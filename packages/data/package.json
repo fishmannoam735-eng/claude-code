@@ -1,0 +1,21 @@
+{
+  "name": "@pb/data",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests yet'",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pb/engine": "workspace:*",
+    "@supabase/supabase-js": "^2.58.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* Semantic tokens — see docs/ART-DIRECTION.md. Components never name a hex. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-surface: #FAF7F2;
+  --color-board: #FFFFFF;
+  --color-line-minor: #E3DDD3;
+  --color-line-major: #C2B8A8;
+  --color-ink: #1A1814;
+  --color-ink-2: #6E6A5E;
+  --color-ink-entered: #2C5F8A;
+  --color-ink-note: #6E6A5E;
+  --color-accent: #C88A2E;
+  --color-accent-text: #8A5E18;
+  --color-accent-soft: #F2E4C9;
+  --color-success: #4A7C59;
+  --color-success-soft: #EAF1EC;
+  --color-danger: #B4503C;
+  --color-danger-soft: #F6E3DE;
+  --color-raised: #FFFFFF;
+  --color-raised-2: #F4EEE3;
+  --color-peer: #F4EFE7;
+  --color-same: #E8EEF5;
+  --color-sel: #F6E7CC;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #16161A;
+    --color-board: #1E1E24;
+    --color-line-minor: #2C2C34;
+    --color-line-major: #43434E;
+    --color-ink: #F2EFE9;
+    --color-ink-2: #9A9AA6;
+    --color-ink-entered: #7FB2E5;
+    --color-ink-note: #9A9AA6;
+    --color-accent: #E0A54A;
+    --color-accent-text: #E0A54A;
+    --color-accent-soft: #2E2515;
+    --color-success: #6FA67E;
+    --color-success-soft: #1E2A22;
+    --color-danger: #D9705C;
+    --color-danger-soft: #3A2320;
+    --color-raised: #1E1E24;
+    --color-raised-2: #26262E;
+    --color-peer: #2A2A34;
+    --color-same: #2E3A4A;
+    --color-sel: #3A2F1B;
+  }
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+button { font-family: inherit; }
+* { -webkit-tap-highlight-color: transparent; }
+
+@keyframes pb-pop { 0% { transform: scale(0.72); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes pb-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+@keyframes pb-sweep { from { background-color: var(--color-success-soft); } to { background-color: transparent; } }
+.pb-pop   { animation: pb-pop 120ms ease-out; }
+.pb-shake { animation: pb-shake 100ms ease-in-out 2; }
+.pb-sweep { animation: pb-sweep 700ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .pb-pop, .pb-shake, .pb-sweep { animation: none; }
+}
