@@ -1,21 +1,35 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router';
-import { localDateKey, makeSeed, randomToken, type Difficulty } from '@pb/engine';
+import { localDateKey, makeSeed, parseSeed, randomToken, type Difficulty, type GameId } from '@pb/engine';
 import { useSession } from './lib/session';
 import { Today } from './pages/Today';
 import { NinePage } from './games/nine/NinePage';
+import { EclipsePage } from './games/eclipse/EclipsePage';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
+const PLAYABLE: GameId[] = ['nine', 'eclipse'];
 const asDifficulty = (s: string | undefined): Difficulty => (DIFFS.includes(s as Difficulty) ? (s as Difficulty) : 'normal');
+const asGame = (s: string | undefined): GameId => (PLAYABLE.includes(s as GameId) ? (s as GameId) : 'nine');
 
+/** `/nine`, `/eclipse/hard` → today's board. An unknown game falls back home. */
 function DailyRedirect() {
-  const { difficulty } = useParams();
-  return <Navigate to={`/g/${makeSeed('nine', localDateKey(), asDifficulty(difficulty))}`} replace />;
+  const { game, difficulty } = useParams();
+  if (!PLAYABLE.includes(game as GameId)) return <Navigate to="/" replace />;
+  return <Navigate to={`/g/${makeSeed(asGame(game), localDateKey(), asDifficulty(difficulty))}`} replace />;
 }
 
 function PracticeRedirect() {
-  const { difficulty } = useParams();
-  return <Navigate to={`/g/${makeSeed('nine', randomToken(), asDifficulty(difficulty))}`} replace />;
+  const { game, difficulty } = useParams();
+  if (!PLAYABLE.includes(game as GameId)) return <Navigate to="/" replace />;
+  return <Navigate to={`/g/${makeSeed(asGame(game), randomToken(), asDifficulty(difficulty))}`} replace />;
+}
+
+/** One route for every board: the seed says which game to mount. */
+function Board() {
+  const { seed = '' } = useParams();
+  const parsed = parseSeed(seed);
+  if (!parsed) return <Navigate to="/" replace />;
+  return parsed.game === 'eclipse' ? <EclipsePage /> : <NinePage />;
 }
 
 export function App() {
@@ -25,11 +39,11 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Today />} />
-      <Route path="/nine" element={<DailyRedirect />} />
-      <Route path="/nine/:difficulty" element={<DailyRedirect />} />
-      <Route path="/practice/nine" element={<PracticeRedirect />} />
-      <Route path="/practice/nine/:difficulty" element={<PracticeRedirect />} />
-      <Route path="/g/:seed" element={<NinePage />} />
+      <Route path="/:game" element={<DailyRedirect />} />
+      <Route path="/:game/:difficulty" element={<DailyRedirect />} />
+      <Route path="/practice/:game" element={<PracticeRedirect />} />
+      <Route path="/practice/:game/:difficulty" element={<PracticeRedirect />} />
+      <Route path="/g/:seed" element={<Board />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

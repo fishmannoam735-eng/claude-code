@@ -1,6 +1,14 @@
 export * from './types.js';
 export * from './seed.js';
 export { createRng, type Rng } from './rng.js';
+
 export * as nineGame from './games/nine/index.js';
 export { nine } from './games/nine/index.js';
-export type { NinePuzzle, Grid } from './games/nine/index.js';
+export type { NinePuzzle } from './games/nine/index.js';
+
+export * as eclipseGame from './games/eclipse/index.js';
+export { eclipse } from './games/eclipse/index.js';
+export type { EclipsePuzzle } from './games/eclipse/index.js';
+
+/** Both games use a plain number[] board; import the game namespace for its own helpers. */
+export type Grid = number[];

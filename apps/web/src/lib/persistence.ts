@@ -1,34 +1,48 @@
 import { useEffect, useRef } from 'react';
 import { upsertPlay, type Json } from '@pb/data';
-import { parseSeed } from '@pb/engine';
-import { supabase, useSession } from '../../lib/session';
-import { writeJSON } from '../../lib/storage';
-import { useNine, type Snapshot } from './store';
+import { parseSeed, type GameId } from '@pb/engine';
+import { supabase, useSession } from './session';
+import { writeJSON } from './storage';
 
-export const localKey = (seed: string): string => `pb:nine:${seed}`;
+export const localKey = (gameId: GameId, seed: string): string => `pb:${gameId}:${seed}`;
+
+/** The shape every game's snapshot must expose for persistence to work. */
+export interface BaseSnapshot {
+  v: 1;
+  elapsedMs: number;
+  mistakes: number;
+  status: 'in_progress' | 'solved';
+  puzzleDate: string | null;
+  startedAt: string;
+  completedAt: string | null;
+}
 
 /**
  * Mirrors game state to localStorage on every change and to Supabase on a
- * debounce (immediately on solve and on pagehide). Local is the source of
+ * debounce — immediately on solve and on pagehide. Local is the source of
  * truth for the session; the server is what makes streaks and cross-device
  * resume work.
  */
-export function usePersistence(seed: string | null): void {
-  const dirty = useNine((s) => s.dirty);
-  const status = useNine((s) => s.status);
-  const snapshot = useNine((s) => s.snapshot);
+export function usePersistence<S extends BaseSnapshot>(opts: {
+  gameId: GameId;
+  seed: string | null;
+  dirty: number;
+  status: 'in_progress' | 'solved';
+  snapshot: () => S;
+}): void {
+  const { gameId, seed, dirty, status, snapshot } = opts;
   const userId = useSession((s) => s.userId);
   const timer = useRef<number | null>(null);
 
   const flush = async (): Promise<void> => {
     if (!seed || !supabase || !userId) return;
-    const snap: Snapshot = snapshot();
     const parsed = parseSeed(seed);
     if (!parsed) return;
+    const snap = snapshot();
     try {
       await upsertPlay(supabase, userId, {
         seed,
-        game_id: 'nine',
+        game_id: gameId,
         difficulty: parsed.difficulty,
         mode: parsed.isDaily ? 'daily' : 'practice',
         puzzle_date: parsed.isDaily ? (snap.puzzleDate ?? parsed.key) : null,
@@ -45,22 +59,22 @@ export function usePersistence(seed: string | null): void {
 
   useEffect(() => {
     if (!seed || dirty === 0) return;
-    writeJSON(localKey(seed), snapshot());
+    writeJSON(localKey(gameId, seed), snapshot());
     if (timer.current) window.clearTimeout(timer.current);
     if (status === 'solved') { void flush(); return; }
     timer.current = window.setTimeout(() => { void flush(); }, 2500);
     return () => { if (timer.current) window.clearTimeout(timer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, status, seed, userId]);
+  }, [dirty, status, seed, gameId, userId]);
 
   useEffect(() => {
     const onHide = (): void => {
       if (!seed) return;
-      writeJSON(localKey(seed), snapshot());
+      writeJSON(localKey(gameId, seed), snapshot());
       void flush();
     };
     window.addEventListener('pagehide', onHide);
     return () => window.removeEventListener('pagehide', onHide);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, userId]);
+  }, [seed, gameId, userId]);
 }

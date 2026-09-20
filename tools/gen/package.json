@@ -1,0 +1,14 @@
+{
+  "name": "@pb/gen",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "histogram": "tsx src/histogram.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests'",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": { "@pb/engine": "workspace:*" },
+  "devDependencies": { "tsx": "^4.20.0", "typescript": "^5.9.0", "@types/node": "^22" }
+}

@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { fetchPlaysForDate, fetchStreaks } from '@pb/data';
-import { localDateKey, makeSeed, type Difficulty } from '@pb/engine';
+import { localDateKey, makeSeed, type Difficulty, type GameId } from '@pb/engine';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtTime, DIFF_LABEL } from '../lib/format';
 import { supabase, useSession } from '../lib/session';
 import { readJSON } from '../lib/storage';
-import type { Snapshot } from '../games/nine/store';
-import { localKey } from '../games/nine/usePersistence';
+import type { Snapshot as NineSnapshot } from '../games/nine/store';
+import type { Snapshot as EclipseSnapshot } from '../games/eclipse/store';
+import { localKey } from '../lib/persistence';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
 interface TileState { status: 'none' | 'in_progress' | 'solved'; elapsedMs: number; placed: number }
 
-function localState(seed: string): TileState {
-  const s = readJSON<Snapshot>(localKey(seed));
+type AnySnapshot = NineSnapshot | EclipseSnapshot;
+
+function localState(gameId: GameId, seed: string): TileState {
+  const s = readJSON<AnySnapshot>(localKey(gameId, seed));
   if (!s) return { status: 'none', elapsedMs: 0, placed: 0 };
   return { status: s.status, elapsedMs: s.elapsedMs, placed: s.grid.filter((v) => v !== 0).length };
 }
@@ -25,21 +28,34 @@ export function Today() {
   const userId = useSession((s) => s.userId);
   const [streak, setStreak] = useState<number | null>(null);
   const [states, setStates] = useState<Record<Difficulty, TileState>>(() => ({
-    easy: localState(makeSeed('nine', today, 'easy')),
-    normal: localState(makeSeed('nine', today, 'normal')),
-    hard: localState(makeSeed('nine', today, 'hard')),
+    easy: localState('nine', makeSeed('nine', today, 'easy')),
+    normal: localState('nine', makeSeed('nine', today, 'normal')),
+    hard: localState('nine', makeSeed('nine', today, 'hard')),
   }));
+  const [eclipseState, setEclipseState] = useState<TileState>(
+    () => localState('eclipse', makeSeed('eclipse', today, 'normal')),
+  );
 
   useEffect(() => {
     if (!supabase || !userId) return;
     void fetchStreaks(supabase, userId).then((rows) => setStreak(rows.find((r) => r.game_id === 'nine')?.current ?? 0)).catch(() => {});
+    void fetchPlaysForDate(supabase, userId, today).then((rows) => {
+      const row = rows.find((r) => r.game_id === 'eclipse' && r.difficulty === 'normal');
+      if (!row) return;
+      const snap = row.state as EclipseSnapshot | null;
+      setEclipseState({
+        status: row.status === 'solved' ? 'solved' : 'in_progress',
+        elapsedMs: row.duration_ms ?? 0,
+        placed: snap?.grid ? snap.grid.filter((v) => v !== 0).length : 0,
+      });
+    }).catch(() => {});
     void fetchPlaysForDate(supabase, userId, today).then((rows) => {
       setStates((prev) => {
         const next = { ...prev };
         for (const row of rows) {
           if (row.game_id !== 'nine') continue;
           const d = row.difficulty;
-          const snap = row.state as Snapshot | null;
+          const snap = row.state as AnySnapshot | null;
           const remote: TileState = {
             status: row.status === 'solved' ? 'solved' : 'in_progress',
             elapsedMs: row.duration_ms ?? 0,
@@ -114,9 +130,37 @@ export function Today() {
         })}
       </div>
 
+      <Link
+        to={`/g/${makeSeed('eclipse', today, 'normal')}`}
+        className="mt-3 flex items-center gap-3.5 rounded-[18px] border border-line-minor bg-raised p-4"
+      >
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-soft text-success">
+          <Icon.Eclipse width={24} height={24} />
+        </div>
+        <div className="flex flex-grow flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[16px] font-bold">Eclipse</span>
+            <span className="rounded-full border border-line-minor px-2 py-0.5 text-[10px] font-semibold text-ink-2">NORMAL</span>
+          </div>
+          <span className="text-[12px] text-ink-2">Suns and moons · quick</span>
+        </div>
+        <span className={`text-[13px] font-semibold ${eclipseState.status === 'solved' ? 'text-success' : 'text-accent-text'}`}>
+          {eclipseState.status === 'solved' ? fmtTime(eclipseState.elapsedMs) : eclipseState.status === 'in_progress' ? 'Resume' : 'Play'}
+        </span>
+      </Link>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        {(['easy', 'hard'] as Difficulty[]).map((d) => (
+          <Link key={d} to={`/g/${makeSeed('eclipse', today, d)}`} className="flex items-center justify-between rounded-2xl border border-line-minor bg-raised px-4 py-3">
+            <span className="text-[14px] font-semibold">Eclipse · {DIFF_LABEL[d]}</span>
+            <span className="text-[12px] font-semibold text-ink-2">Play</span>
+          </Link>
+        ))}
+      </div>
+
       <div className="mt-6 text-[11px] font-bold tracking-wider text-ink-2">COMING SOON</div>
       <div className="mt-2 grid grid-cols-2 gap-3 opacity-60">
-        {[['Crowns', Icon.Crown], ['Eclipse', Icon.Eclipse], ['Thread', Icon.Thread], ['Quilt', Icon.Quilt]].map(([name, I]) => {
+        {[['Crowns', Icon.Crown], ['Thread', Icon.Thread], ['Quilt', Icon.Quilt]].map(([name, I]) => {
           const IconC = I as typeof Icon.Crown;
           return (
             <div key={name as string} className="flex h-[120px] flex-col justify-between rounded-[18px] border border-dashed border-line-minor bg-raised p-4">
@@ -130,13 +174,18 @@ export function Today() {
       <div className="mt-6 rounded-2xl border border-line-minor bg-raised p-4">
         <div className="text-[14px] font-bold">Practice</div>
         <div className="text-[12px] text-ink-2">Unlimited puzzles, any difficulty. They don't count toward your streak.</div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {DIFFS.map((d) => (
-            <Link key={d} to={`/practice/nine/${d}`} className="flex h-11 items-center justify-center rounded-xl border border-line-minor bg-raised-2 text-[13px] font-semibold text-ink">
-              {DIFF_LABEL[d]}
-            </Link>
-          ))}
-        </div>
+        {(['nine', 'eclipse'] as const).map((g) => (
+          <div key={g} className="mt-3">
+            <div className="mb-1.5 text-[11px] font-semibold text-ink-2">{g === 'nine' ? 'Nine' : 'Eclipse'}</div>
+            <div className="grid grid-cols-3 gap-2">
+              {DIFFS.map((d) => (
+                <Link key={d} to={`/practice/${g}/${d}`} className="flex h-11 items-center justify-center rounded-xl border border-line-minor bg-raised-2 text-[13px] font-semibold text-ink">
+                  {DIFF_LABEL[d]}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
