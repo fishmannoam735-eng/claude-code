@@ -1,7 +1,8 @@
 # Puzzle Break — build plan
 
-A daily set of small logic puzzles. One of each per day, each solvable in a few
-minutes, a streak to keep, a result you can share as emoji squares.
+A daily set of logic puzzles. One of each per day, a streak to keep, a result
+you can share as emoji squares. Four are quick — a couple of minutes each. The
+fifth, a full 9×9 sudoku, is the one you sit down for.
 
 Working name: **Puzzle Break**. See [GAME-RESEARCH.md](./GAME-RESEARCH.md) for
 what LinkedIn actually ships and where the rules came from.
@@ -10,7 +11,7 @@ what LinkedIn actually ships and where the rules came from.
 
 ## 1. Product shape
 
-**v1 is the five logic games** — Crowns, Eclipse, Thread, Six, Quilt. The two
+**v1 is the five logic games** — Nine, Crowns, Eclipse, Thread, Quilt. The two
 word games (Common, Rungs) are deliberately out; see §9.
 
 - **Five games**, one fresh puzzle each per day, rolling over at local
@@ -42,7 +43,7 @@ identity are theirs. We use our own names and our own look:
 | Region N-queens | **Crowns** | Queens | ✅ |
 | Binary grid + edge hints | **Eclipse** | Tango | ✅ |
 | Ordered Hamiltonian path | **Thread** | Zip | ✅ |
-| 6×6 sudoku | **Six** | Mini Sudoku | ✅ |
+| 9×9 sudoku | **Nine** | Mini Sudoku (6×6) | ✅ |
 | Rectangle tiling | **Quilt** | Patches | ✅ |
 | Category from clues | **Common** | Pinpoint | — |
 | Trivia word ladder | **Rungs** | Crossclimb | — |
@@ -186,12 +187,52 @@ which is the main reason that constraint exists in §2.
 
 Ordered by what I'd build first.
 
-### Six (6×6 sudoku) — 1 day
-Trivially generatable: fill a valid grid by backtracking, dig cells out while a
-constraint-propagation solver still reports a unique solution. Difficulty = which
-solving techniques are required. **Build this first as the vertical slice** — it
-proves the engine interface, the board UI, the timer, the streak store, and the
-share card against the easiest possible puzzle.
+### Nine (9×9 sudoku) — 4 days
+Full classic sudoku, not the 6×6 mini.
+
+**Generation is the easy half.** Fill a valid grid by backtracking over shuffled
+digits, then dig cells out in symmetric pairs while a constraint-propagation
+solver still reports exactly one solution. Verify uniqueness with propagation
+first and fall back to DLX/exact-cover for the cases propagation can't close.
+This runs in single-digit milliseconds — comfortably inside the §3 budget even
+with the accept/reject loop of §7.
+
+**9×9 makes difficulty rating better, not worse.** A 6×6 grid only supports a
+couple of solving techniques, so "easy/normal/hard" would have been three
+shades of the same thing. Classic sudoku has a genuine technique ladder —
+naked and hidden singles, locked candidates, pointing pairs, box-line
+reduction, naked and hidden subsets, X-wing, XY-wing, colouring, forcing
+chains. Rate a puzzle by the hardest technique its solve requires and how often
+that technique is needed, and the three tiers become meaningfully different
+puzzles rather than three digit-counts. This is the single strongest argument
+for 9×9 and it makes §7 credible in a way the mini never would have been.
+
+**The UI is the expensive half**, and this is what the change really costs:
+
+- **Pencil marks are now mandatory.** A 6×6 fits in working memory; a hard 9×9
+  does not, and nobody solves one without candidate notes. That means a notes
+  mode, up to nine candidate digits rendered legibly inside a ~40px cell, an
+  optional auto-notes fill, and an undo stack that treats a note edit as a
+  first-class move.
+- **Input needs a number pad.** 81 cells plus a persistent digit pad has to fit
+  a phone screen without scrolling. Support both input orders — pick a cell then
+  a digit, and pick a digit then paint cells — because players are strongly
+  split on which feels right, and the second is much faster for notes.
+- **Highlighting carries the deduction.** Peer highlighting (row, column, box),
+  same-digit highlighting across the grid, and live conflict flagging are not
+  polish here; they're how a player reads a 9×9 board at all.
+
+**Solve time goes from ~2 minutes to 5–20.** Nine stops being a warm-up and
+becomes the anchor game — the one people sit down for, while the other four
+stay genuinely quick. Two follow-ons: the lineup is no longer "all five in one
+coffee break" (§1 framing adjusted), and **resume has to be flawless** — the
+`in_progress` play row in §4 must round-trip notes, undo history, and elapsed
+time, because a 20-minute puzzle *will* be interrupted.
+
+**Still the right vertical slice**, despite growing from one day to four. The
+undo stack, input handling, cell highlighting, and resume plumbing it forces us
+to build are shared infrastructure every other game needs. Better to meet that
+work in the game whose *logic* is fully solved than to meet it in Thread.
 
 ### Eclipse (Takuzu + edge hints) — 2 days
 Generate a full valid 6×6, then remove givens and add `=`/`×` edge constraints
@@ -257,22 +298,24 @@ Two consequences:
 **M0 — Foundations (½ week).** Monorepo, Supabase project, schema migration,
 anonymous auth, RLS policies, generated DB types, CI running Vitest.
 
-**M1 — Vertical slice (week 1).** Engine interface, seeded RNG, Six end to end:
-generate → play → validate → solved → persisted to `plays` → streak trigger →
-share card. Deployed. This proves every layer against the easiest game.
+**M1 — Vertical slice (weeks 1–2).** Engine interface, seeded RNG, Nine end to
+end: generate → play → validate → solved → persisted to `plays` → streak trigger
+→ share card. Deployed. Nine is four days rather than one (§6), but it forces
+the undo stack, notes, number-pad input, cell highlighting and resume — all of
+which the other four games inherit.
 
-**M2 — The logic three (weeks 2–3).** Eclipse, Crowns, Quilt on the shared
+**M2 — The logic three (weeks 3–4).** Eclipse, Crowns, Quilt on the shared
 scaffolding. Home screen with today's five tiles and per-game state. Difficulty
 tiers and calibrated bands (§7). Practice mode — nearly free once the seed
 source is abstracted.
 
-**M3 — Thread (week 4).** After the generation spike. Falls back to
+**M3 — Thread (week 5).** After the generation spike. Falls back to
 build-time pre-generated seeds if runtime generation can't hit the budget.
 
-**M4 — Social (week 5).** Challenge links, Edge Function validation (§5),
+**M4 — Social (week 6).** Challenge links, Edge Function validation (§5),
 leaderboards, email linking for cross-device streaks.
 
-**M5 — Polish (week 6).** Per-game onboarding, undo, hints, keyboard support,
+**M5 — Polish (week 7).** Per-game onboarding, undo, hints, keyboard support,
 dark mode, reduced-motion, a11y pass — every grid must be fully operable
 without drag. Stats page.
 
@@ -309,6 +352,13 @@ the trial run — its content cost is an order of magnitude below Rungs.
   anything with a bad ratio moves to build-time pre-generation.
 - **Touch drag.** Thread and Quilt live or die on drag feel — pointer events,
   no scroll hijack, forgiving hit targets.
+- **81 cells on a phone.** Nine's grid plus a number pad has to fit a small
+  screen with ~40px cells that still render nine legible pencil marks. This is
+  the hardest layout problem in the app and it should be prototyped on a real
+  device in week one, not designed on a desktop and discovered later.
+- **A 20-minute puzzle will be interrupted.** Resume for Nine must restore
+  notes, undo history and elapsed time exactly, or players lose real work and
+  don't come back.
 - **Clock and timezone.** Frozen-at-start `puzzle_date` (§4) is the rule.
   Anything else breaks streaks for travellers and night owls.
 - **RLS mistakes are silent.** A missing policy doesn't error, it just returns
