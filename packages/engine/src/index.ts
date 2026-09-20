@@ -10,5 +10,9 @@ export * as eclipseGame from './games/eclipse/index.js';
 export { eclipse } from './games/eclipse/index.js';
 export type { EclipsePuzzle } from './games/eclipse/index.js';
 
+export * as crownsGame from './games/crowns/index.js';
+export { crowns } from './games/crowns/index.js';
+export type { CrownsPuzzle } from './games/crowns/index.js';
+
 /** Both games use a plain number[] board; import the game namespace for its own helpers. */
 export type Grid = number[];

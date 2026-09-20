@@ -6,7 +6,7 @@
  *
  *   pnpm --filter @pb/gen histogram -- --n 500
  */
-import { createRng, eclipse, eclipseGame, nine, makeSeed, type Difficulty } from '@pb/engine';
+import { createRng, crowns, crownsGame, eclipse, eclipseGame, nine, makeSeed, type Difficulty } from '@pb/engine';
 
 const args = process.argv.slice(2);
 const flag = (name: string, dflt: number): number => {
@@ -50,6 +50,33 @@ function report(game: string, d: Difficulty, rows: Row[], failures: number): voi
  * sweep never yields, generation just burns attempts and throws.
  */
 function rawSupply(): void {
+  // Crowns carves nothing: a puzzle is entirely its region shapes, so the
+  // supply is whatever the growth yields, and the share that comes out with
+  // more than one solution is a direct cost on generation time.
+  console.log('\n— raw crowns supply, no band filter —');
+  {
+    const hist = new Map<number, number>();
+    let grownUnique = 0, refineFailed = 0;
+    const tried = N * 4;
+    for (let i = 0; i < tried; i++) {
+      const r = createRng(`crowns-probe:${i}`);
+      const cols = crownsGame.placeCrowns(r);
+      const intended = cols.map((c, row) => row * 8 + c);
+      const grown = crownsGame.growRegions(r, cols);
+      if (crownsGame.countSolutions(grown, 2).count === 1) grownUnique++;
+      const refined = crownsGame.refineRegions(grown, intended, r);
+      if (!refined) { refineFailed++; continue; }
+      const lvl = crownsGame.rateRegions(refined).detail['hardestLevel']!;
+      hist.set(lvl, (hist.get(lvl) ?? 0) + 1);
+    }
+    const histStr = [...hist.entries()].sort((a, b) => a[0] - b[0])
+      .map(([l, n]) => `L${l}:${String(n).padStart(3)}`).join('  ');
+    console.log(
+      `  ${tried} grown · ${grownUnique} unique before refining · ` +
+      `${tried - refineFailed} unique after (${Math.round(((tried - refineFailed) / tried) * 100)}%)  [${histStr}]`,
+    );
+  }
+
   console.log('\n— raw eclipse supply by (edges, floorGivens), no band filter —');
   for (const edges of [3, 5, 7, 9]) {
     for (const floor of [0, 12, 16, 20]) {
@@ -72,7 +99,7 @@ function rawSupply(): void {
 
 function measure(): void {
   console.log(`\n— accepted puzzles (${N} seeds per difficulty) —`);
-  for (const [game, gen] of [['nine', nine], ['eclipse', eclipse]] as const) {
+  for (const [game, gen] of [['nine', nine], ['eclipse', eclipse], ['crowns', crowns]] as const) {
     if (only && only !== game) continue;
     for (const d of DIFFS) {
       const rows: Row[] = [];
@@ -81,10 +108,15 @@ function measure(): void {
         const seed = makeSeed(game, `cal${String(i).padStart(4, '0')}`, d);
         const t0 = performance.now();
         try {
-          const p = gen.generate(seed) as { givens: number[]; rating: { detail: Record<string, number> } };
+          const p = gen.generate(seed) as {
+            givens?: number[];
+            rating: { detail: Record<string, number> };
+          };
           rows.push({
             level: p.rating.detail['hardestLevel']!,
-            givens: p.givens.filter((v) => v !== 0).length,
+            // Crowns carves nothing, so there are no givens — its shape lever
+            // is region size, which the rating already reports.
+            givens: p.givens ? p.givens.filter((v) => v !== 0).length : (p.rating.detail['largestRegion'] ?? 0),
             ms: performance.now() - t0,
             extra: p.rating.detail,
           });

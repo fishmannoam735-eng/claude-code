@@ -24,6 +24,12 @@
   --color-peer: #F4EFE7;
   --color-same: #E8EEF5;
   --color-sel: #F6E7CC;
+
+  /* Region fills (Crowns, later Quilt). Colour is never the only channel:
+     each region also carries its own hatch angle and a drawn border. */
+  --region-alpha: 0.26;
+  --region-alpha-strong: 0.5;
+  --hatch: rgba(26, 24, 20, 0.07);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,6 +54,10 @@
     --color-peer: #2A2A34;
     --color-same: #2E3A4A;
     --color-sel: #3A2F1B;
+
+    --region-alpha: 0.34;
+    --region-alpha-strong: 0.58;
+    --hatch: rgba(255, 255, 255, 0.09);
   }
 }
 

@@ -14,6 +14,7 @@ export const Icon = {
   Pencil: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M12 20h8" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z" /></svg>,
   Check: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M20 6 9 17l-5-5" /></svg>,
   Flame: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1.5.6-2.8 1.3-3.8C9 8.6 10.5 7 12 2z" /></svg>,
+  Sweep: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M3 21h6M6 21v-5l7-7 5 5-7 7" /><path d="M13 6l3-3 5 5-3 3" /></svg>,
   Share: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M12 15V3M7 8l5-5 5 5" /></svg>,
   Grid: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18M15 3v18M3 9h18M3 15h18" /></svg>,
   Crown: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 18h16M4 18L3 8l5 3.5L12 5l4 6.5L21 8l-1 10" /></svg>,

@@ -8,13 +8,22 @@ import { supabase, useSession } from '../lib/session';
 import { readJSON } from '../lib/storage';
 import type { Snapshot as NineSnapshot } from '../games/nine/store';
 import type { Snapshot as EclipseSnapshot } from '../games/eclipse/store';
+import type { Snapshot as CrownsSnapshot } from '../games/crowns/store';
 import { localKey } from '../lib/persistence';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
+const GAME_NAMES: Record<string, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns' };
+
+/** Everything except Nine, which gets the hero card of its own above. */
+const SIDE_GAMES = [
+  { id: 'eclipse' as const, name: 'Eclipse', blurb: 'Suns and moons · quick', Glyph: Icon.Eclipse },
+  { id: 'crowns' as const, name: 'Crowns', blurb: 'One crown per colour · quick', Glyph: Icon.Crown },
+];
+
 interface TileState { status: 'none' | 'in_progress' | 'solved'; elapsedMs: number; placed: number }
 
-type AnySnapshot = NineSnapshot | EclipseSnapshot;
+type AnySnapshot = NineSnapshot | EclipseSnapshot | CrownsSnapshot;
 
 function localState(gameId: GameId, seed: string): TileState {
   const s = readJSON<AnySnapshot>(localKey(gameId, seed));
@@ -32,21 +41,28 @@ export function Today() {
     normal: localState('nine', makeSeed('nine', today, 'normal')),
     hard: localState('nine', makeSeed('nine', today, 'hard')),
   }));
-  const [eclipseState, setEclipseState] = useState<TileState>(
-    () => localState('eclipse', makeSeed('eclipse', today, 'normal')),
-  );
+  const [sideStates, setSideStates] = useState<Record<'eclipse' | 'crowns', TileState>>(() => ({
+    eclipse: localState('eclipse', makeSeed('eclipse', today, 'normal')),
+    crowns: localState('crowns', makeSeed('crowns', today, 'normal')),
+  }));
 
   useEffect(() => {
     if (!supabase || !userId) return;
     void fetchStreaks(supabase, userId).then((rows) => setStreak(rows.find((r) => r.game_id === 'nine')?.current ?? 0)).catch(() => {});
     void fetchPlaysForDate(supabase, userId, today).then((rows) => {
-      const row = rows.find((r) => r.game_id === 'eclipse' && r.difficulty === 'normal');
-      if (!row) return;
-      const snap = row.state as EclipseSnapshot | null;
-      setEclipseState({
-        status: row.status === 'solved' ? 'solved' : 'in_progress',
-        elapsedMs: row.duration_ms ?? 0,
-        placed: snap?.grid ? snap.grid.filter((v) => v !== 0).length : 0,
+      setSideStates((prev) => {
+        const next = { ...prev };
+        for (const g of ['eclipse', 'crowns'] as const) {
+          const row = rows.find((r) => r.game_id === g && r.difficulty === 'normal');
+          if (!row) continue;
+          const snap = row.state as AnySnapshot | null;
+          next[g] = {
+            status: row.status === 'solved' ? 'solved' : 'in_progress',
+            elapsedMs: row.duration_ms ?? 0,
+            placed: snap?.grid ? snap.grid.filter((v) => v !== 0).length : 0,
+          };
+        }
+        return next;
       });
     }).catch(() => {});
     void fetchPlaysForDate(supabase, userId, today).then((rows) => {
@@ -130,37 +146,42 @@ export function Today() {
         })}
       </div>
 
-      <Link
-        to={`/g/${makeSeed('eclipse', today, 'normal')}`}
-        className="mt-3 flex items-center gap-3.5 rounded-[18px] border border-line-minor bg-raised p-4"
-      >
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-soft text-success">
-          <Icon.Eclipse width={24} height={24} />
-        </div>
-        <div className="flex flex-grow flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[16px] font-bold">Eclipse</span>
-            <span className="rounded-full border border-line-minor px-2 py-0.5 text-[10px] font-semibold text-ink-2">NORMAL</span>
-          </div>
-          <span className="text-[12px] text-ink-2">Suns and moons · quick</span>
-        </div>
-        <span className={`text-[13px] font-semibold ${eclipseState.status === 'solved' ? 'text-success' : 'text-accent-text'}`}>
-          {eclipseState.status === 'solved' ? fmtTime(eclipseState.elapsedMs) : eclipseState.status === 'in_progress' ? 'Resume' : 'Play'}
-        </span>
-      </Link>
-
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        {(['easy', 'hard'] as Difficulty[]).map((d) => (
-          <Link key={d} to={`/g/${makeSeed('eclipse', today, d)}`} className="flex items-center justify-between rounded-2xl border border-line-minor bg-raised px-4 py-3">
-            <span className="text-[14px] font-semibold">Eclipse · {DIFF_LABEL[d]}</span>
-            <span className="text-[12px] font-semibold text-ink-2">Play</span>
+      {SIDE_GAMES.map(({ id, name, blurb, Glyph }) => (
+        <div key={id}>
+          <Link
+            to={`/g/${makeSeed(id, today, 'normal')}`}
+            className="mt-3 flex items-center gap-3.5 rounded-[18px] border border-line-minor bg-raised p-4"
+          >
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-success-soft text-success">
+              <Glyph width={24} height={24} />
+            </div>
+            <div className="flex flex-grow flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[16px] font-bold">{name}</span>
+                <span className="rounded-full border border-line-minor px-2 py-0.5 text-[10px] font-semibold text-ink-2">NORMAL</span>
+              </div>
+              <span className="text-[12px] text-ink-2">{blurb}</span>
+            </div>
+            <span className={`text-[13px] font-semibold ${sideStates[id].status === 'solved' ? 'text-success' : 'text-accent-text'}`}>
+              {sideStates[id].status === 'solved'
+                ? fmtTime(sideStates[id].elapsedMs)
+                : sideStates[id].status === 'in_progress' ? 'Resume' : 'Play'}
+            </span>
           </Link>
-        ))}
-      </div>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            {(['easy', 'hard'] as Difficulty[]).map((d) => (
+              <Link key={d} to={`/g/${makeSeed(id, today, d)}`} className="flex items-center justify-between rounded-2xl border border-line-minor bg-raised px-4 py-3">
+                <span className="text-[14px] font-semibold">{name} · {DIFF_LABEL[d]}</span>
+                <span className="text-[12px] font-semibold text-ink-2">Play</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <div className="mt-6 text-[11px] font-bold tracking-wider text-ink-2">COMING SOON</div>
       <div className="mt-2 grid grid-cols-2 gap-3 opacity-60">
-        {[['Crowns', Icon.Crown], ['Thread', Icon.Thread], ['Quilt', Icon.Quilt]].map(([name, I]) => {
+        {[['Thread', Icon.Thread], ['Quilt', Icon.Quilt]].map(([name, I]) => {
           const IconC = I as typeof Icon.Crown;
           return (
             <div key={name as string} className="flex h-[120px] flex-col justify-between rounded-[18px] border border-dashed border-line-minor bg-raised p-4">
@@ -174,9 +195,9 @@ export function Today() {
       <div className="mt-6 rounded-2xl border border-line-minor bg-raised p-4">
         <div className="text-[14px] font-bold">Practice</div>
         <div className="text-[12px] text-ink-2">Unlimited puzzles, any difficulty. They don't count toward your streak.</div>
-        {(['nine', 'eclipse'] as const).map((g) => (
+        {(['nine', 'eclipse', 'crowns'] as const).map((g) => (
           <div key={g} className="mt-3">
-            <div className="mb-1.5 text-[11px] font-semibold text-ink-2">{g === 'nine' ? 'Nine' : 'Eclipse'}</div>
+            <div className="mb-1.5 text-[11px] font-semibold text-ink-2">{GAME_NAMES[g]}</div>
             <div className="grid grid-cols-3 gap-2">
               {DIFFS.map((d) => (
                 <Link key={d} to={`/practice/${g}/${d}`} className="flex h-11 items-center justify-center rounded-xl border border-line-minor bg-raised-2 text-[13px] font-semibold text-ink">

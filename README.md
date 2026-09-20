@@ -9,9 +9,13 @@ See [docs/PLAN.md](docs/PLAN.md) for the build plan,
 
 ## Status
 
-**M1 — vertical slice.** Nine (9×9 sudoku) plays end to end: generate → play →
-validate → solved → persisted → streak → share. The other four games are
-scaffolded in the UI but not implemented.
+**M2 in progress.** Three games play end to end — Nine (9×9 sudoku), Eclipse
+(6×6 Takuzu) and Crowns (region N-queens) — each generate → play → validate →
+solved → persisted → streak → share. Thread and Quilt are not built yet.
+
+Difficulty bands for all three are set from `tools/gen histogram` rather than
+guessed; see the note in each game's `generate.ts` for what the measurement
+changed.
 
 ## Layout
 
