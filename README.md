@@ -9,9 +9,14 @@ See [docs/PLAN.md](docs/PLAN.md) for the build plan,
 
 ## Status
 
-**M2 in progress.** Three games play end to end — Nine (9×9 sudoku), Eclipse
-(6×6 Takuzu) and Crowns (region N-queens) — each generate → play → validate →
-solved → persisted → streak → share. Thread and Quilt are not built yet.
+**M2 in progress.** Four games play end to end — Nine (9×9 sudoku), Eclipse
+(6×6 Takuzu), Crowns (region N-queens) and Thread (ordered Hamiltonian path) —
+each generate → play → validate → solved → persisted → streak → share. Quilt is
+not built yet.
+
+Thread was the plan's standing generation risk, on the grounds that proving a
+Hamiltonian path unique might force build-time pre-generation. Measured, it
+does not: 0.9ms on 5×5, 3.1ms on 6×6, 14.3ms on 7×7, every seed, at runtime.
 
 Difficulty bands for all three are set from `tools/gen histogram` rather than
 guessed; see the note in each game's `generate.ts` for what the measurement

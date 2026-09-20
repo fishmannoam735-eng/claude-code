@@ -9,26 +9,34 @@ import { readJSON } from '../lib/storage';
 import type { Snapshot as NineSnapshot } from '../games/nine/store';
 import type { Snapshot as EclipseSnapshot } from '../games/eclipse/store';
 import type { Snapshot as CrownsSnapshot } from '../games/crowns/store';
+import type { Snapshot as ThreadSnapshot } from '../games/thread/store';
 import { localKey } from '../lib/persistence';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
-const GAME_NAMES: Record<string, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns' };
+const GAME_NAMES: Record<string, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread' };
 
 /** Everything except Nine, which gets the hero card of its own above. */
 const SIDE_GAMES = [
   { id: 'eclipse' as const, name: 'Eclipse', blurb: 'Suns and moons · quick', Glyph: Icon.Eclipse },
   { id: 'crowns' as const, name: 'Crowns', blurb: 'One crown per colour · quick', Glyph: Icon.Crown },
+  { id: 'thread' as const, name: 'Thread', blurb: 'One line, every cell · quick', Glyph: Icon.Thread },
 ];
 
 interface TileState { status: 'none' | 'in_progress' | 'solved'; elapsedMs: number; placed: number }
 
-type AnySnapshot = NineSnapshot | EclipseSnapshot | CrownsSnapshot;
+type AnySnapshot = NineSnapshot | EclipseSnapshot | CrownsSnapshot | ThreadSnapshot;
+
+/** How far along a snapshot is, whichever shape it happens to be. */
+function progressOf(s: AnySnapshot): number {
+  if ('path' in s) return s.path.length;
+  return s.grid.filter((v) => v !== 0).length;
+}
 
 function localState(gameId: GameId, seed: string): TileState {
   const s = readJSON<AnySnapshot>(localKey(gameId, seed));
   if (!s) return { status: 'none', elapsedMs: 0, placed: 0 };
-  return { status: s.status, elapsedMs: s.elapsedMs, placed: s.grid.filter((v) => v !== 0).length };
+  return { status: s.status, elapsedMs: s.elapsedMs, placed: progressOf(s) };
 }
 
 export function Today() {
@@ -41,9 +49,10 @@ export function Today() {
     normal: localState('nine', makeSeed('nine', today, 'normal')),
     hard: localState('nine', makeSeed('nine', today, 'hard')),
   }));
-  const [sideStates, setSideStates] = useState<Record<'eclipse' | 'crowns', TileState>>(() => ({
+  const [sideStates, setSideStates] = useState<Record<'eclipse' | 'crowns' | 'thread', TileState>>(() => ({
     eclipse: localState('eclipse', makeSeed('eclipse', today, 'normal')),
     crowns: localState('crowns', makeSeed('crowns', today, 'normal')),
+    thread: localState('thread', makeSeed('thread', today, 'normal')),
   }));
 
   useEffect(() => {
@@ -52,14 +61,14 @@ export function Today() {
     void fetchPlaysForDate(supabase, userId, today).then((rows) => {
       setSideStates((prev) => {
         const next = { ...prev };
-        for (const g of ['eclipse', 'crowns'] as const) {
+        for (const g of ['eclipse', 'crowns', 'thread'] as const) {
           const row = rows.find((r) => r.game_id === g && r.difficulty === 'normal');
           if (!row) continue;
           const snap = row.state as AnySnapshot | null;
           next[g] = {
             status: row.status === 'solved' ? 'solved' : 'in_progress',
             elapsedMs: row.duration_ms ?? 0,
-            placed: snap?.grid ? snap.grid.filter((v) => v !== 0).length : 0,
+            placed: snap ? progressOf(snap) : 0,
           };
         }
         return next;
@@ -75,7 +84,7 @@ export function Today() {
           const remote: TileState = {
             status: row.status === 'solved' ? 'solved' : 'in_progress',
             elapsedMs: row.duration_ms ?? 0,
-            placed: snap?.grid ? snap.grid.filter((v) => v !== 0).length : 0,
+            placed: snap ? progressOf(snap) : 0,
           };
           const local = prev[d];
           if (local.status === 'none' || (remote.status === 'solved' && local.status !== 'solved') || remote.elapsedMs > local.elapsedMs) next[d] = remote;
@@ -181,7 +190,7 @@ export function Today() {
 
       <div className="mt-6 text-[11px] font-bold tracking-wider text-ink-2">COMING SOON</div>
       <div className="mt-2 grid grid-cols-2 gap-3 opacity-60">
-        {[['Thread', Icon.Thread], ['Quilt', Icon.Quilt]].map(([name, I]) => {
+        {[['Quilt', Icon.Quilt]].map(([name, I]) => {
           const IconC = I as typeof Icon.Crown;
           return (
             <div key={name as string} className="flex h-[120px] flex-col justify-between rounded-[18px] border border-dashed border-line-minor bg-raised p-4">
@@ -195,7 +204,7 @@ export function Today() {
       <div className="mt-6 rounded-2xl border border-line-minor bg-raised p-4">
         <div className="text-[14px] font-bold">Practice</div>
         <div className="text-[12px] text-ink-2">Unlimited puzzles, any difficulty. They don't count toward your streak.</div>
-        {(['nine', 'eclipse', 'crowns'] as const).map((g) => (
+        {(['nine', 'eclipse', 'crowns', 'thread'] as const).map((g) => (
           <div key={g} className="mt-3">
             <div className="mb-1.5 text-[11px] font-semibold text-ink-2">{GAME_NAMES[g]}</div>
             <div className="grid grid-cols-3 gap-2">

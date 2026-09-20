@@ -93,6 +93,8 @@ export function ActionButton(p: {
 export function SolvedCard(props: {
   elapsedMs: number;
   mistakes: number;
+  /** What a mistake is called in this game; Thread counts steps back. */
+  mistakeWord?: string;
   streak: number | null;
   shareLabel: string | null;
   onShare: () => void;
@@ -108,7 +110,9 @@ export function SolvedCard(props: {
       <div className="mt-2 flex items-baseline gap-4">
         <span className="text-3xl font-semibold tabular-nums">{fmtTime(props.elapsedMs)}</span>
         <span className="text-sm text-ink-2">
-          {props.mistakes === 0 ? 'no mistakes' : `${props.mistakes} mistake${props.mistakes === 1 ? '' : 's'}`}
+          {((word) => (props.mistakes === 0
+            ? `no ${word}s`
+            : `${props.mistakes} ${word}${props.mistakes === 1 ? '' : 's'}`))(props.mistakeWord ?? 'mistake')}
         </span>
         {props.streak !== null && props.streak > 0 && (
           <span className="flex items-center gap-1 text-sm font-semibold text-accent-text">

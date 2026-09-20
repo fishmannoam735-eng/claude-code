@@ -6,9 +6,10 @@ import { Today } from './pages/Today';
 import { NinePage } from './games/nine/NinePage';
 import { EclipsePage } from './games/eclipse/EclipsePage';
 import { CrownsPage } from './games/crowns/CrownsPage';
+import { ThreadPage } from './games/thread/ThreadPage';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
-const PLAYABLE: GameId[] = ['nine', 'eclipse', 'crowns'];
+const PLAYABLE: GameId[] = ['nine', 'eclipse', 'crowns', 'thread'];
 const asDifficulty = (s: string | undefined): Difficulty => (DIFFS.includes(s as Difficulty) ? (s as Difficulty) : 'normal');
 const asGame = (s: string | undefined): GameId => (PLAYABLE.includes(s as GameId) ? (s as GameId) : 'nine');
 
@@ -33,6 +34,7 @@ function Board() {
   switch (parsed.game) {
     case 'eclipse': return <EclipsePage />;
     case 'crowns': return <CrownsPage />;
+    case 'thread': return <ThreadPage />;
     case 'nine': return <NinePage />;
     default: return <Navigate to="/" replace />;
   }
