@@ -10,14 +10,24 @@ what LinkedIn actually ships and where the rules came from.
 
 ## 1. Product shape
 
-- **Seven games**, one fresh puzzle each per day, rolling over at local
+**v1 is the five logic games** — Crowns, Eclipse, Thread, Six, Quilt. The two
+word games (Common, Rungs) are deliberately out; see §9.
+
+- **Five games**, one fresh puzzle each per day, rolling over at local
   midnight (not Pacific — no reason to inherit their timezone).
-- **No account required.** Progress, streaks, and stats live in `localStorage`.
-  Accounts are a later feature, only if we want cross-device streaks.
-- **Archive**: any past day is playable. This is free for us (see §3) and it is
-  the single biggest retention feature the originals lack.
+- **No sign-up friction, but real accounts.** Supabase anonymous auth issues
+  every visitor a user row on first load, so play is instant and progress is
+  server-side from move one. Linking an email later upgrades the same row and
+  turns on cross-device streaks — nothing is lost, nothing is migrated.
+- **Three difficulties** per game per day. Normal is the canonical daily; easy
+  and hard are separate puzzles from the same date.
+- **Unlimited practice**: random seed instead of a date seed, any difficulty.
+- **Challenge a friend**: share a link to an exact seed, compare times on an
+  identical board.
 - **Share card**: spoiler-free emoji grid + time + streak.
-- **Mobile-first.** These are thumb games. Drag interactions (Zip, Patches) must
+- **Archive** (any past day playable) is nearly free given §3, but it is not a
+  v1 commitment — it's a switch we can flip later, including as a paid tier.
+- **Mobile-first.** These are thumb games. Drag interactions (Thread, Quilt) must
   feel right on a touchscreen or the whole thing is dead on arrival.
 
 ### Naming
@@ -27,15 +37,15 @@ product names. The *mechanics* are public domain — Shikaku, Takuzu, Hamiltonia
 paths and N-queens long predate LinkedIn — but the names and the exact visual
 identity are theirs. We use our own names and our own look:
 
-| Mechanic | Ours | Theirs |
-|---|---|---|
-| Region N-queens | **Crowns** | Queens |
-| Binary grid + edge hints | **Eclipse** | Tango |
-| Ordered Hamiltonian path | **Thread** | Zip |
-| 6×6 sudoku | **Six** | Mini Sudoku |
-| Rectangle tiling | **Quilt** | Patches |
-| Category from clues | **Common** | Pinpoint |
-| Trivia word ladder | **Rungs** | Crossclimb |
+| Mechanic | Ours | Theirs | v1 |
+|---|---|---|---|
+| Region N-queens | **Crowns** | Queens | ✅ |
+| Binary grid + edge hints | **Eclipse** | Tango | ✅ |
+| Ordered Hamiltonian path | **Thread** | Zip | ✅ |
+| 6×6 sudoku | **Six** | Mini Sudoku | ✅ |
+| Rectangle tiling | **Quilt** | Patches | ✅ |
+| Category from clues | **Common** | Pinpoint | — |
+| Trivia word ladder | **Rungs** | Crossclimb | — |
 
 ---
 
@@ -44,26 +54,31 @@ identity are theirs. We use our own names and our own look:
 | Layer | Choice | Why |
 |---|---|---|
 | App | React 19 + TypeScript + Vite | Fast, boring, good touch story |
-| Styling | Tailwind | Consistent tokens across seven boards |
+| Styling | Tailwind | Consistent tokens across five boards |
 | State | Zustand (UI) + pure engine modules | Engines stay framework-free and testable |
 | Tests | Vitest | Generators need property tests, not click tests |
-| Hosting | Static — Netlify or Cloudflare Pages | Phase 1 has no server at all |
-| Backend | **None initially.** Supabase later if we add accounts/leaderboards | |
+| Hosting | Static — Netlify or Cloudflare Pages | The app itself stays a static bundle |
+| Backend | **Supabase** — Postgres + anonymous auth + RLS + Edge Functions | Accounts, streaks, leaderboards, challenges from day one |
 
 Monorepo, pnpm workspaces:
 
 ```
 packages/
   engine/          # pure TS: types, seeded RNG, per-game generator + solver
-  ui/              # shared board primitives, timer, share card, streak store
+  ui/              # shared board primitives, timer, share card
+  data/            # Supabase client, generated DB types, queries/mutations
 apps/
   web/             # the React app, routes per game
+supabase/
+  migrations/      # schema as SQL, source of truth
+  functions/       # Edge Functions (Deno) — imports packages/engine unchanged
 tools/
-  gen/             # CLI: batch-generate + verify puzzles, difficulty histograms
-content/
-  rungs/           # authored word-ladder puzzles (JSON)
-  common/          # authored category puzzles (JSON)
+  gen/             # CLI: batch-generate + verify, difficulty histograms
 ```
+
+`packages/engine` is pure TypeScript with no DOM and no Node APIs. That is a
+deliberate constraint, and §5 explains what it buys: the identical solver runs
+in the browser and inside a Supabase Edge Function.
 
 ---
 
@@ -72,19 +87,31 @@ content/
 Every logic puzzle is a pure function of a seed:
 
 ```ts
-type Seed = string;                        // `${gameId}:${isoDate}`
+type Difficulty = 'easy' | 'normal' | 'hard';
+type Seed = string;   // `${gameId}:${isoDate}:${difficulty}` — or a random
+                      // string for practice, or a shared string for a challenge
+
 interface Generator<P, S> {
-  generate(seed: Seed, difficulty: Difficulty): P;   // deterministic
-  solve(puzzle: P): S[];                             // all solutions, capped at 2
+  generate(seed: Seed): P;              // deterministic, difficulty encoded in seed
+  solve(puzzle: P): S[];                // all solutions, enumeration capped at 2
   validate(puzzle: P, attempt: S): Result;
+  rate(puzzle: P): DifficultyScore;     // see §7 — drives the accept/reject loop
 }
 ```
 
+Difficulty lives **inside** the seed rather than beside it, so a seed is a
+complete, portable description of a board. One string in a URL reproduces a
+puzzle exactly — which is precisely what "challenge a friend" needs, and it
+means practice, daily, and challenge modes are one code path with three seed
+sources.
+
 Same seed → same puzzle, on every device, forever. That buys us:
 
-- **No puzzle server, no content DB, no daily cron** for five of the seven games.
-- The **archive is free** — any date generates on demand.
-- An **infinite practice mode** — seed with a random string instead of a date.
+- **No puzzle content in the database.** Postgres stores *results*, never
+  boards. A row is a seed plus a time.
+- **Challenge links cost nothing** — the link *is* the puzzle.
+- **Infinite practice** — random seed instead of a date seed.
+- **The archive whenever we want it** — any past date generates on demand.
 - Reproducible bug reports: a seed *is* the repro.
 
 The cost, and it is the real engineering work of this project: a generator is
@@ -99,7 +126,63 @@ timing — decided per game, not up front.
 
 ---
 
-## 4. Per-game engineering notes
+## 4. Data model
+
+Postgres stores results, identities, and social graph — never puzzles.
+
+```sql
+profiles      (id → auth.users, handle, is_anonymous, created_at)
+
+plays         (id, user_id, game_id, seed, difficulty, puzzle_date | null,
+               mode: 'daily' | 'practice' | 'challenge',
+               started_at, completed_at, duration_ms, mistakes,
+               status: 'in_progress' | 'solved' | 'abandoned',
+               move_log jsonb, validated bool default false)
+              unique (user_id, seed)
+
+streaks       (user_id, game_id, current, longest, last_solved_date)
+              -- maintained by trigger on plays, not computed client-side
+
+challenges    (id, seed, game_id, difficulty, creator_id, created_at)
+challenge_entries (challenge_id, user_id, play_id, duration_ms)
+```
+
+Decisions worth naming now:
+
+- **`puzzle_date` is the player's local date**, captured when the puzzle is
+  *started* and then frozen. A player who crosses midnight mid-solve keeps the
+  day they began. Without this rule, streaks break for travellers and night
+  owls — and those are the engaged users.
+- **Streaks count the day, not the difficulty.** Solving any one of easy /
+  normal / hard extends the streak for that game. Leaderboards are per
+  difficulty; streaks are not, or hard mode becomes a punishment.
+- **RLS on every table.** A player reads and writes only their own `plays`.
+  Leaderboard reads go through a view exposing handle + duration, nothing else.
+- **`move_log` is why anti-cheat is possible at all** (§5). It costs a little
+  storage and is worth it.
+- Anonymous users are real rows, so **nothing is migrated on sign-up** — the
+  account links to the row that already exists.
+
+## 5. Trust: server-side validation
+
+The client reports its own time. That is unfalsifiable nonsense the moment a
+leaderboard exists, and "challenge a friend" *is* a leaderboard of two.
+
+Because `packages/engine` is pure TypeScript with no DOM dependency, the same
+generator and solver run unchanged inside a Supabase Edge Function on Deno. So:
+
+1. Client submits `{ seed, solution, move_log, duration_ms }`.
+2. An Edge Function regenerates the puzzle **from the seed**, checks the
+   solution against it, and sanity-checks the move log against the claimed
+   duration (move count vs. elapsed time, no impossible instant-fills).
+3. Only then does it set `validated = true` and write the leaderboard entry.
+
+Unvalidated plays still count for personal stats and streaks — we're not
+policing someone's private practice. They just don't rank. This is a modest
+amount of code precisely *because* we refused to let the engine touch the DOM,
+which is the main reason that constraint exists in §2.
+
+## 6. Per-game engineering notes
 
 Ordered by what I'd build first.
 
@@ -137,66 +220,111 @@ enumerating Hamiltonian paths, which is expensive — this is the game most like
 to need build-time pre-generation. Budget a spike before committing to runtime
 generation.
 
-### Common (category from clues) — 2 days engine, ongoing content
-Engine is a day: reveal clues one at a time, fuzzy-match the guess against
-accepted answers, score inversely to clues used. The work is **content**: each
-puzzle needs a category, five members ordered obscure→obvious, and a generous
-list of accepted phrasings. Plan: an LLM-assisted authoring tool in `tools/gen`
-that drafts candidates, plus human QA on every one. Never auto-publish.
-
-### Rungs (word ladder) — 3 days engine, hardest content
-Engine: three phases, drag-to-reorder, validation that each neighbour pair
-differs by one letter. Content is the bottleneck — we need a 7-rung ladder, a
-trivia clue per rung, and a *related* top/bottom pair. Ladders themselves can be
-found by BFS over a 4-letter word list (that part is automatable and should be a
-tool). Clue writing is not automatable to a shippable standard. **This is the
-one I'd cut from v1** unless we're committed to a daily content operation.
 
 ---
 
-## 5. Milestones
+## 7. Difficulty as a first-class parameter
 
-**M1 — Vertical slice (week 1).** Monorepo, engine interface, seeded RNG, Six
-end to end: generate → play → validate → win → streak → share. Deployed.
+Three tiers per game per day means three puzzles, and it makes difficulty a
+thing we have to *measure*, not hope for. Random generation produces random
+difficulty; without a metric, "hard" is a coin flip and a brutal Tuesday churns
+users.
 
-**M2 — The logic four (weeks 2–3).** Eclipse, Crowns, Quilt on the shared
-scaffolding. Home screen with today's seven tiles and per-game completion state.
-Archive route.
+Every generator implements `rate(puzzle) → DifficultyScore`, derived from how
+the solver actually solved it:
 
-**M3 — Thread (week 4).** After a generation spike. Falls back to pre-generated
-puzzles if runtime generation can't hit the latency budget.
+- Which deduction techniques were required (naked singles vs. region parity vs.
+  contradiction chains).
+- How deep the forced-move chain runs before the first guess.
+- How many cells are decidable at the opening — the "cold start" width.
 
-**M4 — Polish (week 5).** Onboarding per game, undo, hints, keyboard support,
-dark mode, reduced-motion, a11y pass on the grids (they must be operable without
-drag). Stats page.
+The daily loop is then: generate from seed → solve → reject unless unique →
+`rate` → reject unless inside the target band for that tier → else reseed and
+repeat. Bands get calibrated once per game by running `tools/gen` over ten
+thousand seeds and reading the histogram.
 
-**M5 — Word games (week 6+, optional).** Common first, since its content cost is
-an order of magnitude lower than Rungs. Ship Rungs only with a content pipeline
-behind it.
+Two consequences:
+
+- Generation is now a *loop*, so per-attempt cost matters much more. This is
+  what tightens the latency budget in §3 and makes Thread's spike load-bearing.
+- Bands are configuration, not code. We will tune them after launch from real
+  solve times, and that should be a config change and a redeploy, nothing more.
 
 ---
 
-## 6. Things that will bite us
+## 8. Milestones
+
+**M0 — Foundations (½ week).** Monorepo, Supabase project, schema migration,
+anonymous auth, RLS policies, generated DB types, CI running Vitest.
+
+**M1 — Vertical slice (week 1).** Engine interface, seeded RNG, Six end to end:
+generate → play → validate → solved → persisted to `plays` → streak trigger →
+share card. Deployed. This proves every layer against the easiest game.
+
+**M2 — The logic three (weeks 2–3).** Eclipse, Crowns, Quilt on the shared
+scaffolding. Home screen with today's five tiles and per-game state. Difficulty
+tiers and calibrated bands (§7). Practice mode — nearly free once the seed
+source is abstracted.
+
+**M3 — Thread (week 4).** After the generation spike. Falls back to
+build-time pre-generated seeds if runtime generation can't hit the budget.
+
+**M4 — Social (week 5).** Challenge links, Edge Function validation (§5),
+leaderboards, email linking for cross-device streaks.
+
+**M5 — Polish (week 6).** Per-game onboarding, undo, hints, keyboard support,
+dark mode, reduced-motion, a11y pass — every grid must be fully operable
+without drag. Stats page.
+
+---
+
+## 9. Deferred: the word games
+
+**Common** (category from clues) and **Rungs** (trivia word ladder) are out of
+v1 — not because the engines are hard, but because they are a different kind of
+product. Every other game in the lineup is a function we write once; these two
+are a deadline we meet every day forever.
+
+- **Common** — engine is about two days. Content is the cost: a category, five
+  members ordered obscure→obvious, and a generous accepted-answer list, per day.
+  An LLM-assisted drafting tool in `tools/gen` plus human QA on every one; never
+  auto-publish.
+- **Rungs** — engine about three days. Content is genuinely hard: a 7-rung
+  ladder, a trivia clue per rung, and a *thematically related* top/bottom pair.
+  Ladder-finding is automatable (BFS over a 4-letter word list) and should be a
+  tool. Clue writing is not automatable to a shippable standard.
+
+If we take these on: build a 90-day buffer before launch, and treat Common as
+the trial run — its content cost is an order of magnitude below Rungs.
+
+---
+
+## 10. Things that will bite us
 
 - **Uniqueness is the whole product.** A daily puzzle with two solutions is a
   trust-destroying bug, and it reaches everyone at once. Every generator gets a
   property test that runs thousands of seeds through the solver in CI.
-- **Difficulty drift.** Random generation gives random difficulty; a brutal
-  Tuesday churns users. Each generator needs a difficulty *metric*, and the
-  daily seed loop must reject puzzles outside the target band for that weekday.
-- **Touch drag.** Thread and Quilt live or die on the drag feel — pointer
-  events, no scroll hijack, forgiving hit targets.
-- **Clock and timezone.** "Today" must be stable for a user who crosses
-  midnight or a timezone mid-solve. Decide once, store the date with the
-  in-progress state.
-- **Content cadence.** If we ship Common and Rungs, we own a daily deadline
-  forever. Build a 90-day buffer before launch or don't launch them.
+- **Generation latency.** The accept/reject loop in §7 multiplies per-attempt
+  cost by the rejection rate. Measure attempts-per-accepted-puzzle per game;
+  anything with a bad ratio moves to build-time pre-generation.
+- **Touch drag.** Thread and Quilt live or die on drag feel — pointer events,
+  no scroll hijack, forgiving hit targets.
+- **Clock and timezone.** Frozen-at-start `puzzle_date` (§4) is the rule.
+  Anything else breaks streaks for travellers and night owls.
+- **RLS mistakes are silent.** A missing policy doesn't error, it just returns
+  rows it shouldn't or none at all. Policies need their own tests.
+- **Anonymous-account sprawl.** Every visitor creates a row. Needs a cleanup
+  job for anonymous profiles with zero solves older than N days.
+- **Leaderboards invite cheating** the day they ship. §5 is not optional
+  polish — it lands with the feature, not after it.
 
 ---
 
-## 7. Open questions
+## 11. Open questions
 
-1. Scope for v1 — the five logic games, or all seven?
-2. Local-only, or accounts from the start (cross-device streaks, leaderboards)?
-3. Is the archive open to everyone, or is it the thing we'd eventually charge for?
-4. Do we want multiplayer/social at all (challenge a friend, compare times)?
+1. When does the archive open, and is it free or the thing we charge for?
+2. Leaderboard shape — global, friends-only, or daily-reset top N?
+3. Do challenge links expire, and can a challenger see the target's time before
+   they've solved it themselves? (I'd say no — it anchors and spoils the race.)
+4. Handles: required at first solve, or only when a player enters a leaderboard?
+5. Hints — do they exist, and do they void a leaderboard entry?
