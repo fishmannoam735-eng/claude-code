@@ -9,18 +9,20 @@ See [docs/PLAN.md](docs/PLAN.md) for the build plan,
 
 ## Status
 
-**M2 in progress.** Four games play end to end — Nine (9×9 sudoku), Eclipse
-(6×6 Takuzu), Crowns (region N-queens) and Thread (ordered Hamiltonian path) —
-each generate → play → validate → solved → persisted → streak → share. Quilt is
-not built yet.
+**M2 complete.** All five v1 games play end to end — Nine (9×9 sudoku),
+Eclipse (6×6 Takuzu), Crowns (region N-queens), Thread (ordered Hamiltonian
+path) and Quilt (rectangle tiling) — each generate → play → validate → solved →
+persisted → streak → share, in three difficulties, daily and in practice.
 
 Thread was the plan's standing generation risk, on the grounds that proving a
 Hamiltonian path unique might force build-time pre-generation. Measured, it
 does not: 0.9ms on 5×5, 3.1ms on 6×6, 14.3ms on 7×7, every seed, at runtime.
 
-Difficulty bands for all three are set from `tools/gen histogram` rather than
+Difficulty bands for all five are set from `tools/gen histogram` rather than
 guessed; see the note in each game's `generate.ts` for what the measurement
-changed.
+changed. Quilt's measurement changed the *ladder* and not just the bands:
+switching rungs off over a 501-board corpus showed `only owner` solving 68% of
+boards on its own against `shared cells`'s 20%, so the two swapped places.
 
 ## Layout
 

@@ -6,7 +6,10 @@
  *
  *   pnpm --filter @pb/gen histogram -- --n 500
  */
-import { createRng, crowns, crownsGame, eclipse, eclipseGame, nine, makeSeed, type Difficulty } from '@pb/engine';
+import {
+  createRng, crowns, crownsGame, eclipse, eclipseGame, nine, quilt, quiltGame,
+  makeSeed, type Difficulty,
+} from '@pb/engine';
 
 const args = process.argv.slice(2);
 const flag = (name: string, dflt: number): number => {
@@ -97,9 +100,95 @@ function rawSupply(): void {
   }
 }
 
+/**
+ * Quilt has no carving and no region growth — its levers are the board side,
+ * how much of each clue survives, and whether a clue may be blanked entirely.
+ * The sweep is over the budget because that is the knob the bands are cut from.
+ */
+function quiltSupply(): void {
+  console.log('\n— raw quilt supply by (side, weakening budget), no band filter —');
+  for (const n of [6, 7, 8]) {
+    for (const [budget, allowAny] of [[2, false], [4, true], [6, true], [12, true], [99, true]] as [number, boolean][]) {
+      const hist = new Map<number, number>();
+      const ms: number[] = [];
+      const kinds = { area: 0, shape: 0, any: 0 };
+      let unusable = 0;
+      for (let i = 0; i < N; i++) {
+        const t0 = performance.now();
+        const r = createRng(`quilt-probe:${n}:${budget}:${allowAny}:${i}`);
+        const rects = quiltGame.randomTiling(n, r);
+        const singles = rects.filter((x) => x.w === 1 && x.h === 1).length;
+        if (singles > Math.max(1, Math.round(rects.length / 4))) { unusable++; continue; }
+
+        let clues = null as ReturnType<typeof quiltGame.areaClues> | null;
+        for (let t = 0; t < 4 && !clues; t++) {
+          const trial = quiltGame.areaClues(rects, n, r);
+          if (quiltGame.countTilings(n, trial, 2).count === 1) clues = trial;
+        }
+        if (!clues) { unusable++; continue; }
+
+        const weakened = quiltGame.weakenClues(n, clues, rects, r, budget, allowAny);
+        const detail = quiltGame.rateQuilt(n, weakened).detail;
+        hist.set(detail['hardestLevel']!, (hist.get(detail['hardestLevel']!) ?? 0) + 1);
+        kinds.area += detail['areaClues']!;
+        kinds.shape += detail['shapeClues']!;
+        kinds.any += detail['anyClues']!;
+        ms.push(performance.now() - t0);
+      }
+      const tot = kinds.area + kinds.shape + kinds.any || 1;
+      const histStr = [...hist.entries()].sort((a, b) => a[0] - b[0])
+        .map(([l, c]) => `L${l}:${String(c).padStart(3)}`).join('  ');
+      console.log(
+        `  n=${n} budget=${String(budget).padStart(2)} blanks=${allowAny ? 'y' : 'n'}` +
+        `  unusable ${String(unusable).padStart(2)}/${N}` +
+        `  clues ${String(Math.round(kinds.area / tot * 100)).padStart(3)}%num` +
+        `/${String(Math.round(kinds.shape / tot * 100)).padStart(3)}%shape` +
+        `/${String(Math.round(kinds.any / tot * 100)).padStart(3)}%blank` +
+        `  ms med ${pct(ms, 50).toFixed(1)} max ${Math.max(...ms).toFixed(0)}  [${histStr}]`,
+      );
+    }
+  }
+}
+
+/**
+ * Which rungs of a ladder are load-bearing. A rung nothing depends on is
+ * mis-ranked rather than hard — this is the measurement that put Quilt's
+ * `only owner` below `shared cells` instead of above it.
+ */
+function quiltRungs(): void {
+  console.log('\n— quilt ladder, by what each rung is worth —');
+  const corpus: { n: number; clues: ReturnType<typeof quiltGame.areaClues> }[] = [];
+  for (const n of [6, 7, 8]) {
+    for (const budget of [0, 2, 4, 8, 99]) {
+      for (let i = 0; i < Math.ceil(N / 5); i++) {
+        const r = createRng(`quilt-rung:${n}:${budget}:${i}`);
+        const rects = quiltGame.randomTiling(n, r);
+        let clues = null as ReturnType<typeof quiltGame.areaClues> | null;
+        for (let t = 0; t < 4 && !clues; t++) {
+          const trial = quiltGame.areaClues(rects, n, r);
+          if (quiltGame.countTilings(n, trial, 2).count === 1) clues = trial;
+        }
+        if (!clues) continue;
+        corpus.push({ n, clues: quiltGame.weakenClues(n, clues, rects, r, budget, budget > 2) });
+      }
+    }
+  }
+  const sets: [string, boolean[]][] = [
+    ['rung 1 alone         ', [true, true, false, false, false]],
+    ['+ only owner         ', [true, true, true, false, false]],
+    ['+ shared cells       ', [true, true, false, true, false]],
+    ['+ both               ', [true, true, true, true, false]],
+    ['+ refutation (all)   ', [true, true, true, true, true]],
+  ];
+  for (const [label, rungs] of sets) {
+    const solved = corpus.filter((b) => quiltGame.humanSolve(b.n, b.clues, { rungs }).solved).length;
+    console.log(`  ${label} solves ${String(solved).padStart(3)}/${corpus.length}  (${Math.round(solved / corpus.length * 100)}%)`);
+  }
+}
+
 function measure(): void {
   console.log(`\n— accepted puzzles (${N} seeds per difficulty) —`);
-  for (const [game, gen] of [['nine', nine], ['eclipse', eclipse], ['crowns', crowns]] as const) {
+  for (const [game, gen] of [['nine', nine], ['eclipse', eclipse], ['crowns', crowns], ['quilt', quilt]] as const) {
     if (only && only !== game) continue;
     for (const d of DIFFS) {
       const rows: Row[] = [];
@@ -115,8 +204,11 @@ function measure(): void {
           rows.push({
             level: p.rating.detail['hardestLevel']!,
             // Crowns carves nothing, so there are no givens — its shape lever
-            // is region size, which the rating already reports.
-            givens: p.givens ? p.givens.filter((v) => v !== 0).length : (p.rating.detail['largestRegion'] ?? 0),
+            // is region size, which the rating already reports. Quilt's
+            // equivalent is how many clues still name an area.
+            givens: p.givens
+              ? p.givens.filter((v) => v !== 0).length
+              : (p.rating.detail['largestRegion'] ?? p.rating.detail['areaClues'] ?? 0),
             ms: performance.now() - t0,
             extra: p.rating.detail,
           });
@@ -129,7 +221,7 @@ function measure(): void {
   }
 }
 
-if (args.includes('--raw')) rawSupply();
+if (args.includes('--raw')) { rawSupply(); quiltSupply(); quiltRungs(); }
 measure();
 
 const check = (label: string, ok: boolean): void => console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}`);

@@ -246,12 +246,30 @@ must tile the board). Uniqueness check is a small exact-cover search. The
 interesting knob is difficulty — measured by how deep the forced-move chain
 runs before a guess is needed.
 
-### Quilt (rectangle tiling) — 3 days
-Partition the grid into rectangles by recursive splitting, drop one clue into
-each, then weaken clues (number → shape icon → `any`) as long as the tiling
-stays unique. Solver is exact cover over candidate rectangles — the same
-machinery as Crowns, which is why they're adjacent in the schedule.
-Drag-to-draw on touch is the UI risk here, not the math.
+### Quilt (rectangle tiling) — 3 days — built
+Partition the grid into rectangles, drop one clue into each, then weaken clues
+(number → shape icon → `any`) as long as the tiling stays unique. Solver is
+exact cover over candidate rectangles.
+
+Three things came out different from this sketch:
+
+- **Not recursive splitting.** Guillotine cuts only produce guillotine
+  partitions, which excludes pinwheels and reads as a grid of blocks. Anchoring
+  each new patch at the topmost-leftmost free cell gives staircase tilings and
+  is *total*: every free cell can always take a 1×1, so the loop never wedges
+  and never backtracks.
+- **The clue's position is the clue.** "One clue per patch" already forbids any
+  tiling that puts two clues in one patch or leaves a patch clueless. Two
+  opposite corner clues on a 2×2 admit both halvings *even when both say
+  "area 2"* — so weakening a clue to `any` costs far less information than it
+  looks like it should, and that is what makes the `any` rung playable.
+- **The ladder was ranked wrong on the first pass**, and measurement caught it —
+  see §7.
+
+Drag-to-draw was indeed the risk, and it was the same native-drag trap Thread
+hit: pressing on a glyph and moving starts a browser drag, which fires
+`pointercancel` and kills every event after the first. A rectangle could grow
+but never shrink.
 
 ### Thread (ordered Hamiltonian path) — 5 days, highest risk
 Generate the *path* first (random Hamiltonian path via backtracking on the
@@ -291,6 +309,33 @@ Two consequences:
 - Bands are configuration, not code. We will tune them after launch from real
   solve times, and that should be a config change and a redeploy, nothing more.
 
+### The ladder itself has to be measured, not just the bands
+
+Quilt's first ladder put `shared cells` below `only owner`. The bands drawn
+over it were useless: at every board size and every weakening budget, 70–94% of
+boards landed on the same rung. A rung that absorbs everything is not a
+difficulty signal.
+
+The diagnostic is to switch rungs off and see what still solves
+(`pnpm --filter @pb/gen histogram -- --raw`). Over a 501-board corpus:
+
+| ladder | solves |
+|---|---|
+| rung 1 alone | 7% |
+| + only owner | 68% |
+| + shared cells | 20% |
+| + both | 90% |
+| + refutation | 98% |
+
+`only owner` is three times the deduction `shared cells` is, so it belongs
+below it — which is also how the game is actually played: you look at one cell
+and ask which clue could possibly reach it, long before you start intersecting
+every placement of a clue in your head. After the swap the same supply spread
+across four rungs and the bands separate cleanly.
+
+The general rule: **if a band filter rejects most of the supply, suspect the
+ladder before you widen the band.**
+
 ---
 
 ## 8. Milestones
@@ -304,13 +349,14 @@ end: generate → play → validate → solved → persisted to `plays` → stre
 the undo stack, notes, number-pad input, cell highlighting and resume — all of
 which the other four games inherit.
 
-**M2 — The logic three (weeks 3–4).** Eclipse, Crowns, Quilt on the shared
+**M2 — The logic three (weeks 3–4).** ✅ Eclipse, Crowns, Quilt on the shared
 scaffolding. Home screen with today's five tiles and per-game state. Difficulty
 tiers and calibrated bands (§7). Practice mode — nearly free once the seed
 source is abstracted.
 
-**M3 — Thread (week 5).** After the generation spike. Falls back to
-build-time pre-generated seeds if runtime generation can't hit the budget.
+**M3 — Thread (week 5).** ✅ Done early, and without the fallback: the spike
+measured runtime generation at 14.3ms worst case on 7×7, so no build-time
+pre-generation was needed.
 
 **M4 — Social (week 6).** Challenge links, Edge Function validation (§5),
 leaderboards, email linking for cross-device streaks.
