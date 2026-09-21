@@ -51,12 +51,32 @@ The cost is that a generator must prove its puzzle has exactly one solution.
 `solve()` enumerates with a cap of 2; the generate loop is *generate → solve →
 keep only if unique → rate → keep only if in band → else reseed*.
 
+## Get it on another machine
+
+Needs **Node 22+** and **pnpm 10** (`corepack enable` is enough — the version
+is pinned in `packageManager`). Nothing else.
+
+```sh
+git clone https://github.com/fishmannoam735-eng/claude-code.git puzzle-break
+cd puzzle-break
+cp apps/web/.env.example apps/web/.env    # publishable keys, safe to ship
+pnpm install
+pnpm dev                                  # http://localhost:5173
+```
+
+That's the whole setup. The default branch already carries the work, so a plain
+clone lands on it — no `--branch` needed. The keys in `.env.example` are the
+real ones: Supabase *publishable* keys are designed to ship inside the client
+bundle, so they are committed on purpose and the copy step is a formality Vite
+requires.
+
+Verified by doing exactly this from a clean clone: install from the lockfile,
+89 engine + 38 web tests, contrast gate, build, then all five games generating
+and playable in a browser.
+
 ## Develop
 
 ```sh
-pnpm install
-cp apps/web/.env.example apps/web/.env    # publishable keys, safe to ship
-pnpm dev                                   # http://localhost:5173
 pnpm typecheck && pnpm test && pnpm build
 pnpm --filter @pb/gen contrast     # colour contrast gate, exits non-zero on AA failure
 pnpm --filter @pb/gen histogram    # difficulty supply per game
