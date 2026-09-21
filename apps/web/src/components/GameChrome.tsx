@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { Difficulty, ParsedSeed } from '@pb/engine';
 import { localDateKey } from '@pb/engine';
 import { Icon } from './Icon';
+import { GAME_COLOR, GAME_INK } from './GameMark';
 import { fmtTime, DIFF_LABEL } from '../lib/format';
 
 /** Re-renders once a second while the clock runs, and not at all when it doesn't. */
@@ -35,7 +36,15 @@ export function GameHeader(props: {
       <div className="flex flex-grow flex-col gap-0.5">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold tracking-tight">{props.title}</span>
-          <span className="rounded-full border border-line-minor bg-accent-soft px-2 py-0.5 text-[10px] font-bold tracking-wider text-accent-text">
+          {/* The chip wears the game's own colour, so the board and its card
+              on the home screen read as the same object. */}
+          <span
+            className="pb-game rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider"
+            style={{
+              ['--pb-game' as string]: GAME_COLOR[props.parsed.game],
+              color: GAME_INK[props.parsed.game],
+            }}
+          >
             {DIFF_LABEL[props.parsed.difficulty].toUpperCase()}
           </span>
           {!props.parsed.isDaily && <span className="text-[11px] text-ink-2">practice</span>}

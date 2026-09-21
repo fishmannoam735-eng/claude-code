@@ -25,11 +25,32 @@
   --color-same: #E8EEF5;
   --color-sel: #F6E7CC;
 
-  /* Region fills (Crowns, later Quilt). Colour is never the only channel:
-     each region also carries its own hatch angle and a drawn border. */
+  /* Region fills (Crowns, Quilt). Colour is never the only channel: each
+     region also carries its own hatch angle and a drawn border. */
   --region-alpha: 0.26;
   --region-alpha-strong: 0.5;
   --hatch: rgba(26, 24, 20, 0.07);
+
+  /* Per-game identity. Every pair below is measured by `pnpm --filter @pb/gen
+     contrast`, which is a build-time gate and not a nicety — three eyeballed
+     greys on this project failed AA before it existed.
+
+     A game colour carries three things and no others: the soft tile behind
+     its mark, a border, and a progress fill. It is never a solid field under
+     text. That rule is what keeps the palette legible in both themes without
+     a bespoke foreground per game — see the note in contrast.ts. */
+  --game-tile-alpha: 0.16;
+
+  --color-game-nine: #B87A22;
+  --color-game-nine-text: #8A5E18;
+  --color-game-eclipse: #4F5BD5;
+  --color-game-eclipse-text: #3F49B0;
+  --color-game-crowns: #4A7C59;
+  --color-game-crowns-text: #3A6247;
+  --color-game-thread: #2C7A8C;
+  --color-game-thread-text: #22606E;
+  --color-game-quilt: #9B4F72;
+  --color-game-quilt-text: #7E3F5C;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,6 +79,19 @@
     --region-alpha: 0.34;
     --region-alpha-strong: 0.58;
     --hatch: rgba(255, 255, 255, 0.09);
+
+    --game-tile-alpha: 0.24;
+
+    --color-game-nine: #E0A54A;
+    --color-game-nine-text: #E0A54A;
+    --color-game-eclipse: #8E96F0;
+    --color-game-eclipse-text: #9AA2F5;
+    --color-game-crowns: #6FA67E;
+    --color-game-crowns-text: #7FB88E;
+    --color-game-thread: #5FB3C7;
+    --color-game-thread-text: #6FC0D3;
+    --color-game-quilt: #D48CAF;
+    --color-game-quilt-text: #DF9DBC;
   }
 }
 
@@ -73,6 +107,12 @@ body {
 }
 button { font-family: inherit; }
 * { -webkit-tap-highlight-color: transparent; }
+
+/* A card claims its game's colour by setting these two once; everything
+   inside then reads `currentColor`-style from the same pair. */
+.pb-game {
+  background-color: color-mix(in srgb, var(--pb-game) calc(var(--game-tile-alpha) * 100%), var(--color-raised));
+}
 
 @keyframes pb-pop { 0% { transform: scale(0.72); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pb-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }

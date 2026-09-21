@@ -7,8 +7,15 @@
     "histogram": "tsx src/histogram.ts",
     "typecheck": "tsc --noEmit",
     "test": "echo 'no tests'",
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "contrast": "tsx src/contrast.ts"
   },
-  "dependencies": { "@pb/engine": "workspace:*" },
-  "devDependencies": { "tsx": "^4.20.0", "typescript": "^5.9.0", "@types/node": "^22" }
+  "dependencies": {
+    "@pb/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "@types/node": "^22"
+  }
 }

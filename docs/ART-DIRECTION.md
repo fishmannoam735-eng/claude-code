@@ -79,6 +79,58 @@ accent-coloured text uses `#8A5E18` in light theme. And a button filled with
 `accent` takes `ink` for its label, never white (white on `#C88A2E` is 2.9:1;
 near-black on it is 5.8:1).
 
+### Per-game identity
+
+Each game owns one colour. It carries exactly three things — the soft tile
+behind the game's mark, a border, and a progress fill — and it is **never a
+solid field underneath text**.
+
+| Game | Light | Dark |
+|---|---|---|
+| Nine | `#B87A22` | `#E0A54A` |
+| Eclipse | `#4F5BD5` | `#8E96F0` |
+| Crowns | `#4A7C59` | `#6FA67E` |
+| Thread | `#2C7A8C` | `#5FB3C7` |
+| Quilt | `#9B4F72` | `#D48CAF` |
+
+That "never under text" rule is not taste, it is what the measurement forced.
+The first draft filled the selected difficulty chip with the saturated game
+colour and put `ink` on top; in dark mode all five failed AA at 1.90–2.46:1,
+because dark-theme `ink` is near-white and the game colours are pastels. The
+choice was a bespoke foreground per game per theme, or a narrower job for the
+colour. The narrower job won.
+
+### The contrast gate
+
+`pnpm --filter @pb/gen contrast` checks all 46 pairs the UI actually renders,
+in both themes, and **exits non-zero on a failure**. It is a gate, not a
+nicety: three eyeballed values on this project had already failed AA before it
+existed (two mid-greys for pencil marks at ~3.2:1, and an accent used as text).
+It caught six more the moment it was written.
+
+A token table nobody has measured is not a design system, it's a wish.
+
+### Marks
+
+Each game's mark is a portrait of its own board — digits in a sudoku box, a sun
+beside a moon, a crown standing in its region, a line threading between two
+stops, patches cut from a square. They replaced five generic line icons sitting
+in five identical mint tiles, which made the home screen read as one list of one
+thing.
+
+Two lessons from drawing them, both only visible at 8× magnification:
+
+- **A symmetric serpentine inside a rounded box is a numeral.** Thread's first
+  two attempts read as a maze and then plainly as a "2" — next to Nine, which
+  contains real digits. Asymmetry fixes it: a route that doubles back and stops
+  somewhere unexpected is a route, not a glyph.
+- **Give the subject the whole tile.** Crowns' first attempt put a small crown
+  in a top-left quadrant with the bottom half empty, and read as a box with
+  something stuck in the corner.
+
+Judge marks at the size they ship *and* magnified. At 27px a muddy mark just
+looks like a smudge and you will not know why.
+
 ### Colour-blind safety
 
 Crowns and Quilt identify regions *by colour*, which excludes roughly 1 in 12
@@ -141,11 +193,18 @@ raster layer. Practical notes from this project's constraints:
 ### Environment limitation, worth recording
 
 In this sandbox, image generation succeeds but the returned asset URL is
-blocked by the network egress policy. Images can be produced here, but they
-cannot be fetched, reviewed, iterated on, or committed to the repository.
-Until that policy changes, raster art should be generated in an environment
-that can read the results back — generating art we cannot look at is not a
-workflow, it's a lottery.
+blocked by the network egress policy. Re-tested and still true:
+
+```
+connect_rejected — files.evolink.ai:443
+"gateway answered 403 to CONNECT (policy denial)"
+```
+
+Images can be produced here, but they cannot be fetched, reviewed, iterated on,
+or committed to the repository. Until that policy changes, raster art should be
+generated in an environment that can read the results back — generating art we
+cannot look at is not a workflow, it's a lottery, and committing bytes nobody
+has seen is worse than shipping no art at all.
 
 The SVG/CSS layer, which by the rule at the top of this document is the part
 that actually matters, has no such constraint.

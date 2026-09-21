@@ -58,6 +58,8 @@ pnpm install
 cp apps/web/.env.example apps/web/.env    # publishable keys, safe to ship
 pnpm dev                                   # http://localhost:5173
 pnpm typecheck && pnpm test && pnpm build
+pnpm --filter @pb/gen contrast     # colour contrast gate, exits non-zero on AA failure
+pnpm --filter @pb/gen histogram    # difficulty supply per game
 ```
 
 Play without a backend: if anonymous sign-in fails the app runs from
