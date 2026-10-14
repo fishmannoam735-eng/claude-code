@@ -143,6 +143,12 @@ channel, not the only one:
   top of the fill.
 - Region borders always drawn, never implied by a colour change alone.
 
+Crowns has since moved to its own look: a wooden tray (a Kling render) packed
+with glossy pastel tiles and gold crowns, palette in
+`apps/web/src/games/crowns/palette.ts`. The pastels are not Okabe–Ito, so the
+region outline carries the load instead: the seam between two regions is three
+times wider than the seam inside one, and reads in greyscale.
+
 Nine avoids this entirely — digits carry the information.
 
 ### Type
