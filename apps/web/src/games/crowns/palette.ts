@@ -1,10 +1,6 @@
 /**
  * Crowns' pastel tile colours, matched to the approved wooden-tray board
  * (seven from the reference render, plus a cool stone for the eighth region).
- *
- * Colour is still not the only channel: where two regions meet, the seam
- * between tiles is drawn three times wider, so the region outline reads in
- * greyscale too — the tray's version of "region borders always drawn".
  */
 export const CROWNS_PALETTE: readonly { rgb: readonly [number, number, number]; name: string }[] = [
   { rgb: [196, 178, 236], name: 'purple' },

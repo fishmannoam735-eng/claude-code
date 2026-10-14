@@ -145,9 +145,10 @@ channel, not the only one:
 
 Crowns has since moved to its own look: a wooden tray (a Kling render) packed
 with glossy pastel tiles and gold crowns, palette in
-`apps/web/src/games/crowns/palette.ts`. The pastels are not Okabe–Ito, so the
-region outline carries the load instead: the seam between two regions is three
-times wider than the seam inside one, and reads in greyscale.
+`apps/web/src/games/crowns/palette.ts`. Seams are the same width everywhere,
+as in the approved render (wider seams at region edges read as uneven spacing),
+so on this board region identity rests on colour alone. The per-region
+pattern toggle above is the fallback still to build.
 
 Nine avoids this entirely — digits carry the information.
 

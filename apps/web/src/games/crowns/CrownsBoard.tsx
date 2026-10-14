@@ -1,19 +1,18 @@
-import { memo, useMemo, type CSSProperties } from 'react';
+import { memo, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react';
 import { crownsGame } from '@pb/engine';
 import { crownsRegionName, tileColours } from './palette';
-import { CROWN, MARK, useCrowns } from './store';
+import { CROWN, EMPTY, MARK, useCrowns } from './store';
 import crownUrl from './assets/crown.webp';
 import trayUrl from './assets/tray.webp';
 
-const { N, colOf, rowOf, violations } = crownsGame;
+const { colOf, rowOf, violations } = crownsGame;
 
 // Where the tray's opening sits in tray.webp, as a percentage of its side.
 // Measured on the Kling tray render the asset was cropped from.
 const OPENING = { left: 3.8, top: 4.2, size: 92.4 };
 
 // Sizes are in cqw of the tray, so the board looks the same at any width.
-const SEAM = 0.1;         // half the gap between two tiles of one region
-const REGION_SEAM = 0.32; // half the gap where two regions meet
+const SEAM = 0.22;        // half the gap between two tiles, the same everywhere
 const THICK = 0.6;        // how much of the tile's side shows below its face
 const RADIUS = 1.1;
 
@@ -24,6 +23,41 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
   const lastPlaced = useCrowns((s) => s.lastPlaced);
   const status = useCrowns((s) => s.status);
   const tapCell = useCrowns((s) => s.tapCell);
+  const setCell = useCrowns((s) => s.setCell);
+
+  // Press and drag marks every empty tile the pointer passes over with ✕. A
+  // press that never leaves its tile is a tap, and only fires on release so
+  // that starting a drag doesn't also cycle the first tile.
+  const press = useRef<{ start: number; dragging: boolean } | null>(null);
+  const cellAt = (e: PointerEvent): number | null => {
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-i]');
+    return el ? Number(el.dataset.i) : null;
+  };
+  const markIfEmpty = (i: number): void => {
+    if (useCrowns.getState().grid[i] === EMPTY) setCell(i, MARK);
+  };
+  const onPointerDown = (e: PointerEvent): void => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const i = cellAt(e);
+    if (i === null) return;
+    e.preventDefault();
+    // Touch captures the pointer to the first tile; release it so moves are seen across the board.
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    press.current = { start: i, dragging: false };
+  };
+  const onPointerMove = (e: PointerEvent): void => {
+    const p = press.current;
+    if (!p) return;
+    const i = cellAt(e);
+    if (i === null || (!p.dragging && i === p.start)) return;
+    if (!p.dragging) { p.dragging = true; markIfEmpty(p.start); }
+    markIfEmpty(i);
+  };
+  const onPointerUp = (): void => {
+    const p = press.current;
+    press.current = null;
+    if (p && !p.dragging) tapCell(p.start);
+  };
 
   const bad = useMemo(
     () => (puzzle ? violations(grid, puzzle.regions) : []),
@@ -43,7 +77,12 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
       <div
         role="grid"
         aria-label="Crowns board"
-        className="absolute grid grid-cols-8 grid-rows-8 overflow-hidden"
+        className="absolute grid touch-none grid-cols-8 grid-rows-8 overflow-hidden"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => { press.current = null; }}
+        onPointerLeave={() => { press.current = null; }}
         style={{
           left: `${OPENING.left}%`, top: `${OPENING.top}%`,
           width: `${OPENING.size}%`, height: `${OPENING.size}%`,
@@ -59,11 +98,9 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
             i={i}
             value={hidden ? 0 : v}
             region={puzzle.regions[i]!}
-            regions={puzzle.regions}
             selected={selected === i}
             conflict={!hidden && !!bad[i]}
             pop={lastPlaced === i}
-            onTap={tapCell}
           />
         ))}
         {status === 'solved' && <div className="pb-sweep pointer-events-none absolute inset-0 opacity-60" />}
@@ -73,23 +110,15 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
 }
 
 interface CellProps {
-  i: number; value: number; region: number; regions: number[];
+  i: number; value: number; region: number;
   selected: boolean; conflict: boolean; pop: boolean;
-  onTap: (i: number) => void;
 }
 
 const Cell = memo(function Cell(p: CellProps) {
   const r = rowOf(p.i), c = colOf(p.i);
 
-  // Region outlines are drawn as wider seams, so colour is never load-bearing alone.
-  // Each side's gap is split between the two tiles that share it.
-  const gap = (there: number | undefined): number =>
-    there === undefined ? SEAM : there === p.region ? SEAM : REGION_SEAM;
   const tile: CSSProperties = {
-    top: `${gap(r > 0 ? p.regions[p.i - N] : undefined)}cqw`,
-    bottom: `${gap(r < N - 1 ? p.regions[p.i + N] : undefined) + THICK}cqw`,
-    left: `${gap(c > 0 ? p.regions[p.i - 1] : undefined)}cqw`,
-    right: `${gap(c < N - 1 ? p.regions[p.i + 1] : undefined)}cqw`,
+    top: `${SEAM}cqw`, bottom: `${SEAM + THICK}cqw`, left: `${SEAM}cqw`, right: `${SEAM}cqw`,
     borderRadius: `${RADIUS}cqw`,
   };
 
@@ -113,7 +142,7 @@ const Cell = memo(function Cell(p: CellProps) {
       role="gridcell"
       aria-label={label}
       aria-selected={p.selected}
-      onPointerDown={(e) => { e.preventDefault(); p.onTap(p.i); }}
+      data-i={p.i}
       onContextMenu={(e) => e.preventDefault()}
       className="relative outline-none"
     >
