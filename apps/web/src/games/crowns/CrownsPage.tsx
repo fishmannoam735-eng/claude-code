@@ -129,7 +129,7 @@ export function CrownsPage() {
       <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
         One crown per row, column and colour. No two crowns may touch, even corner to corner.
         <br />
-        Tap to cycle ✕ → crown → blank; the ✕ is just your own note.
+        Tap to cycle ✕ → crown → blank, or drag to ✕ several tiles. The ✕ is just your own note.
       </p>
 
       <div className="mt-auto flex gap-2.5 pt-4">

@@ -23,7 +23,8 @@ export const MAX_SIDE = 4;
  * Partition the board into rectangles, anchoring each new patch at the
  * topmost-leftmost free cell. That anchor is what makes the loop total: every
  * free cell can always take at least a 1x1, so the tiling never wedges and
- * never needs backtracking. Patches are drawn with probability proportional to
+ * never needs backtracking. A 1x1 is only taken when nothing bigger fits, and
+ * the generator throws such tilings away, since no patch may be one tile. Patches are drawn with probability proportional to
  * their area, because a uniform choice buries the board in single cells and a
  * board of single cells is not a puzzle.
  */
@@ -52,6 +53,10 @@ export function randomTiling(n: number, rng: Rng, maxSide = MAX_SIDE): Rect[] {
       }
       for (let hh = 1; hh <= h; hh++) options.push({ r: r0, c: c0, w, h: hh });
     }
+
+    // No patch is a single tile. Leave the 1x1 out whenever anything bigger
+    // fits; when nothing does, the cell is boxed in and the caller retries.
+    if (options.length > 1) options.shift();
 
     const total = options.reduce((a, o) => a + rectArea(o), 0);
     let roll = rng.next() * total;
@@ -184,8 +189,7 @@ export function generateQuilt(seed: string, difficulty: Difficulty): QuiltPuzzle
     const rects = randomTiling(n, rng);
     // A board that is mostly single cells is technically a tiling and never a
     // puzzle; so is one with barely any patches to reason between.
-    const singles = rects.filter((r) => r.w === 1 && r.h === 1).length;
-    if (singles > Math.max(1, Math.round(rects.length / 4))) continue;
+    if (rects.some((r) => r.w === 1 && r.h === 1)) continue;
 
     // Clue positions matter as much as clue values — the same tiling can be
     // ambiguous with one set of anchors and pinned down with another.

@@ -1,9 +1,11 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, type PointerEvent } from 'react';
 import { crownsGame } from '@pb/engine';
-import { regionName, regionStyle } from '../../lib/regionPalette';
-import { CROWN, MARK, useCrowns } from './store';
+import { crownsRegionName, tileColours } from './palette';
+import { CROWN, EMPTY, MARK, useCrowns } from './store';
+import crownUrl from './assets/crown.webp';
+import { WoodTray, tileStyle } from '../../components/WoodTray';
 
-const { N, colOf, rowOf, violations } = crownsGame;
+const { colOf, rowOf, violations } = crownsGame;
 
 export function CrownsBoard({ hidden }: { hidden: boolean }) {
   const puzzle = useCrowns((s) => s.puzzle);
@@ -12,6 +14,41 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
   const lastPlaced = useCrowns((s) => s.lastPlaced);
   const status = useCrowns((s) => s.status);
   const tapCell = useCrowns((s) => s.tapCell);
+  const setCell = useCrowns((s) => s.setCell);
+
+  // Press and drag marks every empty tile the pointer passes over with ✕. A
+  // press that never leaves its tile is a tap, and only fires on release so
+  // that starting a drag doesn't also cycle the first tile.
+  const press = useRef<{ start: number; dragging: boolean } | null>(null);
+  const cellAt = (e: PointerEvent): number | null => {
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-i]');
+    return el ? Number(el.dataset.i) : null;
+  };
+  const markIfEmpty = (i: number): void => {
+    if (useCrowns.getState().grid[i] === EMPTY) setCell(i, MARK);
+  };
+  const onPointerDown = (e: PointerEvent): void => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const i = cellAt(e);
+    if (i === null) return;
+    e.preventDefault();
+    // Touch captures the pointer to the first tile; release it so moves are seen across the board.
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    press.current = { start: i, dragging: false };
+  };
+  const onPointerMove = (e: PointerEvent): void => {
+    const p = press.current;
+    if (!p) return;
+    const i = cellAt(e);
+    if (i === null || (!p.dragging && i === p.start)) return;
+    if (!p.dragging) { p.dragging = true; markIfEmpty(p.start); }
+    markIfEmpty(i);
+  };
+  const onPointerUp = (): void => {
+    const p = press.current;
+    press.current = null;
+    if (p && !p.dragging) tapCell(p.start);
+  };
 
   const bad = useMemo(
     () => (puzzle ? violations(grid, puzzle.regions) : []),
@@ -21,55 +58,49 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
   if (!puzzle) return null;
 
   return (
-    <div
-      role="grid"
-      aria-label="Crowns board"
-      className={`grid aspect-square w-full grid-cols-8 grid-rows-8 overflow-hidden rounded-md border-2 border-ink ${status === 'solved' ? 'pb-sweep' : ''}`}
+    <WoodTray
+      grid={{
+        role: 'grid',
+        'aria-label': 'Crowns board',
+        className: 'grid touch-none grid-cols-8 grid-rows-8',
+        onPointerDown, onPointerMove, onPointerUp,
+        onPointerCancel: () => { press.current = null; },
+        onPointerLeave: () => { press.current = null; },
+      }}
     >
-      {grid.map((v, i) => (
-        <Cell
-          key={i}
-          i={i}
-          value={hidden ? 0 : v}
-          region={puzzle.regions[i]!}
-          regions={puzzle.regions}
-          selected={selected === i}
-          conflict={!hidden && !!bad[i]}
-          pop={lastPlaced === i}
-          onTap={tapCell}
-        />
-      ))}
-    </div>
+        {grid.map((v, i) => (
+          <Cell
+            key={i}
+            i={i}
+            value={hidden ? 0 : v}
+            region={puzzle.regions[i]!}
+            selected={selected === i}
+            conflict={!hidden && !!bad[i]}
+            pop={lastPlaced === i}
+          />
+        ))}
+        {status === 'solved' && <div className="pb-sweep pointer-events-none absolute inset-0 opacity-60" />}
+    </WoodTray>
   );
 }
 
 interface CellProps {
-  i: number; value: number; region: number; regions: number[];
+  i: number; value: number; region: number;
   selected: boolean; conflict: boolean; pop: boolean;
-  onTap: (i: number) => void;
 }
 
 const Cell = memo(function Cell(p: CellProps) {
   const r = rowOf(p.i), c = colOf(p.i);
 
-  // A region boundary is always drawn, so colour is never load-bearing alone.
-  const edge = (there: number | undefined): boolean => there === undefined || there !== p.region;
-  const right = c === N - 1 ? '' : edge(p.regions[p.i + 1]) ? 'border-r-[2.5px] border-r-ink' : 'border-r border-r-ink/20';
-  const bottom = r === N - 1 ? '' : edge(p.regions[p.i + N]) ? 'border-b-[2.5px] border-b-ink' : 'border-b border-b-ink/20';
-
-  const fill = regionStyle(p.region, p.value === CROWN && !p.conflict);
-  // Tailwind only sees class names it can read in the source, so these stay
-  // whole strings rather than being assembled from parts.
-  const ring = p.selected
-    ? 'shadow-[inset_0_0_0_2.5px_var(--color-accent)]'
-    : p.value !== CROWN
-      ? ''
-      : p.conflict
-        ? 'shadow-[inset_0_0_0_2.5px_var(--color-danger)]'
-        : 'shadow-[inset_0_0_0_2.5px_var(--color-ink)]';
+  const { face, side } = tileColours(p.region);
+  const tile = tileStyle(
+    p.conflict ? `linear-gradient(rgb(180 80 60 / 0.35), rgb(180 80 60 / 0.35)), ${face}` : face,
+    side,
+    p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
+  );
 
   const what = p.value === CROWN ? 'crown' : p.value === MARK ? 'marked' : 'empty';
-  const label = `Row ${r + 1}, column ${c + 1}, ${regionName(p.region)} region, ${what}${p.conflict ? ', breaks a rule' : ''}`;
+  const label = `Row ${r + 1}, column ${c + 1}, ${crownsRegionName(p.region)} region, ${what}${p.conflict ? ', breaks a rule' : ''}`;
 
   return (
     <button
@@ -77,24 +108,25 @@ const Cell = memo(function Cell(p: CellProps) {
       role="gridcell"
       aria-label={label}
       aria-selected={p.selected}
-      onPointerDown={(e) => { e.preventDefault(); p.onTap(p.i); }}
-      style={p.conflict ? undefined : fill}
+      data-i={p.i}
       onContextMenu={(e) => e.preventDefault()}
-      className={`relative flex items-center justify-center outline-none select-none ${right} ${bottom} ${ring} ${p.conflict ? 'bg-danger-soft' : ''}`}
+      className="relative outline-none"
     >
-      {p.value === CROWN && (
-        <svg
-          viewBox="0 0 24 24" className={`h-[62%] w-[62%] ${p.pop ? 'pb-pop' : ''} ${p.conflict ? 'text-danger' : 'text-ink'}`}
-          fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-        >
-          <path d="M4 18h16M4 18L3 8l5 3.5L12 5l4 6.5L21 8l-1 10" />
-        </svg>
-      )}
-      {p.value === MARK && (
-        <svg viewBox="0 0 24 24" className="h-[30%] w-[30%] text-ink/45" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      )}
+      <span className="absolute flex items-center justify-center" style={tile}>
+        {p.value === CROWN && (
+          <img
+            src={crownUrl} alt="" draggable={false}
+            className={`w-[78%] ${p.pop ? 'pb-pop' : ''}`}
+            style={{ filter: 'drop-shadow(0.15cqw 0.4cqw 0.3cqw rgb(60 40 10 / 0.45))' }}
+          />
+        )}
+        {p.value === MARK && (
+          // Fixed dark brown rather than `ink`: the tiles stay pastel in dark mode.
+          <svg viewBox="0 0 24 24" className="h-[30%] w-[30%] text-[#5C4028]/60" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        )}
+      </span>
     </button>
   );
 });
