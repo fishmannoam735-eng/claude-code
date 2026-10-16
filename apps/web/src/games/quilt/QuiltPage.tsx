@@ -145,7 +145,7 @@ export function QuiltPage() {
           <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'tall' }} k={2} className="h-4 w-4" />
           <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'square' }} k={0} className="h-4 w-4" />
         </span>{' '}
-        its shape (wide, tall or square, and one tile counts as a square), and{' '}
+        its shape (wide, tall or square), and{' '}
         <ClueBadge clue={{ cell: 0, kind: 'any' }} k={6} className="inline-block h-4 w-4 translate-y-[2px]" />{' '}
         can be any rectangle.
         <br />

@@ -81,7 +81,11 @@ export function areaClues(rects: readonly Rect[], n: number, rng: Rng): Clue[] {
 
 /** The next rung down for a clue, or null once it says nothing at all. */
 function weaker(clue: Clue, rect: Rect): Clue | null {
-  if (clue.kind === 'area') return { cell: clue.cell, kind: 'shape', shape: shapeOf(rect.w, rect.h) };
+  if (clue.kind === 'area') {
+    // A one-tile patch has no shape worth naming, so its clue skips that rung.
+    if (rectArea(rect) === 1) return { cell: clue.cell, kind: 'any' };
+    return { cell: clue.cell, kind: 'shape', shape: shapeOf(rect.w, rect.h) };
+  }
   if (clue.kind === 'shape') return { cell: clue.cell, kind: 'any' };
   return null;
 }

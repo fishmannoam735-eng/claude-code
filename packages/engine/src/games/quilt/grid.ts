@@ -58,7 +58,8 @@ export const rectContains = (rect: Rect, i: number, n: number): boolean => {
 export function fitsClue(clue: Clue, rect: Rect): boolean {
   switch (clue.kind) {
     case 'area': return rect.w * rect.h === clue.area;
-    case 'shape': return shapeOf(rect.w, rect.h) === clue.shape;
+    // A single tile is not a square patch: a square badge means 2x2 or bigger.
+    case 'shape': return shapeOf(rect.w, rect.h) === clue.shape && rect.w * rect.h > 1;
     case 'any': return true;
   }
 }
@@ -139,7 +140,7 @@ export function brokenClues(owner: Owner, clues: readonly Clue[], n: number): bo
     // An area clue is only broken once the patch overshoots; a short patch is
     // simply unfinished. A shape clue has no such halfway state.
     if (clue.kind === 'area' && mine.length > clue.area) bad[k] = true;
-    if (clue.kind === 'shape' && shapeOf(b.rect.w, b.rect.h) !== clue.shape) bad[k] = true;
+    if (clue.kind === 'shape' && !fitsClue(clue, b.rect)) bad[k] = true;
   });
 
   return bad;
