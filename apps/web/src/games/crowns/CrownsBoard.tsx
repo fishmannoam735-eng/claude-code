@@ -1,20 +1,11 @@
-import { memo, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react';
+import { memo, useMemo, useRef, type PointerEvent } from 'react';
 import { crownsGame } from '@pb/engine';
 import { crownsRegionName, tileColours } from './palette';
 import { CROWN, EMPTY, MARK, useCrowns } from './store';
 import crownUrl from './assets/crown.webp';
-import trayUrl from './assets/tray.webp';
+import { WoodTray, tileStyle } from '../../components/WoodTray';
 
 const { colOf, rowOf, violations } = crownsGame;
-
-// Where the tray's opening sits in tray.webp, as a percentage of its side.
-// Measured on the Kling tray render the asset was cropped from.
-const OPENING = { left: 3.8, top: 4.2, size: 92.4 };
-
-// Sizes are in cqw of the tray, so the board looks the same at any width.
-const SEAM = 0.22;        // half the gap between two tiles, the same everywhere
-const THICK = 0.6;        // how much of the tile's side shows below its face
-const RADIUS = 1.1;
 
 export function CrownsBoard({ hidden }: { hidden: boolean }) {
   const puzzle = useCrowns((s) => s.puzzle);
@@ -67,31 +58,16 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
   if (!puzzle) return null;
 
   return (
-    <div
-      className="relative aspect-square w-full select-none [container-type:inline-size]"
-      style={{
-        backgroundImage: `url(${trayUrl})`, backgroundSize: '100% 100%',
-        boxShadow: '0.6cqw 1.4cqw 2.6cqw rgb(60 40 20 / 0.28)',
+    <WoodTray
+      grid={{
+        role: 'grid',
+        'aria-label': 'Crowns board',
+        className: 'grid touch-none grid-cols-8 grid-rows-8',
+        onPointerDown, onPointerMove, onPointerUp,
+        onPointerCancel: () => { press.current = null; },
+        onPointerLeave: () => { press.current = null; },
       }}
     >
-      <div
-        role="grid"
-        aria-label="Crowns board"
-        className="absolute grid touch-none grid-cols-8 grid-rows-8 overflow-hidden"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={() => { press.current = null; }}
-        onPointerLeave={() => { press.current = null; }}
-        style={{
-          left: `${OPENING.left}%`, top: `${OPENING.top}%`,
-          width: `${OPENING.size}%`, height: `${OPENING.size}%`,
-          // Dark warm bed: what shows through the seams between tiles.
-          backgroundColor: '#5C4028',
-          borderRadius: '0.6cqw',
-          boxShadow: 'inset 0 0 1.6cqw rgb(40 26 14 / 0.55)',
-        }}
-      >
         {grid.map((v, i) => (
           <Cell
             key={i}
@@ -104,8 +80,7 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
           />
         ))}
         {status === 'solved' && <div className="pb-sweep pointer-events-none absolute inset-0 opacity-60" />}
-      </div>
-    </div>
+    </WoodTray>
   );
 }
 
@@ -117,21 +92,12 @@ interface CellProps {
 const Cell = memo(function Cell(p: CellProps) {
   const r = rowOf(p.i), c = colOf(p.i);
 
-  const tile: CSSProperties = {
-    top: `${SEAM}cqw`, bottom: `${SEAM + THICK}cqw`, left: `${SEAM}cqw`, right: `${SEAM}cqw`,
-    borderRadius: `${RADIUS}cqw`,
-  };
-
   const { face, side } = tileColours(p.region);
-  const ring = p.selected
-    ? ', inset 0 0 0 0.6cqw var(--color-accent)'
-    : p.conflict
-      ? ', inset 0 0 0 0.6cqw var(--color-danger)'
-      : '';
-  tile.background = p.conflict
-    ? `linear-gradient(rgb(180 80 60 / 0.35), rgb(180 80 60 / 0.35)), ${face}`
-    : face;
-  tile.boxShadow = `0 ${THICK}cqw 0 ${side}, inset 0.2cqw 0.2cqw 0 rgb(255 255 255 / 0.35)${ring}`;
+  const tile = tileStyle(
+    p.conflict ? `linear-gradient(rgb(180 80 60 / 0.35), rgb(180 80 60 / 0.35)), ${face}` : face,
+    side,
+    p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
+  );
 
   const what = p.value === CROWN ? 'crown' : p.value === MARK ? 'marked' : 'empty';
   const label = `Row ${r + 1}, column ${c + 1}, ${crownsRegionName(p.region)} region, ${what}${p.conflict ? ', breaks a rule' : ''}`;

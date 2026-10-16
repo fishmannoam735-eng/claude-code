@@ -1,22 +1,65 @@
-import { memo, useMemo } from 'react';
+import { memo, useId, useMemo } from 'react';
 import { eclipseGame } from '@pb/engine';
 import { useEclipse, MOON, SUN } from './store';
+import { BED, WoodTray, tileStyle } from '../../components/WoodTray';
 
 const { N, colOf, rowOf, violations } = eclipseGame;
 
-function Sun({ filled }: { filled: boolean }) {
+// Tiles are a fixed warm ivory, darker sand for the givens, so a given reads
+// as part of the board rather than something you placed. Like Crowns, they stay
+// light in dark mode: they are objects in the tray, not page surface.
+const ENTERED = {
+  face: 'linear-gradient(135deg, rgb(255 251 240) 0%, rgb(250 243 226) 45%, rgb(238 228 206) 100%)',
+  side: 'rgb(196 180 150)',
+};
+const GIVEN = {
+  face: 'linear-gradient(135deg, rgb(240 224 192) 0%, rgb(230 211 174) 45%, rgb(214 194 156) 100%)',
+  side: 'rgb(170 146 108)',
+};
+const CONFLICT_TINT = 'linear-gradient(rgb(180 80 60 / 0.32), rgb(180 80 60 / 0.32))';
+
+/** A glossy gold sun: a domed disc with eight short rays. */
+function Sun({ given }: { given: boolean }) {
+  const id = useId();
   return (
-    <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="4.4" fill={filled ? 'currentColor' : 'none'} />
-      <path d="M12 3.4v2.1M12 18.5v2.1M3.4 12h2.1M18.5 12h2.1M6 6l1.5 1.5M16.5 16.5 18 18M6 18l1.5-1.5M16.5 7.5 18 6" />
+    <svg viewBox="0 0 24 24" className="h-[66%] w-[66%]" aria-hidden="true"
+      style={{ filter: 'drop-shadow(0.1cqw 0.35cqw 0.25cqw rgb(120 70 10 / 0.45))' }}>
+      <defs>
+        <radialGradient id={`${id}d`} cx="38%" cy="34%" r="70%">
+          <stop offset="0" stopColor="#FFF6C4" />
+          <stop offset="0.45" stopColor="#FFC93C" />
+          <stop offset="1" stopColor={given ? '#D9820F' : '#E89A1C'} />
+        </radialGradient>
+        <linearGradient id={`${id}r`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFD45A" />
+          <stop offset="1" stopColor="#E08A12" />
+        </linearGradient>
+      </defs>
+      <g stroke={`url(#${id}r)`} strokeWidth={2} strokeLinecap="round">
+        <path d="M12 1.8v2.6M12 19.6v2.6M1.8 12h2.6M19.6 12h2.6M4.8 4.8l1.8 1.8M17.4 17.4l1.8 1.8M4.8 19.2l1.8-1.8M17.4 6.6l1.8-1.8" />
+      </g>
+      <circle cx="12" cy="12" r="5.6" fill={`url(#${id}d)`} stroke="#C9780C" strokeOpacity={0.55} strokeWidth={0.5} />
+      <ellipse cx="10.2" cy="9.6" rx="2.2" ry="1.3" fill="#fff" opacity={0.55} transform="rotate(-30 10.2 9.6)" />
     </svg>
   );
 }
 
-function Moon({ filled }: { filled: boolean }) {
+/** A glossy silver-blue crescent moon. */
+function Moon({ given }: { given: boolean }) {
+  const id = useId();
   return (
-    <svg viewBox="0 0 24 24" className="h-[54%] w-[54%]" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />
+    <svg viewBox="0 0 24 24" className="h-[62%] w-[62%]" aria-hidden="true"
+      style={{ filter: 'drop-shadow(0.1cqw 0.35cqw 0.25cqw rgb(30 40 80 / 0.45))' }}>
+      <defs>
+        <linearGradient id={`${id}m`} x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+          <stop offset="0" stopColor="#EEF2FF" />
+          <stop offset="0.45" stopColor="#9DB0E8" />
+          <stop offset="1" stopColor={given ? '#4A5CB0' : '#5B6DC4'} />
+        </linearGradient>
+      </defs>
+      <path d="M19.6 15.2A8.4 8.4 0 0 1 8.8 3.6a9 9 0 1 0 10.8 11.6z"
+        fill={`url(#${id}m)`} stroke="#3E4C96" strokeOpacity={0.5} strokeWidth={0.5} strokeLinejoin="round" />
+      <path d="M6.6 7.4a7 7 0 0 0 .4 7.4" fill="none" stroke="#fff" strokeOpacity={0.6} strokeWidth={1.1} strokeLinecap="round" />
     </svg>
   );
 }
@@ -36,41 +79,49 @@ export function EclipseBoard({ hidden }: { hidden: boolean }) {
 
   if (!puzzle) return null;
 
-  return (
-    <div className={`relative aspect-square w-full ${status === 'solved' ? 'pb-sweep' : ''}`}>
-      <div role="grid" aria-label="Eclipse board" className="grid h-full w-full grid-cols-6 grid-rows-6 overflow-hidden rounded-md border-2 border-line-major bg-board">
-        {grid.map((v, i) => (
-          <Cell
-            key={i}
-            i={i}
-            value={hidden ? 0 : v}
-            given={puzzle.givens[i] !== 0}
-            selected={selected === i}
-            conflict={!hidden && !!bad[i]}
-            pop={lastPlaced === i}
-            onTap={tapCell}
-          />
-        ))}
+  // Edge clues sit on the seam between two tiles, as small dark wooden chips.
+  const badges = hidden ? null : puzzle.edges.map((e) => {
+    const horizontal = e.b === e.a + 1;
+    const r = rowOf(e.a), c = colOf(e.a);
+    const left = horizontal ? ((c + 1) / N) * 100 : ((c + 0.5) / N) * 100;
+    const top = horizontal ? ((r + 0.5) / N) * 100 : ((r + 1) / N) * 100;
+    return (
+      <div
+        key={`${e.a}-${e.b}`}
+        aria-hidden="true"
+        className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-bold leading-none"
+        style={{
+          left: `${left}%`, top: `${top}%`,
+          width: '5.4cqw', height: '5.4cqw', fontSize: '3.6cqw',
+          background: `radial-gradient(circle at 35% 30%, #8A6440, ${BED} 70%)`,
+          color: '#FBEFD8',
+          boxShadow: '0 0.35cqw 0.5cqw rgb(40 26 14 / 0.5), inset 0 0.15cqw 0 rgb(255 255 255 / 0.25)',
+        }}
+      >
+        {e.same ? '=' : '×'}
       </div>
+    );
+  });
 
-      {/* Edge badges sit on the line between two cells, above the grid. */}
-      {!hidden && puzzle.edges.map((e) => {
-        const horizontal = e.b === e.a + 1;
-        const r = rowOf(e.a), c = colOf(e.a);
-        const left = horizontal ? ((c + 1) / N) * 100 : ((c + 0.5) / N) * 100;
-        const top = horizontal ? ((r + 0.5) / N) * 100 : ((r + 1) / N) * 100;
-        return (
-          <div
-            key={`${e.a}-${e.b}`}
-            aria-hidden="true"
-            style={{ left: `${left}%`, top: `${top}%` }}
-            className="pointer-events-none absolute z-10 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[1.5px] border-ink bg-board text-[11px] font-bold leading-none text-ink"
-          >
-            {e.same ? '=' : '×'}
-          </div>
-        );
-      })}
-    </div>
+  return (
+    <WoodTray
+      grid={{ role: 'grid', 'aria-label': 'Eclipse board', className: 'grid grid-cols-6 grid-rows-6' }}
+      overlay={badges}
+    >
+      {grid.map((v, i) => (
+        <Cell
+          key={i}
+          i={i}
+          value={hidden ? 0 : v}
+          given={puzzle.givens[i] !== 0}
+          selected={selected === i}
+          conflict={!hidden && !!bad[i]}
+          pop={lastPlaced === i}
+          onTap={tapCell}
+        />
+      ))}
+      {status === 'solved' && <div className="pb-sweep pointer-events-none absolute inset-0 opacity-60" />}
+    </WoodTray>
   );
 }
 
@@ -81,17 +132,16 @@ interface CellProps {
 
 const Cell = memo(function Cell(p: CellProps) {
   const r = rowOf(p.i), c = colOf(p.i);
-  const right = c === N - 1 ? '' : 'border-r border-r-line-minor';
-  const bottom = r === N - 1 ? '' : 'border-b border-b-line-minor';
-
-  const bg = p.conflict ? 'bg-danger-soft' : p.selected ? 'bg-sel' : p.given ? 'bg-raised-2' : '';
-  const ring = p.selected
-    ? 'shadow-[inset_0_0_0_2px_var(--color-accent)]'
-    : p.conflict ? 'shadow-[inset_0_0_0_1.5px_var(--color-danger)]' : '';
-  const color = p.conflict ? 'text-danger' : p.given ? 'text-ink' : 'text-ink-entered';
+  const { face, side } = p.given ? GIVEN : ENTERED;
+  const tile = tileStyle(
+    p.conflict ? `${CONFLICT_TINT}, ${face}` : face,
+    side,
+    p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
+  );
 
   const name = p.value === SUN ? 'sun' : p.value === MOON ? 'moon' : 'empty';
-  const label = `Row ${r + 1}, column ${c + 1}, ${p.given ? `given ${name}` : name}`;
+  const label = `Row ${r + 1}, column ${c + 1}, ${p.given ? `given ${name}` : name}${p.conflict ? ', breaks a rule' : ''}`;
+  const pop = p.pop ? 'pb-pop' : '';
 
   return (
     <button
@@ -100,10 +150,13 @@ const Cell = memo(function Cell(p: CellProps) {
       aria-label={label}
       aria-selected={p.selected}
       onPointerDown={(e) => { e.preventDefault(); p.onTap(p.i); }}
-      className={`flex items-center justify-center outline-none select-none ${right} ${bottom} ${bg} ${ring} ${color}`}
+      onContextMenu={(e) => e.preventDefault()}
+      className="relative outline-none"
     >
-      {p.value === SUN && <span className={p.pop ? 'pb-pop flex h-full w-full items-center justify-center' : 'flex h-full w-full items-center justify-center'}><Sun filled={p.given} /></span>}
-      {p.value === MOON && <span className={p.pop ? 'pb-pop flex h-full w-full items-center justify-center' : 'flex h-full w-full items-center justify-center'}><Moon filled={p.given} /></span>}
+      <span className="absolute flex items-center justify-center" style={tile}>
+        {p.value === SUN && <span className={`flex h-full w-full items-center justify-center ${pop}`}><Sun given={p.given} /></span>}
+        {p.value === MOON && <span className={`flex h-full w-full items-center justify-center ${pop}`}><Moon given={p.given} /></span>}
+      </span>
     </button>
   );
 });

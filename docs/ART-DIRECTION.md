@@ -150,6 +150,11 @@ as in the approved render (wider seams at region edges read as uneven spacing),
 so on this board region identity rests on colour alone. The per-region
 pattern toggle above is the fallback still to build.
 
+Eclipse sits in the same tray (`components/WoodTray.tsx` holds the tray and
+the tile style both games share): ivory tiles for entered cells, sand for
+givens, a glossy gold sun and silver-blue moon, and the = / × clues as small
+dark wooden chips on the seams.
+
 Nine avoids this entirely — digits carry the information.
 
 ### Type
