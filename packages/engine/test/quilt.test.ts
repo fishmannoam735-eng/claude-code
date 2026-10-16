@@ -36,18 +36,19 @@ describe('grid vocabulary', () => {
     expect(fitsClue({ cell: 0, kind: 'any' }, rect)).toBe(true);
   });
 
-  it('never counts a single tile as a square patch', () => {
+  it('never counts a single tile as a patch', () => {
     const one: Rect = { r: 0, c: 0, w: 1, h: 1 };
     expect(fitsClue({ cell: 0, kind: 'shape', shape: 'square' }, one)).toBe(false);
+    expect(fitsClue({ cell: 0, kind: 'any' }, one)).toBe(false);
+    expect(fitsClue({ cell: 0, kind: 'area', area: 1 }, one)).toBe(false);
     expect(fitsClue({ cell: 0, kind: 'shape', shape: 'square' }, { r: 0, c: 0, w: 2, h: 2 })).toBe(true);
   });
 
-  it('never gives a one-tile patch a square clue', () => {
+  it('never makes a one-tile patch', () => {
     for (const d of ['easy', 'normal', 'hard'] as const) {
       for (let day = 1; day <= 20; day++) {
         const p = quilt.generate(makeSeed('quilt', `2026-10-${String(day).padStart(2, '0')}`, d));
-        p.clues.forEach((clue, k) => {
-          if (clue.kind !== 'shape') return;
+        p.clues.forEach((_, k) => {
           expect(p.solution.filter((o) => o === k).length).toBeGreaterThan(1);
         });
       }

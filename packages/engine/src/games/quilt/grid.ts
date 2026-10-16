@@ -54,12 +54,15 @@ export const rectContains = (rect: Rect, i: number, n: number): boolean => {
   return r >= rect.r && r < rect.r + rect.h && c >= rect.c && c < rect.c + rect.w;
 };
 
-/** Does a rectangle satisfy what its clue actually says? */
+/**
+ * Does a rectangle satisfy what its clue actually says? A single tile is never
+ * a patch, whatever the clue: every patch covers at least two cells.
+ */
 export function fitsClue(clue: Clue, rect: Rect): boolean {
+  if (rect.w * rect.h < 2) return false;
   switch (clue.kind) {
     case 'area': return rect.w * rect.h === clue.area;
-    // A single tile is not a square patch: a square badge means 2x2 or bigger.
-    case 'shape': return shapeOf(rect.w, rect.h) === clue.shape && rect.w * rect.h > 1;
+    case 'shape': return shapeOf(rect.w, rect.h) === clue.shape;
     case 'any': return true;
   }
 }

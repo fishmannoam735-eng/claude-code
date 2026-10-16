@@ -147,7 +147,7 @@ export function QuiltPage() {
         </span>{' '}
         its shape (wide, tall or square), and{' '}
         <ClueBadge clue={{ cell: 0, kind: 'any' }} k={6} className="inline-block h-4 w-4 translate-y-[2px]" />{' '}
-        can be any rectangle.
+        can be any rectangle. Every patch is at least two tiles.
         <br />
         {status === 'solved' ? null : refused > 0
           ? <span className="font-semibold text-danger">A patch can hold only one clue — that rectangle covered two.</span>
