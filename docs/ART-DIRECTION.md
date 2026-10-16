@@ -155,6 +155,11 @@ the tile style both games share): ivory tiles for entered cells, sand for
 givens, a glossy gold sun and silver-blue moon, and the = / × clues as small
 dark wooden chips on the seams.
 
+Quilt uses the tray too, LinkedIn Patches style: every clue is a pastel badge
+(round with a number for a size, a square, wide or tall chip for a shape, a
+"?" for any rectangle), and the patch drawn around it becomes one glossy
+piece in that badge's colour. The old hatched region palette is gone.
+
 Nine avoids this entirely — digits carry the information.
 
 ### Type

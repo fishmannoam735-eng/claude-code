@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 import trayUrl from '../assets/tray.webp';
 
 // Where the tray's opening sits in tray.webp, as a percentage of its side.
@@ -18,8 +18,9 @@ export const BED = '#5C4028';
  * element that fills the tray's opening, so a game lays its cells out there;
  * `overlay` is drawn above it in the same box (edge badges, solved sweep).
  */
-export function WoodTray({ grid, children, overlay }: {
+export function WoodTray({ grid, gridRef, children, overlay }: {
   grid: React.HTMLAttributes<HTMLDivElement> & { className?: string };
+  gridRef?: Ref<HTMLDivElement>;
   children: ReactNode;
   overlay?: ReactNode;
 }) {
@@ -37,6 +38,7 @@ export function WoodTray({ grid, children, overlay }: {
     >
       <div
         {...grid}
+        ref={gridRef}
         className={`absolute overflow-hidden ${grid.className ?? ''}`}
         style={{
           ...box,
