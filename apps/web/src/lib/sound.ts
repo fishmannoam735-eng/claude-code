@@ -13,7 +13,7 @@ import { readJSON, writeJSON } from './storage';
 export type Sound = 'place' | 'mark' | 'erase' | 'error' | 'solve';
 
 const KEY = 'pb.sound';
-const VOLUME = 0.55;
+const VOLUME = 0.9;
 
 export const useSoundSetting = create<{ on: boolean; toggle: () => void }>((set, get) => ({
   on: readJSON<boolean>(KEY) ?? true,
@@ -37,13 +37,43 @@ function audio(): { ctx: AudioContext; out: GainNode; noise: AudioBuffer } | nul
     ctx = new AC();
     master = ctx.createGain();
     master.gain.value = VOLUME;
-    master.connect(ctx.destination);
+    // A gentle limiter, so loud enough on a phone speaker never means clipping
+    // when a drag fires several taps at once.
+    const limit = ctx.createDynamicsCompressor();
+    limit.threshold.value = -8;
+    limit.knee.value = 6;
+    limit.ratio.value = 8;
+    master.connect(limit).connect(ctx.destination);
     noise = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   return { ctx, out: master!, noise: noise! };
+}
+
+/**
+ * Browsers only start audio from inside a user gesture, and iOS also mutes
+ * web audio when the ringer switch is on silent unless the page declares it
+ * plays media. So on the first touch anywhere, declare that, start the
+ * context and play one silent sample to unlock it.
+ */
+function unlock(): void {
+  const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+  if (session) { try { session.type = 'playback'; } catch { /* older Safari */ } }
+  const a = audio();
+  if (!a) return;
+  const src = a.ctx.createBufferSource();
+  src.buffer = a.ctx.createBuffer(1, 1, a.ctx.sampleRate);
+  src.connect(a.ctx.destination);
+  src.start();
+  if (a.ctx.state === 'running') {
+    for (const e of GESTURES) window.removeEventListener(e, unlock, true);
+  }
+}
+const GESTURES = ['pointerdown', 'touchend', 'keydown', 'click'] as const;
+if (typeof window !== 'undefined') {
+  for (const e of GESTURES) window.addEventListener(e, unlock, true);
 }
 
 /** Small random detune, so a run of taps sounds handled rather than looped. */
@@ -88,34 +118,35 @@ function hiss(freq: number, q: number, peak: number, attack: number, decay: numb
 }
 
 const SOUNDS: Record<Sound, () => void> = {
-  // A piece set down on wood: a short knock with a tiny click on contact.
+  // A piece set down on wood: a short knock with a click on contact. Pitched
+  // where phone speakers actually reproduce sound, not down in the bass.
   place: () => {
-    const f = vary(420);
-    tone('triangle', f * 1.35, f, 0.42, 0.002, 0.11);
-    tone('sine', f / 2, f / 2.3, 0.22, 0.003, 0.09);
-    hiss(vary(2600), 1.4, 0.12, 0.001, 0.018);
+    const f = vary(620);
+    tone('triangle', f * 1.4, f, 0.9, 0.002, 0.12);
+    tone('sine', f * 2.7, f * 2.4, 0.25, 0.001, 0.05);
+    hiss(vary(3000), 0.8, 1.2, 0.001, 0.02);
   },
   // A fingertip tap: higher, lighter, mostly click.
   mark: () => {
-    hiss(vary(4200), 2, 0.1, 0.001, 0.022);
-    tone('sine', vary(1350), vary(1100), 0.06, 0.001, 0.04);
+    hiss(vary(4500), 0.7, 1.6, 0.001, 0.025);
+    tone('sine', vary(1900), vary(1600), 0.7, 0.001, 0.045);
   },
   // Lifting a piece off and brushing the tile: a soft swish.
   erase: () => {
-    hiss(vary(1500, 0.08), 0.9, 0.09, 0.012, 0.09);
-    tone('sine', vary(300), vary(240), 0.05, 0.004, 0.05);
+    hiss(vary(2200, 0.08), 0.5, 1.6, 0.015, 0.11);
+    tone('sine', vary(700), vary(560), 0.4, 0.004, 0.06);
   },
-  // Wrong move: a dull, low, quiet thud. Never a buzzer.
+  // Wrong move: a dull, low thud. Never a buzzer.
   error: () => {
-    tone('sine', 150, 95, 0.32, 0.004, 0.17);
-    hiss(500, 1, 0.05, 0.003, 0.06);
+    tone('triangle', 300, 190, 0.8, 0.004, 0.2);
+    hiss(700, 0.8, 0.25, 0.003, 0.07);
   },
   // Solved: one knock, then a soft rising three-note chime.
   solve: () => {
     SOUNDS.place();
     [1046.5, 1318.5, 1568].forEach((f, k) => {
-      tone('sine', f, f, 0.14, 0.006, 1.3, 0.12 + k * 0.11);
-      tone('sine', f * 2.01, f * 2.01, 0.03, 0.006, 0.6, 0.12 + k * 0.11);
+      tone('sine', f, f, 0.38, 0.006, 1.3, 0.12 + k * 0.11);
+      tone('sine', f * 2.01, f * 2.01, 0.08, 0.006, 0.6, 0.12 + k * 0.11);
     });
   },
 };
