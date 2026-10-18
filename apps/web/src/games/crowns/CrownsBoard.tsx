@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, type PointerEvent } from 'react';
+import { memo, useEffect, useMemo, useRef, type PointerEvent } from 'react';
 import { crownsGame } from '@pb/engine';
 import { crownsRegionName, tileColours } from './palette';
 import { CROWN, EMPTY, MARK, useCrowns } from './store';
@@ -32,8 +32,9 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
     const i = cellAt(e);
     if (i === null) return;
     e.preventDefault();
-    // Touch captures the pointer to the first tile; release it so moves are seen across the board.
-    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    // Capture on the board itself, as Quilt does: moves keep arriving wherever
+    // the finger goes, and cellAt finds the tile under it.
+    e.currentTarget.setPointerCapture(e.pointerId);
     press.current = { start: i, dragging: false };
   };
   const onPointerMove = (e: PointerEvent): void => {
@@ -50,6 +51,19 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
     if (p && !p.dragging) tapCell(p.start);
   };
 
+  // Phones: a swipe must never scroll the page, select text or start a native
+  // drag, or the browser cancels the pointer and the swipe marks one tile at
+  // most. touch-action covers most browsers; a non-passive touchmove that
+  // cancels itself covers the in-app web views that ignore it.
+  const boardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    const stop = (e: TouchEvent): void => { if (e.cancelable) e.preventDefault(); };
+    el.addEventListener('touchmove', stop, { passive: false });
+    return () => el.removeEventListener('touchmove', stop);
+  }, [puzzle]);
+
   const bad = useMemo(
     () => (puzzle ? violations(grid, puzzle.regions) : []),
     [grid, puzzle],
@@ -59,13 +73,15 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
 
   return (
     <WoodTray
+      gridRef={boardRef}
       grid={{
         role: 'grid',
         'aria-label': 'Crowns board',
-        className: 'grid touch-none grid-cols-8 grid-rows-8',
+        className: 'grid touch-none select-none grid-cols-8 grid-rows-8 [-webkit-touch-callout:none]',
+        onDragStart: (e) => e.preventDefault(),
         onPointerDown, onPointerMove, onPointerUp,
         onPointerCancel: () => { press.current = null; },
-        onPointerLeave: () => { press.current = null; },
+        onLostPointerCapture: () => { press.current = null; },
       }}
     >
         {grid.map((v, i) => (
