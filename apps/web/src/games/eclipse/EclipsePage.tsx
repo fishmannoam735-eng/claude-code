@@ -10,10 +10,14 @@ import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { EclipseBoard } from './EclipseBoard';
 import { MOON, SUN, useEclipse, type Snapshot } from './store';
+import { byCount, useGameSounds } from '../../lib/sound';
+
+const eclipseBoard = (s: { grid: number[] }) => s.grid;
 
 export function EclipsePage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useEclipse, eclipseBoard, byCount);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);

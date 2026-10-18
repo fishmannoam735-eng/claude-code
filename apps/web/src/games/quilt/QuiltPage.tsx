@@ -10,10 +10,17 @@ import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { ClueBadge, QuiltBoard } from './QuiltBoard';
 import { useQuilt, type Snapshot } from './store';
+import { useGameSounds, type Sound } from '../../lib/sound';
+
+// Cutting a patch is a piece set down; rubbing one out lifts it off.
+const quiltBoard = (s: { owner: number[] }) => s.owner;
+const claimed = (o: number[]) => o.reduce((n, k) => n + (k >= 0 ? 1 : 0), 0);
+const quiltSound = (a: number[], b: number[]): Sound => (claimed(b) < claimed(a) ? 'erase' : 'place');
 
 export function QuiltPage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useQuilt, quiltBoard, quiltSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);

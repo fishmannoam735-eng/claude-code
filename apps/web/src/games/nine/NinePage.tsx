@@ -11,10 +11,17 @@ import { readJSON } from '../../lib/storage';
 import { NineBoard } from './NineBoard';
 import { NumberPad } from './NumberPad';
 import { useNine, type Snapshot } from './store';
+import { byCount, useGameSounds, type Sound } from '../../lib/sound';
+
+// Digits are pieces; pencil marks are light taps.
+const nineBoard = (s: { grid: number[]; notes: number[] }) => s;
+const nineSound = (a: { grid: number[]; notes: number[] }, b: { grid: number[]; notes: number[] }): Sound | null =>
+  a.grid !== b.grid ? byCount(a.grid, b.grid) : a.notes !== b.notes ? 'mark' : null;
 
 export function NinePage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useNine, nineBoard, nineSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);

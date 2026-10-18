@@ -10,10 +10,20 @@ import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { CrownsBoard } from './CrownsBoard';
 import { CROWN, EMPTY, MARK, useCrowns, type Snapshot } from './store';
+import { useGameSounds, type Sound } from '../../lib/sound';
+
+// A crown is a piece set down, a ✕ is a fingertip note, anything else lifts off.
+const crownsBoard = (s: { grid: number[] }) => s.grid;
+const crownsSound = (a: number[], b: number[]): Sound => {
+  const i = b.findIndex((v, k) => v !== a[k]);
+  if (i < 0) return 'place';
+  return b[i] === CROWN ? 'place' : b[i] === MARK ? 'mark' : 'erase';
+};
 
 export function CrownsPage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useCrowns, crownsBoard, crownsSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);
