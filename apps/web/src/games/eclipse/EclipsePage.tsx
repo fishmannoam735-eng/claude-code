@@ -5,7 +5,7 @@ import { eclipseGame, parseSeed } from '@pb/engine';
 import { Icon } from '../../components/Icon';
 import { ActionButton, GameHeader, PausedOverlay, SolvedCard } from '../../components/GameChrome';
 import { localKey, usePersistence } from '../../lib/persistence';
-import { buildShareText, mistakeRows, share } from '../../lib/share';
+import { buildShareText, share } from '../../lib/share';
 import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { EclipseBoard } from './EclipseBoard';
@@ -27,8 +27,6 @@ export function EclipsePage() {
   const status = useEclipse((s) => s.status);
   const running = useEclipse((s) => s.runningSince !== null);
   const canUndo = useEclipse((s) => s.undo.length > 0);
-  const mistakes = useEclipse((s) => s.mistakes);
-  const rowMistakes = useEclipse((s) => s.rowMistakes);
   const grid = useEclipse((s) => s.grid);
   const dirty = useEclipse((s) => s.dirty);
   const snapshot = useEclipse((s) => s.snapshot);
@@ -105,7 +103,7 @@ export function EclipsePage() {
   const onShare = async (): Promise<void> => {
     const text = buildShareText({
       game: 'Eclipse', parsed, seed, elapsedMs: elapsed(),
-      rows: mistakeRows(rowMistakes, 3), streak,
+      rows: [], streak,
     });
     const r = await share(text);
     setShared(r === 'copied' ? 'Copied' : r === 'shared' ? 'Shared' : 'Could not share');
@@ -118,7 +116,7 @@ export function EclipsePage() {
       <GameHeader
         title="Eclipse"
         parsed={parsed}
-        subtitle={`${placed} of ${eclipseGame.CELLS} placed${mistakes ? ` · ${mistakes} mistake${mistakes === 1 ? '' : 's'}` : ''}`}
+        subtitle={`${placed} of ${eclipseGame.CELLS} placed`}
         elapsed={elapsed}
         running={running}
         solved={status === 'solved'}
@@ -144,7 +142,6 @@ export function EclipsePage() {
       {status === 'solved' && (
         <SolvedCard
           elapsedMs={elapsed()}
-          mistakes={mistakes}
           streak={streak}
           shareLabel={shared}
           onShare={() => { void onShare(); }}
