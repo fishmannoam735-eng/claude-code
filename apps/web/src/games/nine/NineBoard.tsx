@@ -14,6 +14,8 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
   const lastWrong = useNine((s) => s.lastWrong);
   const status = useNine((s) => s.status);
   const selectCell = useNine((s) => s.selectCell);
+  const hint = useNine((s) => s.hint);
+  const hinted = useMemo(() => new Set(hint?.focus ?? []), [hint]);
 
   const clash = useMemo(() => nineGame.conflicts(grid), [grid]);
   const peers = useMemo(() => {
@@ -39,6 +41,7 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
           given={puzzle.givens[i] !== 0}
           selected={selected === i}
           peer={peers.has(i)}
+          hinted={!hidden && hinted.has(i)}
           same={!hidden && highlightDigit !== null && v === highlightDigit}
           conflict={!hidden && clash[i]!}
           pop={lastPlaced === i}
@@ -52,7 +55,7 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
 
 interface CellProps {
   i: number; value: number; notes: number; given: boolean;
-  selected: boolean; peer: boolean; same: boolean; conflict: boolean;
+  selected: boolean; peer: boolean; hinted: boolean; same: boolean; conflict: boolean;
   pop: boolean; shake: boolean;
   onSelect: (i: number) => void;
 }
@@ -64,6 +67,8 @@ const Cell = memo(function Cell(p: CellProps) {
 
   let bg = '';
   if (p.peer) bg = 'bg-peer';
+  // Cells a hint talks about glow softly, so the explanation can be followed on the board.
+  if (p.hinted) bg = 'bg-accent-soft';
   if (p.same) bg = 'bg-same';
   if (p.conflict) bg = 'bg-danger-soft';
   if (p.selected) bg = 'bg-sel';

@@ -18,6 +18,9 @@ export const Icon = {
   Flame: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M13 2.5c.3 2.6-1 4-2.4 5.3C9 9.2 7.5 10.6 7.5 13a4.5 4.5 0 0 0 9 0c0-2.4-1.1-4-2.2-5.4-.3 1-.9 1.7-1.7 2.2.2-2.6-.7-5.5-3.6-7.3" /><path d="M12 14.2c.6.5.9 1.1.9 1.8a1.9 1.9 0 0 1-3.8 0c0-1 .7-1.6 1.4-2.2" strokeWidth="1.3" opacity="0.7" /></svg>,
   Sweep: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M3 21h6M6 21v-5l7-7 5 5-7 7" /><path d="M13 6l3-3 5 5-3 3" /></svg>,
   Share: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M12 15V3M7 8l5-5 5 5" /></svg>,
+  Bulb: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z" /></svg>,
+  Fill: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" strokeWidth="2.6" /></svg>,
+  Close: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>,
   Sound: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>,
   Mute: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M17 9.5l5 5M22 9.5l-5 5" /></svg>,
 };

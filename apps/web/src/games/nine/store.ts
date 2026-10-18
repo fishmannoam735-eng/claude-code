@@ -48,6 +48,8 @@ interface GameState {
   lastPlaced: number | null;
   lastWrong: number | null;
   dirty: number;                  // bumps on every persisted-state change
+  /** The hint on show, if any. Cleared by the next move. */
+  hint: NineHint | null;
 
   load: (seed: string, snapshot: Snapshot | null, puzzleDate: string | null) => boolean;
   snapshot: () => Snapshot;
@@ -60,7 +62,16 @@ interface GameState {
   pause: () => void;
   resume: () => void;
   moveSelection: (dr: number, dc: number) => void;
+  /** Work out the next step and show it. */
+  showHint: () => void;
+  /** Place the digit the hint points at (or erase the wrong entry it found). */
+  applyHint: () => void;
+  dismissHint: () => void;
+  /** Pencil every empty cell with all the numbers it can still take. */
+  fillNotes: () => void;
 }
+
+export type NineHint = nineGame.Hint & { wrong?: boolean };
 
 const bit = (d: number): number => 1 << d;
 
@@ -81,7 +92,7 @@ export const useNine = create<GameState>((set, get) => {
       if (grid[i] !== 0) return;
       notes[i] = notes[i]! ^ bit(d);
       move.nn = notes[i]!;
-      set({ grid, notes, undo: [...s.undo, move], dirty: s.dirty + 1 });
+      set({ grid, notes, undo: [...s.undo, move], hint: null, dirty: s.dirty + 1 });
       return;
     }
 
@@ -120,7 +131,7 @@ export const useNine = create<GameState>((set, get) => {
     }
 
     set({
-      grid, notes, undo: [...s.undo, move], mistakes, boxMistakes, lastWrong, lastPlaced: i,
+      grid, notes, undo: [...s.undo, move], mistakes, boxMistakes, lastWrong, lastPlaced: i, hint: null,
       status, completedAt, elapsedBase, runningSince, dirty: s.dirty + 1,
     });
   }
@@ -131,7 +142,7 @@ export const useNine = create<GameState>((set, get) => {
     selected: null, lockedDigit: null, highlightDigit: null, notesMode: false,
     elapsedBase: 0, runningSince: null, mistakes: 0, boxMistakes: new Array<number>(9).fill(0),
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(), completedAt: null,
-    lastPlaced: null, lastWrong: null, dirty: 0,
+    lastPlaced: null, lastWrong: null, dirty: 0, hint: null,
 
     load: (seed, snap, puzzleDate) => {
       const parsed = parseSeed(seed);
@@ -140,7 +151,7 @@ export const useNine = create<GameState>((set, get) => {
       const base = {
         seed, puzzle, mode: parsed.isDaily ? 'daily' as const : 'practice' as const,
         selected: null, lockedDigit: null, highlightDigit: null, notesMode: false,
-        lastPlaced: null, lastWrong: null, dirty: 0,
+        lastPlaced: null, lastWrong: null, dirty: 0, hint: null,
       };
       if (snap && snap.v === 1 && snap.grid.length === 81) {
         set({
@@ -206,7 +217,7 @@ export const useNine = create<GameState>((set, get) => {
       const grid = s.grid.slice(); const notes = s.notes.slice();
       const move: Move = { i, pv: grid[i]!, nv: 0, pn: notes[i]!, nn: 0, peers: [] };
       grid[i] = 0; notes[i] = 0;
-      set({ grid, notes, undo: [...s.undo, move], lastWrong: null, dirty: s.dirty + 1 });
+      set({ grid, notes, undo: [...s.undo, move], lastWrong: null, hint: null, dirty: s.dirty + 1 });
     },
 
     toggleNotes: () => set((s) => ({ notesMode: !s.notesMode })),
@@ -218,7 +229,7 @@ export const useNine = create<GameState>((set, get) => {
       const grid = s.grid.slice(); const notes = s.notes.slice();
       grid[move.i] = move.pv; notes[move.i] = move.pn;
       for (const [j, pn] of move.peers) notes[j] = pn;
-      set({ grid, notes, undo: s.undo.slice(0, -1), selected: move.i, lastWrong: null, dirty: s.dirty + 1 });
+      set({ grid, notes, undo: s.undo.slice(0, -1), selected: move.i, lastWrong: null, hint: null, dirty: s.dirty + 1 });
     },
 
     pause: () => {
@@ -231,6 +242,56 @@ export const useNine = create<GameState>((set, get) => {
       const s = get();
       if (s.runningSince !== null || s.status !== 'in_progress' || !s.puzzle) return;
       set({ runningSince: Date.now() });
+    },
+
+    showHint: () => {
+      const s = get();
+      if (!s.puzzle || s.status !== 'in_progress') return;
+      // A wrong digit poisons every deduction after it, so that comes first.
+      const bad = s.grid.findIndex((v, i) => v !== 0 && s.puzzle!.givens[i] === 0 && v !== s.puzzle!.solution[i]);
+      if (bad >= 0) {
+        const v = s.grid[bad]!;
+        set({
+          selected: bad, highlightDigit: null, lockedDigit: null,
+          hint: {
+            cell: bad, digit: 0, focus: [bad], revealed: false, wrong: true,
+            steps: [`The ${v} at ${nineGame.cellName(bad)} isn't right, and anything worked out from it will be off too. Clear it first, then ask for another hint.`],
+          },
+        });
+        return;
+      }
+      const hint = nineGame.nextHint(s.grid, s.puzzle.solution);
+      if (hint) set({ hint, selected: hint.cell, highlightDigit: null, lockedDigit: null });
+    },
+
+    applyHint: () => {
+      const s = get();
+      const h = s.hint;
+      if (!h || !s.puzzle) return;
+      if (h.wrong) { set({ selected: h.cell, notesMode: false }); get().erase(); return; }
+      const notesMode = s.notesMode;
+      set({ selected: h.cell, notesMode: false });
+      apply(h.cell, h.digit);
+      set({ notesMode, highlightDigit: h.digit });
+    },
+
+    dismissHint: () => set({ hint: null }),
+
+    fillNotes: () => {
+      const s = get();
+      if (!s.puzzle || s.status !== 'in_progress') return;
+      const cand = nineGame.candidates(s.grid);
+      const notes = s.notes.slice();
+      const changed: [number, number][] = [];
+      for (let i = 0; i < 81; i++) {
+        if (s.grid[i] === 0 && notes[i] !== cand[i]) { changed.push([i, notes[i]!]); notes[i] = cand[i]!; }
+      }
+      if (!changed.length) return;
+      // One undo step for the whole fill: the first cell carries the move and
+      // the rest ride along as `peers`, whose notes undo restores.
+      const [first, ...rest] = changed;
+      const move: Move = { i: first![0], pv: 0, nv: 0, pn: first![1], nn: notes[first![0]]!, peers: rest };
+      set({ notes, undo: [...s.undo, move], hint: null, dirty: s.dirty + 1 });
     },
 
     moveSelection: (dr, dc) => {

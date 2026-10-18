@@ -31,6 +31,9 @@ export function NinePage() {
   const status = useNine((s) => s.status);
   const running = useNine((s) => s.runningSince !== null);
   const notesMode = useNine((s) => s.notesMode);
+  const hint = useNine((s) => s.hint);
+  const showHint = useNine((s) => s.showHint);
+  const fillNotes = useNine((s) => s.fillNotes);
   const canUndo = useNine((s) => s.undo.length > 0);
   const mistakes = useNine((s) => s.mistakes);
   const boxMistakes = useNine((s) => s.boxMistakes);
@@ -136,10 +139,14 @@ export function NinePage() {
         {paused && <PausedOverlay onResume={resume} />}
       </div>
 
+      {hint && !paused && <HintCard />}
+
       <div className="mt-4 flex gap-2.5">
         <ActionButton label="Undo" onClick={undoMove} disabled={!canUndo || status === 'solved'}><Icon.Undo /></ActionButton>
         <ActionButton label="Erase" onClick={erase} disabled={status === 'solved'}><Icon.Erase /></ActionButton>
         <ActionButton label={notesMode ? 'Notes · On' : 'Notes'} onClick={toggleNotes} active={notesMode} disabled={status === 'solved'}><Icon.Pencil /></ActionButton>
+        <ActionButton label="Fill" onClick={fillNotes} disabled={status === 'solved' || paused}><Icon.Fill /></ActionButton>
+        <ActionButton label="Hint" onClick={showHint} active={hint !== null} disabled={status === 'solved' || paused}><Icon.Bulb /></ActionButton>
       </div>
 
       <div className="mt-4">
@@ -157,6 +164,35 @@ export function NinePage() {
           difficulty={parsed.difficulty}
         />
       )}
+    </div>
+  );
+}
+
+/** The hint on show: its reasoning step by step, and a way to act on it. */
+function HintCard() {
+  const hint = useNine((s) => s.hint)!;
+  const applyHint = useNine((s) => s.applyHint);
+  const dismissHint = useNine((s) => s.dismissHint);
+  return (
+    <div role="status" className="relative mt-3 rounded-2xl border border-accent bg-accent-soft px-4 pb-3 pt-3 text-[13px] leading-snug text-ink">
+      <button type="button" aria-label="Close hint" onClick={dismissHint} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-ink-2">
+        <Icon.Close width={16} height={16} />
+      </button>
+      <div className="mb-1.5 flex items-center gap-1.5 pr-8 text-[11px] font-bold uppercase tracking-wider text-accent-text">
+        <Icon.Bulb width={14} height={14} /> {hint.wrong ? 'Check this one' : hint.revealed ? 'A nudge' : 'Hint'}
+      </div>
+      {hint.steps.length > 1 ? (
+        <ol className="list-decimal space-y-1.5 pl-5">
+          {hint.steps.map((t, k) => <li key={k}>{t}</li>)}
+        </ol>
+      ) : <p>{hint.steps[0]}</p>}
+      <button
+        type="button"
+        onClick={applyHint}
+        className="mt-2.5 rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink"
+      >
+        {hint.wrong ? 'Clear it' : `Place the ${hint.digit}`}
+      </button>
     </div>
   );
 }

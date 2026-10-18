@@ -40,4 +40,5 @@ export type { NinePuzzle };
 export { conflicts, isComplete, parseGrid, gridToString, PEERS, UNITS, rowOf, colOf, boxOf, type Grid } from './grid.js';
 export { humanSolve, TECHNIQUES, BEYOND } from './techniques.js';
 export { countSolutions } from './solver.js';
+export { nextHint, candidates, cellName, type Hint } from './hint.js';
 export { fillGrid, dig, rateGrid, generateNine } from './generate.js';
