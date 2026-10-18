@@ -160,7 +160,7 @@ export function QuiltPage() {
           ? <span className="font-semibold text-danger">A patch can hold only one clue — that rectangle covered two.</span>
           : anchor !== null
             ? <>Corner set. Move to the far corner and press <b>Enter</b>.</>
-            : <>Drag to draw. Tap a drawn patch to rub it out; press <b>Space</b> to set a corner by keyboard.</>}
+            : <>Drag to draw, or drag from inside a patch to stretch or shrink it. Tap a patch to rub it out; press <b>Space</b> to set a corner by keyboard.</>}
       </p>
 
       <div className="mt-auto flex gap-2.5 pt-4">
