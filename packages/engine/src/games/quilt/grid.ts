@@ -31,7 +31,7 @@ export type Clue =
 /** Which clue owns each cell, by index into the clue list. -1 = unclaimed. */
 export type Owner = number[];
 
-export const SIDES = { easy: 6, normal: 7, hard: 8 } as const;
+export const SIDES = { easy: 8, normal: 9, hard: 10 } as const;
 
 export const rowOf = (i: number, n: number): number => Math.floor(i / n);
 export const colOf = (i: number, n: number): number => i % n;

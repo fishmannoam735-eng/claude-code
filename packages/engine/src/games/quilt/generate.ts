@@ -152,26 +152,27 @@ interface Band { min: number; max: number; weaken: number; allowAny: boolean }
 
 /**
  * Set from `tools/gen histogram --raw`. There are three levers and they pull
- * together: the board side (6/7/8) sets how many patches there are, the
+ * together: the board side (8/9/10) sets how many patches there are, the
  * weakening budget sets how much each clue still says, and `allowAny` decides
  * whether a clue may be stripped to nothing at all.
  *
- * Measured supply at these settings, over 120 seeds per row:
- *
- *   easy   n=6 budget=2  no blanks   L1  8%  L2 84%  L3  9%          → 92% accepted
- *   normal n=7 budget=6              L2 49%  L3 36%  L4 13%  L5  3%  → 36% accepted
- *   hard   n=8 budget=12             L2 32%  L3 37%  L4 18%  L5 13%  → 31% accepted
+ * The boards grew from 6/7/8 on 2026-10-19, to give much larger quilts.
+ * Measured at these settings over 60 seeds each: no seed failed, and
+ * generation took easy 1ms / normal 6ms / hard 35ms median, with hard's
+ * slowest seed at 377ms. Hard's budget came down from 12 to 9 for that tail:
+ * at 10x10 a budget of 12 ran to 3s on the worst seed. 12x12 was tried and
+ * dropped, at several seconds a board and tiles too small for a finger.
  *
  * The weakening budget is deliberately short of "as far as uniqueness allows".
  * Eclipse taught that lesson: strip every clue you legally can and every board
  * lands at the top of the ladder, because the redundancy you removed *was* the
- * easy deductions. Budget 12 rather than unlimited also keeps the tail sane —
+ * easy deductions. A capped budget rather than unlimited also keeps the tail sane —
  * unlimited weakening produced a 348ms outlier against 45ms here.
  */
 const BANDS: Record<Difficulty, Band> = {
   easy:   { min: 1, max: 2,      weaken: 2,  allowAny: false },
   normal: { min: 3, max: 3,      weaken: 6,  allowAny: true },
-  hard:   { min: 4, max: BEYOND, weaken: 12, allowAny: true },
+  hard:   { min: 4, max: BEYOND, weaken: 9,  allowAny: true },
 };
 
 /**
