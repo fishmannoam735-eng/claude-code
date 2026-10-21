@@ -17,7 +17,11 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
   const selectCell = useNine((s) => s.selectCell);
   const hint = useNine((s) => s.hint);
   const notesToo = useNoteHighlight((s) => s.on);
-  const hinted = useMemo(() => new Set(hint?.focus ?? []), [hint]);
+  const hintStep = useNine((s) => s.hintStep);
+  // Only the row being read lights up, so each sentence points at its own squares.
+  const row = hint?.steps[hintStep];
+  const hinted = useMemo(() => new Set(row?.focus ?? []), [row]);
+  const ruledOut = useMemo(() => new Set(row?.out ?? []), [row]);
 
   const clash = useMemo(() => nineGame.conflicts(grid), [grid]);
   const peers = useMemo(() => {
@@ -44,6 +48,7 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
           selected={selected === i}
           peer={peers.has(i)}
           hinted={!hidden && hinted.has(i)}
+          ruledOut={!hidden && ruledOut.has(i)}
           same={!hidden && highlightDigit !== null && v === highlightDigit}
           noteDigit={!hidden && notesToo && highlightDigit !== null && v === 0 && notes[i]! & (1 << highlightDigit) ? highlightDigit : 0}
           conflict={!hidden && clash[i]!}
@@ -58,7 +63,7 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
 
 interface CellProps {
   i: number; value: number; notes: number; given: boolean;
-  selected: boolean; peer: boolean; hinted: boolean; same: boolean; conflict: boolean;
+  selected: boolean; peer: boolean; hinted: boolean; ruledOut: boolean; same: boolean; conflict: boolean;
   /** The picked number, when this empty cell has it as a pencil mark; else 0. */
   noteDigit: number;
   pop: boolean; shake: boolean;
@@ -74,6 +79,7 @@ const Cell = memo(function Cell(p: CellProps) {
   if (p.peer) bg = 'bg-peer';
   // Cells a hint talks about glow softly, so the explanation can be followed on the board.
   if (p.hinted) bg = 'bg-accent-soft';
+  if (p.ruledOut) bg = 'bg-danger-soft';
   if (p.same || p.noteDigit) bg = 'bg-same';
   if (p.conflict) bg = 'bg-danger-soft';
   if (p.selected) bg = 'bg-sel';
@@ -81,6 +87,7 @@ const Cell = memo(function Cell(p: CellProps) {
   let ring = '';
   if (p.selected) ring = 'shadow-[inset_0_0_0_2px_var(--color-accent)]';
   else if (p.conflict) ring = 'shadow-[inset_0_0_0_1.5px_var(--color-danger)]';
+  else if (p.hinted) ring = 'shadow-[inset_0_0_0_2px_var(--color-accent)]';
   // `same` gets its fill only — a ring on top of the blue digit reads as noise.
 
   const color = p.conflict ? 'text-danger' : p.given ? 'text-ink' : 'text-ink-entered';
@@ -111,6 +118,9 @@ const Cell = memo(function Cell(p: CellProps) {
           ))}
         </span>
       ) : null}
+      {p.ruledOut && (
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center text-[clamp(16px,5vw,22px)] font-light leading-none text-danger/70">✕</span>
+      )}
     </button>
   );
 });

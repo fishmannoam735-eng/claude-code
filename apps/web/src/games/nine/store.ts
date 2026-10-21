@@ -50,6 +50,9 @@ interface GameState {
   dirty: number;                  // bumps on every persisted-state change
   /** The hint on show, if any. Cleared by the next move. */
   hint: NineHint | null;
+  /** Which row of the hint is being looked at; the board lights up its squares. */
+  hintStep: number;
+  setHintStep: (k: number) => void;
 
   load: (seed: string, snapshot: Snapshot | null, puzzleDate: string | null) => boolean;
   snapshot: () => Snapshot;
@@ -142,7 +145,7 @@ export const useNine = create<GameState>((set, get) => {
     selected: null, lockedDigit: null, highlightDigit: null, notesMode: false,
     elapsedBase: 0, runningSince: null, mistakes: 0, boxMistakes: new Array<number>(9).fill(0),
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(), completedAt: null,
-    lastPlaced: null, lastWrong: null, dirty: 0, hint: null,
+    lastPlaced: null, lastWrong: null, dirty: 0, hint: null, hintStep: 0,
 
     load: (seed, snap, puzzleDate) => {
       const parsed = parseSeed(seed);
@@ -264,16 +267,21 @@ export const useNine = create<GameState>((set, get) => {
       if (bad >= 0) {
         const v = s.grid[bad]!;
         set({
-          selected: bad, highlightDigit: null, lockedDigit: null,
+          selected: null, highlightDigit: null, lockedDigit: null, hintStep: 0,
           hint: {
             cell: bad, digit: 0, focus: [bad], revealed: false, wrong: true,
-            steps: [`The ${v} at ${nineGame.cellName(bad)} isn't right, and anything worked out from it will be off too. Clear it first, then ask for another hint.`],
+            steps: [
+              { text: `The ${v} in ${nineGame.cellName(bad)} isn't right.`, focus: [bad] },
+              { text: 'Anything worked out from it will be off too, so clear it first and then ask for another hint.', focus: [bad] },
+            ],
           },
         });
         return;
       }
       const hint = nineGame.nextHint(s.grid, s.puzzle.solution);
-      if (hint) set({ hint, selected: hint.cell, highlightDigit: null, lockedDigit: null });
+      // Nothing is selected while the hint walks through its rows, so the
+      // answer square isn't given away before the last one.
+      if (hint) set({ hint, hintStep: 0, selected: null, highlightDigit: null, lockedDigit: null });
     },
 
     applyHint: () => {
@@ -288,6 +296,8 @@ export const useNine = create<GameState>((set, get) => {
     },
 
     dismissHint: () => set({ hint: null }),
+
+    setHintStep: (k) => set((s) => ({ hintStep: s.hint ? Math.max(0, Math.min(k, s.hint.steps.length - 1)) : 0 })),
 
     fillNotes: () => {
       const s = get();

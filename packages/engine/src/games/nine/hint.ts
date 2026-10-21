@@ -8,12 +8,24 @@ import { PEERS, UNITS, UNITS_OF, colOf, rowOf, type Grid } from './grid.js';
  * marks (those may be incomplete or wrong) and never from the solution, except
  * as a last resort when the board needs more than the techniques below.
  */
+/**
+ * One row of a hint: a short sentence and the squares it is about, so the
+ * board can light up exactly what that sentence talks about.
+ */
+export interface HintStep {
+  text: string;
+  /** Squares the sentence points at (the cells to look at). */
+  focus: number[];
+  /** Squares where the number is ruled out by this sentence. */
+  out?: number[];
+}
+
 export interface Hint {
   /** The cell to fill and the digit that goes there. */
   cell: number;
   digit: number;
-  /** One sentence per step: any eliminations first, then the placement. */
-  steps: string[];
+  /** One row per step, in reading order: eliminations first, then the placement. */
+  steps: HintStep[];
   /** Cells worth looking at, for the board to light up (includes `cell`). */
   focus: number[];
   /** True when no technique applied and the cell is simply revealed. */
@@ -52,14 +64,24 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
   const cand = candidates(grid);
   // Each elimination records which (cell, digit) facts it removed and which it
   // relied on, so the hint can keep only the steps the placement really needs.
-  interface Step { text: string; hits: string[]; uses: string[]; focus: number[] }
+  interface Step { rows: HintStep[]; hits: string[]; uses: string[]; focus: number[] }
   const log: Step[] = [];
   const key = (i: number, d: number): string => `${i}:${d}`;
   const keysIn = (cells: readonly number[], ds: readonly number[]): string[] =>
     cells.flatMap((i) => ds.map((d) => key(i, d)));
   const NINE = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-  const done = (cell: number, digit: number, why: (prior: boolean) => string, uses: string[], more: number[] = []): Hint => {
+  /** A placed copy of `d` that each of `cells` can see, one per cell, without repeats. */
+  const blockersOf = (cells: readonly number[], d: number): number[] => {
+    const out = new Set<number>();
+    for (const i of cells) {
+      const b = PEERS[i]!.find((j) => grid[j] === d);
+      if (b !== undefined) out.add(b);
+    }
+    return [...out];
+  };
+
+  const done = (cell: number, digit: number, why: (prior: boolean) => HintStep[], uses: string[], more: number[] = []): Hint => {
     const needed = new Set(uses);
     const kept: Step[] = [];
     for (let k = log.length - 1; k >= 0; k--) {
@@ -67,7 +89,7 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
       if (st.hits.some((h) => needed.has(h))) { kept.unshift(st); st.uses.forEach((u) => needed.add(u)); }
     }
     const focus = new Set([...kept.flatMap((st) => st.focus), ...more, cell]);
-    return { cell, digit, steps: [...kept.map((st) => st.text), why(kept.length > 0)], focus: [...focus], revealed: false };
+    return { cell, digit, steps: [...kept.flatMap((st) => st.rows), ...why(kept.length > 0)], focus: [...focus], revealed: false };
   };
 
   function single(): Hint | null {
@@ -79,18 +101,30 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
         const spots = cells.filter((i) => grid[i] === 0 && cand[i]! & bit(d));
         if (spots.length === 1) {
           const empty = cells.filter((i) => grid[i] === 0);
-          return done(spots[0]!, d, (prior) =>
-            `In ${unitName(u)}, the ${d} has only one place left: ${cellName(spots[0]!)}. Every other empty cell there already sees ${a(d)} in its row, column or box${prior ? ', or was ruled out above' : ''}.`,
-            keysIn(empty, [d]), empty);
+          const others = empty.filter((i) => i !== spots[0]);
+          const seen = others.filter((i) => blockersOf([i], d).length > 0);
+          return done(spots[0]!, d, (prior) => [
+            { text: `Look at ${unitName(u)}. It still needs ${a(d)}.`, focus: empty },
+            ...(others.length ? [{
+              text: seen.length === others.length || !prior
+                ? `The marked squares can't be ${d}: each already sees ${a(d)} in its row, column or box.`
+                : `The marked squares can't be ${d}: they see ${a(d)}, or were ruled out above.`,
+              focus: blockersOf(others, d), out: others,
+            }] : []),
+            { text: `So the ${d} goes in ${cellName(spots[0]!)}.`, focus: [spots[0]!] },
+          ], keysIn(empty, [d]), empty);
         }
       }
     }
     for (let i = 0; i < 81; i++) {
       if (grid[i] === 0 && popcount(cand[i]!) === 1) {
         const d = digitsOf(cand[i]!)[0]!;
-        return done(i, d, (prior) =>
-          `${cap(cellName(i))} can only be ${d}: ${prior ? 'with the steps above, ' : ''}its row, column and box rule out every other number.`,
-          keysIn([i], NINE));
+        const taken = NINE.filter((x) => x !== d && PEERS[i]!.some((j) => grid[j] === x));
+        const blockers = taken.flatMap((x) => blockersOf([i], x));
+        return done(i, d, (prior) => [
+          { text: `Look at ${cellName(i)}. Its row, column and box already hold ${taken.join(', ')}.`, focus: [i, ...blockers] },
+          { text: `${prior ? 'With the steps above, the' : 'The'} only number left for it is ${d}.`, focus: [i] },
+        ], keysIn([i], NINE));
       }
     }
     return null;
@@ -109,7 +143,10 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
           if (!hit.length) continue;
           for (const j of hit) cand[j]! &= ~b;
           log.push({
-            text: `In ${unitName(bx)}, the ${d} can only go in ${unitName(line)}, so no other cell of ${unitName(line)} can be ${d}.`,
+            rows: [
+              { text: `In ${unitName(bx)}, the ${d} can only go in these squares, all in ${unitName(line)}.`, focus: cells },
+              { text: `So the rest of ${unitName(line)} can't be ${d}.`, focus: cells, out: hit },
+            ],
             hits: keysIn(hit, [d]), uses: keysIn(UNITS[bx]!, [d]), focus: cells,
           });
           return true;
@@ -124,7 +161,10 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
         if (!hit.length) continue;
         for (const j of hit) cand[j]! &= ~b;
         log.push({
-          text: `In ${unitName(ln)}, the ${d} can only go inside ${unitName(box)}, so the rest of that box can't be ${d}.`,
+          rows: [
+            { text: `In ${unitName(ln)}, the ${d} can only go in these squares, all inside ${unitName(box)}.`, focus: cells },
+            { text: `So the rest of that box can't be ${d}.`, focus: cells, out: hit },
+          ],
           hits: keysIn(hit, [d]), uses: keysIn(UNITS[ln]!, [d]), focus: cells,
         });
         return true;
@@ -146,7 +186,10 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
           const [x, y] = digitsOf(m);
           const both = [twos[a]!, twos[z]!];
           log.push({
-            text: `${cap(cellName(both[0]!))} and ${cellName(both[1]!)} can only be ${x} or ${y}, so no other cell in ${unitName(u)} can be ${x} or ${y}.`,
+            rows: [
+              { text: `In ${unitName(u)}, these two squares can only be ${x} or ${y}, so between them they take both.`, focus: both },
+              { text: `So no other square in ${unitName(u)} can be ${x} or ${y}.`, focus: both, out: hit },
+            ],
             hits: keysIn(hit, [x!, y!]), uses: keysIn(both, NINE), focus: both,
           });
           return true;
@@ -186,11 +229,12 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
               hits: keysIn(hit, [d]),
               uses: [...keysIn(UNITS[l1.u]!, [d]), ...keysIn(UNITS[l2.u]!, [d])],
               focus: [...four],
-              text:
-              `Follow the ${d}s. In ${unitName(l1.u)} the ${d} is at ${cellName(far1)} or ${cellName(near1)}, ` +
-              `and in ${unitName(l2.u)} it is at ${cellName(near2)} or ${cellName(far2)}. ` +
-              `${cap(cellName(near1))} and ${cellName(near2)} share ${unitName(sharedUnit(near1, near2))}, so they can't both be ${d}. ` +
-              `That means ${cellName(far1)} or ${cellName(far2)} is ${d}, and ${hit.map(cellName).join(' and ')}, which ${hit.length === 1 ? 'sees' : 'see'} both, can't be ${d}.`,
+              rows: [
+                { text: `Follow the ${d}s. In ${unitName(l1.u)} the ${d} can only be in one of these two squares.`, focus: [far1, near1] },
+                { text: `In ${unitName(l2.u)} it can only be in one of these two.`, focus: [near2, far2] },
+                { text: `These two share ${unitName(sharedUnit(near1, near2))}, so they can't both be ${d}.`, focus: [near1, near2] },
+                { text: `So at least one of these two is ${d}, and any square that sees both can't be.`, focus: [far1, far2], out: hit },
+              ],
             });
             return true;
           }
@@ -215,6 +259,9 @@ export function nextHint(grid: Grid, solution: Grid): Hint | null {
   const d = solution[best]!;
   return {
     cell: best, digit: d, revealed: true, focus: [best],
-    steps: [`This spot needs a long chain of reasoning, so here's a nudge instead: ${cellName(best)} is ${d}. It can only be ${digitsOf(cand[best]!).join(' or ')}, and ${d} is the one that works.`],
+    steps: [
+      { text: `This spot needs a long chain of reasoning, so here's a nudge instead.`, focus: [best] },
+      { text: `${cap(cellName(best))} can only be ${digitsOf(cand[best]!).join(' or ')}, and ${d} is the one that works.`, focus: [best] },
+    ],
   };
 }
