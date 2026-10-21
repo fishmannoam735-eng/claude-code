@@ -10,10 +10,16 @@ import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { ThreadBoard } from './ThreadBoard';
 import { useThread, type Snapshot } from './store';
+import { useGameSounds, type Sound } from '../../lib/sound';
+
+// The line ticks along as it grows, and brushes back as it retracts.
+const threadBoard = (s: { path: number[] }) => s.path;
+const threadSound = (a: number[], b: number[]): Sound => (b.length < a.length ? 'erase' : 'mark');
 
 export function ThreadPage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useThread, threadBoard, threadSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);

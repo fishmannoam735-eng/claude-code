@@ -5,6 +5,7 @@ import { localDateKey } from '@pb/engine';
 import { Icon } from './Icon';
 import { GAME_COLOR, GAME_INK } from './GameMark';
 import { fmtTime, DIFF_LABEL } from '../lib/format';
+import { useSoundSetting } from '../lib/sound';
 
 /** Re-renders once a second while the clock runs, and not at all when it doesn't. */
 export function Timer({ elapsed, running }: { elapsed: () => number; running: boolean }) {
@@ -53,6 +54,7 @@ export function GameHeader(props: {
         <div className="text-[11px] text-ink-2">{props.subtitle}</div>
       </div>
       <Timer elapsed={props.elapsed} running={props.running} />
+      <SoundToggle />
       <button
         type="button"
         aria-label={paused ? 'Resume' : 'Pause'}
@@ -63,6 +65,22 @@ export function GameHeader(props: {
         {paused ? <Icon.Play /> : <Icon.Pause />}
       </button>
     </header>
+  );
+}
+
+function SoundToggle() {
+  const on = useSoundSetting((s) => s.on);
+  const toggle = useSoundSetting((s) => s.toggle);
+  return (
+    <button
+      type="button"
+      aria-label={on ? 'Mute sounds' : 'Turn sounds on'}
+      aria-pressed={on}
+      onClick={toggle}
+      className="flex h-10 w-10 items-center justify-center rounded-xl border border-line-minor bg-raised text-ink-2"
+    >
+      {on ? <Icon.Sound /> : <Icon.Mute />}
+    </button>
   );
 }
 
@@ -101,7 +119,8 @@ export function ActionButton(p: {
 
 export function SolvedCard(props: {
   elapsedMs: number;
-  mistakes: number;
+  /** Left out by games that count no mistakes (Eclipse). */
+  mistakes?: number;
   /** What a mistake is called in this game; Thread counts steps back. */
   mistakeWord?: string;
   streak: number | null;
@@ -118,11 +137,13 @@ export function SolvedCard(props: {
       </div>
       <div className="mt-2 flex items-baseline gap-4">
         <span className="text-3xl font-semibold tabular-nums">{fmtTime(props.elapsedMs)}</span>
-        <span className="text-sm text-ink-2">
-          {((word) => (props.mistakes === 0
-            ? `no ${word}s`
-            : `${props.mistakes} ${word}${props.mistakes === 1 ? '' : 's'}`))(props.mistakeWord ?? 'mistake')}
-        </span>
+        {props.mistakes !== undefined && (
+          <span className="text-sm text-ink-2">
+            {((word, n) => (n === 0
+              ? `no ${word}s`
+              : `${n} ${word}${n === 1 ? '' : 's'}`))(props.mistakeWord ?? 'mistake', props.mistakes)}
+          </span>
+        )}
         {props.streak !== null && props.streak > 0 && (
           <span className="flex items-center gap-1 text-sm font-semibold text-accent-text">
             <Icon.Flame width={14} height={14} /> {props.streak}

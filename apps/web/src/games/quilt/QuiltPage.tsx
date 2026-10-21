@@ -8,12 +8,19 @@ import { localKey, usePersistence } from '../../lib/persistence';
 import { buildShareText, mistakeRows, share } from '../../lib/share';
 import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
-import { AnyGlyph, QuiltBoard, ShapeSwatch } from './QuiltBoard';
+import { ClueBadge, QuiltBoard } from './QuiltBoard';
 import { useQuilt, type Snapshot } from './store';
+import { useGameSounds, type Sound } from '../../lib/sound';
+
+// Cutting a patch is a piece set down; rubbing one out lifts it off.
+const quiltBoard = (s: { owner: number[] }) => s.owner;
+const claimed = (o: number[]) => o.reduce((n, k) => n + (k >= 0 ? 1 : 0), 0);
+const quiltSound = (a: number[], b: number[]): Sound => (claimed(b) < claimed(a) ? 'erase' : 'place');
 
 export function QuiltPage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useQuilt, quiltBoard, quiltSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);
@@ -136,22 +143,24 @@ export function QuiltPage() {
       </div>
 
       <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2" aria-live="polite">
-        Cut the board into rectangles, one clue in each. A number is that patch's
-        area;{' '}
+        Cut the board into rectangles, one badge in each; the patch takes the
+        badge's colour.{' '}
+        <ClueBadge clue={{ cell: 0, kind: 'area', area: 4 }} k={3} className="inline-block h-4 w-4 translate-y-[2px]" />{' '}
+        is the patch's size,{' '}
         <span className="inline-flex translate-y-[2px] items-center gap-[3px]" aria-hidden="true">
-          <ShapeSwatch shape="wide" className="h-4 w-4 text-ink" />
-          <ShapeSwatch shape="tall" className="h-4 w-4 text-ink" />
-          <ShapeSwatch shape="square" className="h-4 w-4 text-ink" />
+          <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'wide' }} k={1} className="h-4 w-4" />
+          <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'tall' }} k={2} className="h-4 w-4" />
+          <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'square' }} k={0} className="h-4 w-4" />
         </span>{' '}
-        say only wide, tall or square;{' '}
-        <AnyGlyph className="inline-block h-4 w-4 translate-y-[2px] text-ink" />{' '}
-        says nothing but that a patch lives here.
+        its shape (wide, tall or square), and{' '}
+        <ClueBadge clue={{ cell: 0, kind: 'any' }} k={6} className="inline-block h-4 w-4 translate-y-[2px]" />{' '}
+        can be any rectangle. Every patch is at least two tiles.
         <br />
         {status === 'solved' ? null : refused > 0
           ? <span className="font-semibold text-danger">A patch can hold only one clue — that rectangle covered two.</span>
           : anchor !== null
             ? <>Corner set. Move to the far corner and press <b>Enter</b>.</>
-            : <>Drag to draw. Tap a drawn patch to rub it out; press <b>Space</b> to set a corner by keyboard.</>}
+            : <>Drag to draw, or drag from inside a patch to stretch or shrink it. Tap a patch to rub it out; press <b>Space</b> to set a corner by keyboard.</>}
       </p>
 
       <div className="mt-auto flex gap-2.5 pt-4">

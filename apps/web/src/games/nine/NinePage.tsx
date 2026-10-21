@@ -11,10 +11,18 @@ import { readJSON } from '../../lib/storage';
 import { NineBoard } from './NineBoard';
 import { NumberPad } from './NumberPad';
 import { useNine, type Snapshot } from './store';
+import { useNoteHighlight } from './settings';
+import { byCount, useGameSounds, type Sound } from '../../lib/sound';
+
+// Digits are pieces; pencil marks are light taps.
+const nineBoard = (s: { grid: number[]; notes: number[] }) => s;
+const nineSound = (a: { grid: number[]; notes: number[] }, b: { grid: number[]; notes: number[] }): Sound | null =>
+  a.grid !== b.grid ? byCount(a.grid, b.grid) : a.notes !== b.notes ? 'mark' : null;
 
 export function NinePage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useNine, nineBoard, nineSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);
@@ -24,6 +32,9 @@ export function NinePage() {
   const status = useNine((s) => s.status);
   const running = useNine((s) => s.runningSince !== null);
   const notesMode = useNine((s) => s.notesMode);
+  const hint = useNine((s) => s.hint);
+  const showHint = useNine((s) => s.showHint);
+  const fillNotes = useNine((s) => s.fillNotes);
   const canUndo = useNine((s) => s.undo.length > 0);
   const mistakes = useNine((s) => s.mistakes);
   const boxMistakes = useNine((s) => s.boxMistakes);
@@ -129,15 +140,21 @@ export function NinePage() {
         {paused && <PausedOverlay onResume={resume} />}
       </div>
 
+      {hint && !paused && <HintCard />}
+
       <div className="mt-4 flex gap-2.5">
         <ActionButton label="Undo" onClick={undoMove} disabled={!canUndo || status === 'solved'}><Icon.Undo /></ActionButton>
         <ActionButton label="Erase" onClick={erase} disabled={status === 'solved'}><Icon.Erase /></ActionButton>
         <ActionButton label={notesMode ? 'Notes · On' : 'Notes'} onClick={toggleNotes} active={notesMode} disabled={status === 'solved'}><Icon.Pencil /></ActionButton>
+        <ActionButton label="Fill" onClick={fillNotes} disabled={status === 'solved' || paused}><Icon.Fill /></ActionButton>
+        <ActionButton label="Hint" onClick={showHint} active={hint !== null} disabled={status === 'solved' || paused}><Icon.Bulb /></ActionButton>
       </div>
 
       <div className="mt-4">
         <NumberPad />
       </div>
+
+      <NotesHighlightToggle />
 
       {status === 'solved' && (
         <SolvedCard
@@ -150,6 +167,87 @@ export function NinePage() {
           difficulty={parsed.difficulty}
         />
       )}
+    </div>
+  );
+}
+
+/** Whether picking a number lights up the pencil marks that hold it too. */
+function NotesHighlightToggle() {
+  const on = useNoteHighlight((s) => s.on);
+  const toggle = useNoteHighlight((s) => s.toggle);
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={toggle}
+      className="mx-auto mt-3 flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] text-ink-2"
+    >
+      <span className={`relative h-[18px] w-8 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-line-major'}`}>
+        <span className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-surface shadow transition-[left] ${on ? 'left-[16px]' : 'left-[2px]'}`} />
+      </span>
+      Highlight the number in notes too
+    </button>
+  );
+}
+
+/**
+ * The hint on show, one step at a time. The step being read is the one the
+ * board lights up: its squares glow, and squares it rules out get a red ✕.
+ * Next and Back walk through it, and the last step's button places the number.
+ */
+function HintCard() {
+  const hint = useNine((s) => s.hint)!;
+  const step = useNine((s) => s.hintStep);
+  const setHintStep = useNine((s) => s.setHintStep);
+  const applyHint = useNine((s) => s.applyHint);
+  const dismissHint = useNine((s) => s.dismissHint);
+  const last = step >= hint.steps.length - 1;
+  return (
+    <div role="status" className="relative mt-3 rounded-2xl border border-accent bg-accent-soft px-3 pb-3 pt-3 text-[13px] leading-snug text-ink">
+      <button type="button" aria-label="Close hint" onClick={dismissHint} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-ink-2">
+        <Icon.Close width={16} height={16} />
+      </button>
+      <div className="mb-2 flex items-center gap-1.5 px-1 pr-8 text-[11px] font-bold uppercase tracking-wider text-accent-text">
+        <Icon.Bulb width={14} height={14} /> {hint.wrong ? 'Check this one' : hint.revealed ? 'A nudge' : 'Hint'}
+        <span className="font-semibold normal-case tracking-normal text-ink-2">· step {step + 1} of {hint.steps.length}</span>
+      </div>
+      {/* One row at a time, so the card stays short and the board stays on
+          screen; the dots jump straight to any row. */}
+      <p className="min-h-[3.4em] rounded-xl bg-surface px-3 py-2 text-[14px] font-medium leading-snug text-ink shadow-sm">
+        {hint.steps[step]!.text}
+      </p>
+      {hint.steps.length > 1 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1" role="tablist" aria-label="Hint steps">
+          {hint.steps.map((_, k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={k === step}
+              aria-label={`Step ${k + 1}`}
+              onClick={() => setHintStep(k)}
+              className={`h-2.5 rounded-full transition-all ${k === step ? 'w-6 bg-accent' : k < step ? 'w-2.5 bg-accent/50' : 'w-2.5 bg-line-major'}`}
+            />
+          ))}
+        </div>
+      )}
+      <div className="mt-2.5 flex gap-2 px-1">
+        {step > 0 && (
+          <button type="button" onClick={() => setHintStep(step - 1)} className="rounded-xl border border-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-text">
+            Back
+          </button>
+        )}
+        {last ? (
+          <button type="button" onClick={applyHint} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            {hint.wrong ? 'Clear it' : `Place the ${hint.digit}`}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setHintStep(step + 1)} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            Next
+          </button>
+        )}
+      </div>
     </div>
   );
 }

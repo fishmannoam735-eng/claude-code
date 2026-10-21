@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { eclipse, eclipseGame, parseSeed, type EclipsePuzzle } from '@pb/engine';
 import type { BaseSnapshot } from '../../lib/persistence';
 
-const { SUN, MOON, CELLS, N, rowOf } = eclipseGame;
+const { SUN, MOON, CELLS, N } = eclipseGame;
 
 /** Tapping a cell walks empty → sun → moon → empty. */
 const nextValue = (v: number): number => (v === 0 ? SUN : v === SUN ? MOON : 0);
@@ -59,14 +59,9 @@ export const useEclipse = create<GameState>((set, get) => {
     if (pv === nv) return;
     grid[i] = nv;
 
-    // A mistake is a committed value that disagrees with the solution. Clearing
-    // a cell is never a mistake, and the same wrong cell is only counted once.
-    let { mistakes } = s;
-    const rowMistakes = s.rowMistakes.slice();
-    if (nv !== 0 && nv !== s.puzzle.solution[i]) {
-      mistakes++;
-      rowMistakes[rowOf(i)]!++;
-    }
+    // Eclipse counts no mistakes: a tap walks every cell through the sun on
+    // its way to the moon, so a "wrong" sun is just the way you get there.
+    const { mistakes, rowMistakes } = s;
 
     let status: 'in_progress' | 'solved' = s.status;
     let completedAt = s.completedAt;
@@ -102,7 +97,7 @@ export const useEclipse = create<GameState>((set, get) => {
           ...base,
           grid: snap.grid.slice(), undo: snap.undo.slice(),
           elapsedBase: snap.elapsedMs, runningSince: snap.status === 'in_progress' ? Date.now() : null,
-          mistakes: snap.mistakes, rowMistakes: snap.rowMistakes.slice(),
+          mistakes: 0, rowMistakes: new Array<number>(N).fill(0),
           status: snap.status, puzzleDate: snap.puzzleDate,
           startedAt: snap.startedAt, completedAt: snap.completedAt,
         });

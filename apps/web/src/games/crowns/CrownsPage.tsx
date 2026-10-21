@@ -10,10 +10,20 @@ import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { CrownsBoard } from './CrownsBoard';
 import { CROWN, EMPTY, MARK, useCrowns, type Snapshot } from './store';
+import { useGameSounds, type Sound } from '../../lib/sound';
+
+// A crown is a piece set down, a ✕ is a fingertip note, anything else lifts off.
+const crownsBoard = (s: { grid: number[] }) => s.grid;
+const crownsSound = (a: number[], b: number[]): Sound => {
+  const i = b.findIndex((v, k) => v !== a[k]);
+  if (i < 0) return 'place';
+  return b[i] === CROWN ? 'place' : b[i] === MARK ? 'mark' : 'erase';
+};
 
 export function CrownsPage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useCrowns, crownsBoard, crownsSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);
@@ -129,7 +139,7 @@ export function CrownsPage() {
       <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
         One crown per row, column and colour. No two crowns may touch, even corner to corner.
         <br />
-        Tap to cycle ✕ → crown → blank; the ✕ is just your own note.
+        Tap to cycle ✕ → crown → blank, or drag to ✕ several tiles. The ✕ is just your own note.
       </p>
 
       <div className="mt-auto flex gap-2.5 pt-4">

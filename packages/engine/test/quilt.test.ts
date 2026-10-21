@@ -36,6 +36,25 @@ describe('grid vocabulary', () => {
     expect(fitsClue({ cell: 0, kind: 'any' }, rect)).toBe(true);
   });
 
+  it('never counts a single tile as a patch', () => {
+    const one: Rect = { r: 0, c: 0, w: 1, h: 1 };
+    expect(fitsClue({ cell: 0, kind: 'shape', shape: 'square' }, one)).toBe(false);
+    expect(fitsClue({ cell: 0, kind: 'any' }, one)).toBe(false);
+    expect(fitsClue({ cell: 0, kind: 'area', area: 1 }, one)).toBe(false);
+    expect(fitsClue({ cell: 0, kind: 'shape', shape: 'square' }, { r: 0, c: 0, w: 2, h: 2 })).toBe(true);
+  });
+
+  it('never makes a one-tile patch', () => {
+    for (const d of ['easy', 'normal', 'hard'] as const) {
+      for (let day = 1; day <= 20; day++) {
+        const p = quilt.generate(makeSeed('quilt', `2026-10-${String(day).padStart(2, '0')}`, d));
+        p.clues.forEach((_, k) => {
+          expect(p.solution.filter((o) => o === k).length).toBeGreaterThan(1);
+        });
+      }
+    }
+  });
+
   it('tells a rectangle from a cell set that merely fits inside one', () => {
     expect(boundsOf([0, 1, 4, 5], 4)).toEqual({ rect: { r: 0, c: 0, w: 2, h: 2 }, exact: true });
     expect(boundsOf([0, 1, 4], 4)!.exact).toBe(false);   // an L, not a rectangle

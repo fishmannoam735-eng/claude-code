@@ -30,6 +30,10 @@ interface GameState {
   /** Live drag, before it is committed. */
   dragFrom: number | null;
   dragTo: number | null;
+  /** The cell the press landed on, and whether the pointer has left it. A press
+   *  that never moves is a tap, whatever corner the drag was anchored to. */
+  pressed: number | null;
+  moved: boolean;
   /** Bumped when a drag spanned two clues and had to be refused; cleared by
    *  the next move that does something. */
   refused: number;
@@ -175,7 +179,7 @@ export const useQuilt = create<GameState>((set, get) => {
 
   return {
     seed: null, puzzle: null, owner: [], undo: [], selected: null, anchor: null,
-    dragFrom: null, dragTo: null, refused: 0,
+    dragFrom: null, dragTo: null, pressed: null, moved: false, refused: 0,
     elapsedBase: 0, runningSince: null, mistakes: 0, rowMistakes: [],
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(),
     completedAt: null, dirty: 0,
@@ -187,7 +191,7 @@ export const useQuilt = create<GameState>((set, get) => {
       const cells = puzzle.n * puzzle.n;
       const base = {
         seed, puzzle, selected: null, anchor: null,
-        dragFrom: null, dragTo: null, refused: 0, dirty: 0,
+        dragFrom: null, dragTo: null, pressed: null, moved: false, refused: 0, dirty: 0,
       };
       if (snap && snap.v === 1 && snap.owner.length === cells) {
         set({
@@ -232,22 +236,40 @@ export const useQuilt = create<GameState>((set, get) => {
       return null;
     },
 
+    /**
+     * Pressing inside a patch you already drew picks it up by the corner
+     * farthest from your finger, so dragging stretches or shrinks that patch
+     * instead of starting a new one from scratch. Anywhere else, the press is
+     * the first corner of a new rectangle.
+     */
     beginAt: (i) => {
-      if (get().status !== 'in_progress') return;
-      set({ dragFrom: i, dragTo: i, selected: i, anchor: null });
+      const s = get();
+      if (s.status !== 'in_progress' || !s.puzzle) return;
+      let from = i;
+      const k = s.owner[i] ?? -1;
+      const rect = k >= 0 ? patchesOf(s.puzzle, s.owner)[k]?.rect : null;
+      if (rect) {
+        const n = s.puzzle.n, r = rowOf(i, n), c = colOf(i, n);
+        const right = rect.c + rect.w - 1, bottom = rect.r + rect.h - 1;
+        const fr = r - rect.r <= bottom - r ? bottom : rect.r;
+        const fc = c - rect.c <= right - c ? right : rect.c;
+        from = fr * n + fc;
+      }
+      set({ dragFrom: from, dragTo: i, pressed: i, moved: false, selected: i, anchor: null });
     },
 
     dragOver: (i) => {
       const s = get();
       if (s.dragFrom === null || s.dragTo === i) return;
-      set({ dragTo: i, selected: i });
+      set({ dragTo: i, selected: i, moved: true });
     },
 
     endDrag: () => {
       const s = get();
       if (s.dragFrom === null || s.dragTo === null) return;
-      const from = s.dragFrom, to = s.dragTo;
-      set({ dragFrom: null, dragTo: null });
+      const tap = !s.moved && s.pressed !== null;
+      const from = tap ? s.pressed! : s.dragFrom, to = s.dragTo;
+      set({ dragFrom: null, dragTo: null, pressed: null, moved: false });
       commit(from, to);
     },
 
