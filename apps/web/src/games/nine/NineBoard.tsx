@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { nineGame } from '@pb/engine';
 import { useNine } from './store';
+import { useNoteHighlight } from './settings';
 
 const NOTE_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -15,6 +16,7 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
   const status = useNine((s) => s.status);
   const selectCell = useNine((s) => s.selectCell);
   const hint = useNine((s) => s.hint);
+  const notesToo = useNoteHighlight((s) => s.on);
   const hinted = useMemo(() => new Set(hint?.focus ?? []), [hint]);
 
   const clash = useMemo(() => nineGame.conflicts(grid), [grid]);
@@ -43,6 +45,7 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
           peer={peers.has(i)}
           hinted={!hidden && hinted.has(i)}
           same={!hidden && highlightDigit !== null && v === highlightDigit}
+          noteDigit={!hidden && notesToo && highlightDigit !== null && v === 0 && notes[i]! & (1 << highlightDigit) ? highlightDigit : 0}
           conflict={!hidden && clash[i]!}
           pop={lastPlaced === i}
           shake={lastWrong === i}
@@ -56,6 +59,8 @@ export function NineBoard({ hidden }: { hidden: boolean }) {
 interface CellProps {
   i: number; value: number; notes: number; given: boolean;
   selected: boolean; peer: boolean; hinted: boolean; same: boolean; conflict: boolean;
+  /** The picked number, when this empty cell has it as a pencil mark; else 0. */
+  noteDigit: number;
   pop: boolean; shake: boolean;
   onSelect: (i: number) => void;
 }
@@ -69,7 +74,7 @@ const Cell = memo(function Cell(p: CellProps) {
   if (p.peer) bg = 'bg-peer';
   // Cells a hint talks about glow softly, so the explanation can be followed on the board.
   if (p.hinted) bg = 'bg-accent-soft';
-  if (p.same) bg = 'bg-same';
+  if (p.same || p.noteDigit) bg = 'bg-same';
   if (p.conflict) bg = 'bg-danger-soft';
   if (p.selected) bg = 'bg-sel';
 
@@ -100,7 +105,7 @@ const Cell = memo(function Cell(p: CellProps) {
       ) : p.notes !== 0 ? (
         <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-[2px]">
           {NOTE_SLOTS.map((d) => (
-            <span key={d} className={`flex items-center justify-center text-[clamp(7px,2.3vw,10px)] leading-none ${p.notes & (1 << d) ? 'text-ink-note' : 'text-transparent'}`}>
+            <span key={d} className={`flex items-center justify-center text-[clamp(7px,2.3vw,10px)] leading-none ${p.notes & (1 << d) ? (d === p.noteDigit ? 'font-bold text-ink-entered' : 'text-ink-note') : 'text-transparent'}`}>
               {d}
             </span>
           ))}

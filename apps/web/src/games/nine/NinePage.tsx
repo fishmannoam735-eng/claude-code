@@ -11,6 +11,7 @@ import { readJSON } from '../../lib/storage';
 import { NineBoard } from './NineBoard';
 import { NumberPad } from './NumberPad';
 import { useNine, type Snapshot } from './store';
+import { useNoteHighlight } from './settings';
 import { byCount, useGameSounds, type Sound } from '../../lib/sound';
 
 // Digits are pieces; pencil marks are light taps.
@@ -153,6 +154,8 @@ export function NinePage() {
         <NumberPad />
       </div>
 
+      <NotesHighlightToggle />
+
       {status === 'solved' && (
         <SolvedCard
           elapsedMs={elapsed()}
@@ -165,6 +168,26 @@ export function NinePage() {
         />
       )}
     </div>
+  );
+}
+
+/** Whether picking a number lights up the pencil marks that hold it too. */
+function NotesHighlightToggle() {
+  const on = useNoteHighlight((s) => s.on);
+  const toggle = useNoteHighlight((s) => s.toggle);
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={toggle}
+      className="mx-auto mt-3 flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] text-ink-2"
+    >
+      <span className={`relative h-[18px] w-8 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-line-major'}`}>
+        <span className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-surface shadow transition-[left] ${on ? 'left-[16px]' : 'left-[2px]'}`} />
+      </span>
+      Highlight the number in notes too
+    </button>
   );
 }
 
