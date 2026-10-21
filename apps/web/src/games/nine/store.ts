@@ -189,8 +189,17 @@ export const useNine = create<GameState>((set, get) => {
       if (!s.puzzle) return;
       const given = s.puzzle.givens[i] !== 0;
       if (s.lockedDigit !== null && !given && s.status === 'in_progress') {
-        set({ selected: i });
+        // Painting leaves nothing selected, so the pad keeps steering the
+        // locked digit instead of writing into the last painted cell.
+        set({ selected: null, highlightDigit: s.lockedDigit });
         apply(i, s.lockedDigit);
+        return;
+      }
+      // Tapping the selected cell again lets go of it. On a phone there is no
+      // Escape key, and without a way to deselect the pad could never lock a
+      // digit again once a cell had been picked.
+      if (s.selected === i && s.lockedDigit === null) {
+        set({ selected: null, highlightDigit: null });
         return;
       }
       const v = s.grid[i]!;
@@ -200,13 +209,16 @@ export const useNine = create<GameState>((set, get) => {
     tapDigit: (d) => {
       const s = get();
       if (!s.puzzle || s.status !== 'in_progress') return;
-      if (s.selected !== null && s.puzzle.givens[s.selected] === 0) {
+      // While a digit is locked the pad only ever switches it (or, on the same
+      // digit, unlocks it). Writing into a selected cell here is what made the
+      // mode feel stuck: the next tap filled a square instead of changing digit.
+      if (s.lockedDigit === null && s.selected !== null && s.puzzle.givens[s.selected] === 0) {
         set({ highlightDigit: d });
         apply(s.selected, d);
         return;
       }
       const locked = s.lockedDigit === d ? null : d;
-      set({ lockedDigit: locked, highlightDigit: locked });
+      set({ lockedDigit: locked, highlightDigit: locked, selected: null });
     },
 
     erase: () => {

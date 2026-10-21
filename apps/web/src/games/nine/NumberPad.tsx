@@ -7,6 +7,7 @@ export function NumberPad() {
   const left = digitsRemaining(grid);
 
   return (
+    <>
     <div className="grid grid-cols-3 gap-2.5" role="group" aria-label="Number pad">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
         const on = locked === d;
@@ -28,5 +29,11 @@ export function NumberPad() {
         );
       })}
     </div>
+    <p className="mt-2 h-4 text-center text-[12px] leading-4 text-ink-2" aria-live="polite">
+      {locked !== null
+        ? `Tap squares to place ${locked}s. Tap ${locked} again to stop.`
+        : 'Tip: tap a number with no square picked to place it again and again.'}
+    </p>
+    </>
   );
 }
