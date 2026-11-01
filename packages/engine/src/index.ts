@@ -12,7 +12,7 @@ export type { EclipsePuzzle } from './games/eclipse/index.js';
 
 export * as crownsGame from './games/crowns/index.js';
 export { crowns } from './games/crowns/index.js';
-export type { CrownsPuzzle } from './games/crowns/index.js';
+export type { CrownsPuzzle, CrownsHint, CrownsHintStep } from './games/crowns/index.js';
 
 export * as threadGame from './games/thread/index.js';
 export { thread } from './games/thread/index.js';

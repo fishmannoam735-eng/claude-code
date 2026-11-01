@@ -15,6 +15,12 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
   const status = useCrowns((s) => s.status);
   const tapCell = useCrowns((s) => s.tapCell);
   const setCell = useCrowns((s) => s.setCell);
+  const hint = useCrowns((s) => s.hint);
+  const hintStep = useCrowns((s) => s.hintStep);
+  // The hint row being read lights its squares; the rest of the board dims.
+  const row = hint?.steps[hintStep];
+  const focus = useMemo(() => new Set(row?.focus ?? []), [row]);
+  const out = useMemo(() => new Set(row?.out ?? []), [row]);
 
   // Press and drag marks every empty tile the pointer passes over with ✕. A
   // press that never leaves its tile is a tap, and only fires on release so
@@ -93,6 +99,7 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
             selected={selected === i}
             conflict={!hidden && !!bad[i]}
             pop={lastPlaced === i}
+            hint={!row || hidden ? 0 : out.has(i) ? 3 : focus.has(i) ? 2 : 1}
           />
         ))}
         {status === 'solved' && <div className="pb-sweep pointer-events-none absolute inset-0 opacity-60" />}
@@ -103,6 +110,8 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
 interface CellProps {
   i: number; value: number; region: number;
   selected: boolean; conflict: boolean; pop: boolean;
+  /** 0 no hint showing, 1 dimmed, 2 looked at, 3 ruled out by the hint. */
+  hint: 0 | 1 | 2 | 3;
 }
 
 const Cell = memo(function Cell(p: CellProps) {
@@ -112,7 +121,8 @@ const Cell = memo(function Cell(p: CellProps) {
   const tile = tileStyle(
     p.conflict ? `linear-gradient(rgb(180 80 60 / 0.35), rgb(180 80 60 / 0.35)), ${face}` : face,
     side,
-    p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
+    p.hint === 2 ? 'var(--color-accent)' : p.hint === 3 ? 'var(--color-danger)'
+      : p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
   );
 
   const what = p.value === CROWN ? 'crown' : p.value === MARK ? 'marked' : 'empty';
@@ -135,6 +145,12 @@ const Cell = memo(function Cell(p: CellProps) {
             className={`w-[78%] ${p.pop ? 'pb-pop' : ''}`}
             style={{ filter: 'drop-shadow(0.15cqw 0.4cqw 0.3cqw rgb(60 40 10 / 0.45))' }}
           />
+        )}
+        {p.hint === 1 && <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[rgb(40_28_16/0.38)]" />}
+        {p.hint === 3 && p.value !== MARK && (
+          <svg viewBox="0 0 24 24" className="pointer-events-none absolute h-[46%] w-[46%] text-danger" fill="none" stroke="currentColor" strokeWidth={3.4} strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
         )}
         {p.value === MARK && (
           // Fixed dark brown rather than `ink`: the tiles stay pastel in dark mode.
