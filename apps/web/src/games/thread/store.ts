@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { thread, threadGame, parseSeed, type ThreadPuzzle } from '@pb/engine';
+import { thread, threadGame, parseSeed, type ThreadHint, type ThreadPuzzle } from '@pb/engine';
 import type { BaseSnapshot } from '../../lib/persistence';
 
-const { openNeighbours, rowOf } = threadGame;
+const { openNeighbours, rowOf, nextThreadHint } = threadGame;
 
 export interface Snapshot extends BaseSnapshot {
   path: number[];
@@ -26,6 +26,8 @@ interface GameState {
   startedAt: string;
   completedAt: string | null;
   dirty: number;
+  hint: ThreadHint | null;
+  hintStep: number;
 
   load: (seed: string, snapshot: Snapshot | null, puzzleDate: string | null) => boolean;
   snapshot: () => Snapshot;
@@ -41,6 +43,10 @@ interface GameState {
   clearPath: () => void;
   pause: () => void;
   resume: () => void;
+  showHint: () => void;
+  setHintStep: (k: number) => void;
+  applyHint: () => void;
+  dismissHint: () => void;
 }
 
 export const useThread = create<GameState>((set, get) => {
@@ -63,7 +69,7 @@ export const useThread = create<GameState>((set, get) => {
       elapsedBase = fold();
       runningSince = null;
     }
-    set({ path, status, completedAt, elapsedBase, runningSince, dirty: s.dirty + 1, ...extra });
+    set({ path, status, completedAt, elapsedBase, runningSince, dirty: s.dirty + 1, hint: null, hintStep: 0, ...extra });
   }
 
   /**
@@ -93,7 +99,7 @@ export const useThread = create<GameState>((set, get) => {
     seed: null, puzzle: null, open: [], path: [], dragging: false,
     elapsedBase: 0, runningSince: null, backtracks: 0, rowBacktracks: [],
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(),
-    completedAt: null, dirty: 0,
+    completedAt: null, dirty: 0, hint: null, hintStep: 0,
 
     load: (seed, snap, puzzleDate) => {
       const parsed = parseSeed(seed);
@@ -102,7 +108,7 @@ export const useThread = create<GameState>((set, get) => {
       const open = openNeighbours(puzzle.n, new Set(puzzle.walls));
       // The path always begins on number 1; there is nowhere else it could.
       const fresh = [puzzle.waypoints[0]!];
-      const base = { seed, puzzle, open, dragging: false, dirty: 0 };
+      const base = { seed, puzzle, open, dragging: false, dirty: 0, hint: null, hintStep: 0 };
 
       if (snap && snap.v === 1 && snap.path.length > 0) {
         set({
@@ -202,5 +208,33 @@ export const useThread = create<GameState>((set, get) => {
       if (s.runningSince !== null || s.status !== 'in_progress' || !s.puzzle) return;
       set({ runningSince: Date.now() });
     },
+
+    showHint: () => {
+      const s = get();
+      if (!s.puzzle || s.status !== 'in_progress') return;
+      if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
+      const p = s.puzzle;
+      set({ hint: nextThreadHint(s.path, p.n, p.walls, p.waypoints, p.solution), hintStep: 0 });
+    },
+
+    setHintStep: (k) => {
+      const { hint } = get();
+      if (!hint) return;
+      set({ hintStep: Math.max(0, Math.min(hint.steps.length - 1, k)) });
+    },
+
+    /** Draws the line on, or backs it up to where it went wrong (counted as steps back). */
+    applyHint: () => {
+      const s = get();
+      if (!s.hint || !s.puzzle || s.status !== 'in_progress') return;
+      const a = s.hint.action;
+      if (a.kind === 'extend') { commit([...s.path, ...a.cells]); return; }
+      const keep = Math.max(1, a.keep);
+      const rowBacktracks = s.rowBacktracks.slice();
+      for (let k = keep; k < s.path.length; k++) rowBacktracks[rowOf(s.path[k]!, s.puzzle.n)]!++;
+      commit(s.path.slice(0, keep), { backtracks: s.backtracks + (s.path.length - keep), rowBacktracks });
+    },
+
+    dismissHint: () => set({ hint: null, hintStep: 0 }),
   };
 });

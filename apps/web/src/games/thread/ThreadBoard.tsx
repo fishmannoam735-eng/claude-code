@@ -8,6 +8,9 @@ export function ThreadBoard({ hidden }: { hidden: boolean }) {
   const puzzle = useThread((s) => s.puzzle);
   const path = useThread((s) => s.path);
   const status = useThread((s) => s.status);
+  const hint = useThread((s) => s.hint);
+  const hintStep = useThread((s) => s.hintStep);
+  const row = hidden ? undefined : hint?.steps[hintStep];
   const { beginAt, dragTo, endDrag } = useThread.getState();
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +76,20 @@ export function ThreadBoard({ hidden }: { hidden: boolean }) {
           <g key={`g${k}`} stroke="var(--color-line-minor)" strokeWidth={0.02}>
             <line x1={k + 1} y1={0} x2={k + 1} y2={n} />
             <line x1={0} y1={k + 1} x2={n} y2={k + 1} />
+          </g>
+        ))}
+
+        {/* the hint row being read: squares it talks about, and squares it rules out */}
+        {row && row.focus.filter((i) => !row.out?.includes(i)).map((i) => (
+          <rect key={`hf${i}`} x={colOf(i, n) + 0.06} y={rowOf(i, n) + 0.06} width={0.88} height={0.88} rx={0.12}
+            fill="var(--color-accent-soft)" stroke="var(--color-accent)" strokeWidth={0.06} />
+        ))}
+        {row?.out?.map((i) => (
+          <g key={`ho${i}`}>
+            <rect x={colOf(i, n) + 0.06} y={rowOf(i, n) + 0.06} width={0.88} height={0.88} rx={0.12}
+              fill="var(--color-danger-soft)" stroke="var(--color-danger)" strokeWidth={0.06} />
+            <path d={`M${colOf(i, n) + 0.3} ${rowOf(i, n) + 0.3}l0.4 0.4M${colOf(i, n) + 0.7} ${rowOf(i, n) + 0.3}l-0.4 0.4`}
+              stroke="var(--color-danger)" strokeWidth={0.08} strokeLinecap="round" />
           </g>
         ))}
 

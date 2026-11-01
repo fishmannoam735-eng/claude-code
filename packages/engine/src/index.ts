@@ -16,7 +16,7 @@ export type { CrownsPuzzle, CrownsHint, CrownsHintStep } from './games/crowns/in
 
 export * as threadGame from './games/thread/index.js';
 export { thread } from './games/thread/index.js';
-export type { ThreadPuzzle } from './games/thread/index.js';
+export type { ThreadPuzzle, ThreadHint, ThreadHintStep } from './games/thread/index.js';
 
 export * as quiltGame from './games/quilt/index.js';
 export { quilt } from './games/quilt/index.js';
