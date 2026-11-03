@@ -40,4 +40,5 @@ export {
 export { buildCandidates, countTilings, findTilings, maskOf, type Cand } from './solver.js';
 export type { Mask } from './mask.js';
 export { humanSolve, TECHNIQUES, BEYOND, REFUTE_MAX, type SolveOpts } from './techniques.js';
+export { nextQuiltHint, clueName, type QuiltHint, type QuiltHintStep, type QuiltHintAction } from './hint.js';
 export { MAX_SIDE, randomTiling, areaClues, weakenClues, rateQuilt, generateQuilt } from './generate.js';

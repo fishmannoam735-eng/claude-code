@@ -73,6 +73,8 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
   const dragFrom = useQuilt((s) => s.dragFrom);
   const anchor = useQuilt((s) => s.anchor);
   const dragTo = useQuilt((s) => s.dragTo);
+  const hint = useQuilt((s) => s.hint);
+  const hintStep = useQuilt((s) => s.hintStep);
   // Derived, not subscribed: a selector that builds a new array every render
   // never settles and loops React forever.
   const patches = useMemo(() => patchesOf(puzzle, owner), [puzzle, owner]);
@@ -165,6 +167,33 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
           <span className="absolute inset-[0.4cqw] rounded-[1.1cqw] border-[0.7cqw] border-dashed border-accent bg-accent/20" />
         </div>
       )}
+
+      {/* The hint row being read: the rest of the board dims, its squares light
+          up, and squares it rules out get a red cross. */}
+      {!hidden && hint && (() => {
+        const row = hint.steps[hintStep]!;
+        const focus = new Set(row.focus), out = new Set(row.out ?? []);
+        return (
+          <div className="pointer-events-none absolute inset-0 grid" style={cols} aria-hidden="true">
+            {Array.from({ length: n * n }, (_, i) => (
+              <div key={i} className="relative flex items-center justify-center">
+                {out.has(i) ? (
+                  <>
+                    <span className="absolute inset-[0.3cqw] rounded-[1.1cqw] bg-danger/25" style={{ boxShadow: 'inset 0 0 0 0.6cqw var(--color-danger)' }} />
+                    <svg viewBox="0 0 24 24" className="absolute h-[44%] w-[44%] text-danger" fill="none" stroke="currentColor" strokeWidth={3.4} strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </>
+                ) : focus.has(i) ? (
+                  <span className="absolute inset-[0.3cqw] rounded-[1.1cqw]" style={{ boxShadow: 'inset 0 0 0 0.7cqw var(--color-accent)' }} />
+                ) : (
+                  <span className="absolute inset-0 bg-[rgb(40_28_16/0.34)]" />
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       <div role="grid" aria-label="Quilt board" className="pointer-events-none absolute inset-0 grid" style={cols}>
         {Array.from({ length: n * n }, (_, i) => {

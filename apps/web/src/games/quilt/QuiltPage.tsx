@@ -29,6 +29,7 @@ export function QuiltPage() {
   const loadedSeed = useQuilt((s) => s.seed);
   const puzzle = useQuilt((s) => s.puzzle);
   const status = useQuilt((s) => s.status);
+  const hint = useQuilt((s) => s.hint);
   const running = useQuilt((s) => s.runningSince !== null);
   const canUndo = useQuilt((s) => s.undo.length > 0);
   const mistakes = useQuilt((s) => s.mistakes);
@@ -142,6 +143,8 @@ export function QuiltPage() {
         {paused && <PausedOverlay onResume={resume} />}
       </div>
 
+      {hint && !paused && <HintCard />}
+
       <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2" aria-live="polite">
         Cut the board into rectangles, one badge in each; the patch takes the
         badge's colour.{' '}
@@ -171,6 +174,7 @@ export function QuiltPage() {
           disabled={!canErase || status === 'solved'}
         ><Icon.Erase /></ActionButton>
         <ActionButton label="Clear" onClick={clearAll} disabled={!anyDrawn || status === 'solved'}><Icon.Sweep /></ActionButton>
+        <ActionButton label="Hint" onClick={() => useQuilt.getState().showHint()} active={hint !== null} disabled={status === 'solved' || paused}><Icon.Bulb /></ActionButton>
       </div>
 
       {status === 'solved' && (
@@ -185,6 +189,67 @@ export function QuiltPage() {
           difficulty={parsed.difficulty}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The hint, one short row at a time. Each row lights up the squares it talks
+ * about on the board, and the last row's button lays the patch down (or takes
+ * a wrong one off).
+ */
+function HintCard() {
+  const hint = useQuilt((s) => s.hint)!;
+  const step = useQuilt((s) => s.hintStep);
+  const setHintStep = useQuilt((s) => s.setHintStep);
+  const applyHint = useQuilt((s) => s.applyHint);
+  const dismissHint = useQuilt((s) => s.dismissHint);
+  const last = step >= hint.steps.length - 1;
+  return (
+    <div role="status" className="relative mt-3 rounded-2xl border border-accent bg-accent-soft px-3 pb-3 pt-3 text-[13px] leading-snug text-ink">
+      <button type="button" aria-label="Close hint" onClick={dismissHint} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-ink-2">
+        <Icon.Close width={16} height={16} />
+      </button>
+      <div className="mb-2 flex items-center gap-1.5 px-1 pr-8 text-[11px] font-bold uppercase tracking-wider text-accent-text">
+        <Icon.Bulb width={14} height={14} /> {hint.wrong ? 'Check this one' : hint.revealed ? 'A nudge' : 'Hint'}
+        {hint.steps.length > 1 && (
+          <span className="font-semibold normal-case tracking-normal text-ink-2">· step {step + 1} of {hint.steps.length}</span>
+        )}
+      </div>
+      <p className="min-h-[3.4em] rounded-xl bg-surface px-3 py-2 text-[14px] font-medium leading-snug text-ink shadow-sm">
+        {hint.steps[step]!.text}
+      </p>
+      {hint.steps.length > 1 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1" role="tablist" aria-label="Hint steps">
+          {hint.steps.map((_, k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={k === step}
+              aria-label={`Step ${k + 1}`}
+              onClick={() => setHintStep(k)}
+              className={`h-2.5 rounded-full transition-all ${k === step ? 'w-6 bg-accent' : k < step ? 'w-2.5 bg-accent/50' : 'w-2.5 bg-line-major'}`}
+            />
+          ))}
+        </div>
+      )}
+      <div className="mt-2.5 flex gap-2 px-1">
+        {step > 0 && (
+          <button type="button" onClick={() => setHintStep(step - 1)} className="rounded-xl border border-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-text">
+            Back
+          </button>
+        )}
+        {last ? (
+          <button type="button" onClick={applyHint} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            {hint.action.kind === 'clear' ? 'Take it off' : 'Lay the patch'}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setHintStep(step + 1)} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            Next
+          </button>
+        )}
+      </div>
     </div>
   );
 }

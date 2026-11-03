@@ -20,7 +20,7 @@ export type { ThreadPuzzle, ThreadHint, ThreadHintStep } from './games/thread/in
 
 export * as quiltGame from './games/quilt/index.js';
 export { quilt } from './games/quilt/index.js';
-export type { QuiltPuzzle } from './games/quilt/index.js';
+export type { QuiltPuzzle, QuiltHint, QuiltHintStep } from './games/quilt/index.js';
 
 /** Both games use a plain number[] board; import the game namespace for its own helpers. */
 export type Grid = number[];

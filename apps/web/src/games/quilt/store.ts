@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { quilt, quiltGame, parseSeed, type QuiltPuzzle } from '@pb/engine';
+import { quilt, quiltGame, parseSeed, type QuiltHint, type QuiltPuzzle } from '@pb/engine';
+import { CROWNS_PALETTE } from '../crowns/palette';
 import type { BaseSnapshot } from '../../lib/persistence';
 
-const { boundsOf, colOf, fitsClue, rectCells, rowOf } = quiltGame;
+const { boundsOf, clueName, colOf, fitsClue, nextQuiltHint, rectCells, rowOf } = quiltGame;
 
 /** Only the cells a move actually changed, so the undo stack stays small. */
 export interface Move { cells: number[]; prev: number[] }
@@ -46,6 +47,8 @@ interface GameState {
   startedAt: string;
   completedAt: string | null;
   dirty: number;
+  hint: QuiltHint | null;
+  hintStep: number;
 
   load: (seed: string, snapshot: Snapshot | null, puzzleDate: string | null) => boolean;
   snapshot: () => Snapshot;
@@ -63,6 +66,10 @@ interface GameState {
   pause: () => void;
   resume: () => void;
   moveSelection: (dr: number, dc: number) => void;
+  showHint: () => void;
+  setHintStep: (k: number) => void;
+  applyHint: () => void;
+  dismissHint: () => void;
 }
 
 export interface Span { r: number; c: number; w: number; h: number }
@@ -174,6 +181,7 @@ export const useQuilt = create<GameState>((set, get) => {
       // itself it is sticky, and a sticky notice masks every later hint.
       refused: 0,
       status, completedAt, elapsedBase, runningSince, dirty: s.dirty + 1,
+      hint: null, hintStep: 0,
     });
   }
 
@@ -182,7 +190,7 @@ export const useQuilt = create<GameState>((set, get) => {
     dragFrom: null, dragTo: null, pressed: null, moved: false, refused: 0,
     elapsedBase: 0, runningSince: null, mistakes: 0, rowMistakes: [],
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(),
-    completedAt: null, dirty: 0,
+    completedAt: null, dirty: 0, hint: null, hintStep: 0,
 
     load: (seed, snap, puzzleDate) => {
       const parsed = parseSeed(seed);
@@ -192,6 +200,7 @@ export const useQuilt = create<GameState>((set, get) => {
       const base = {
         seed, puzzle, selected: null, anchor: null,
         dragFrom: null, dragTo: null, pressed: null, moved: false, refused: 0, dirty: 0,
+        hint: null, hintStep: 0,
       };
       if (snap && snap.v === 1 && snap.owner.length === cells) {
         set({
@@ -280,7 +289,7 @@ export const useQuilt = create<GameState>((set, get) => {
       const owner = s.owner.slice();
       const cells: number[] = [], prev: number[] = [];
       owner.forEach((v, j) => { if (v === k) { cells.push(j); prev.push(v); owner[j] = -1; } });
-      set({ owner, undo: [...s.undo, { cells, prev }], dirty: s.dirty + 1 });
+      set({ owner, undo: [...s.undo, { cells, prev }], dirty: s.dirty + 1, hint: null, hintStep: 0 });
     },
 
     toggleAnchor: () => {
@@ -303,7 +312,7 @@ export const useQuilt = create<GameState>((set, get) => {
       if (!move || s.status !== 'in_progress') return;
       const owner = s.owner.slice();
       move.cells.forEach((i, k) => { owner[i] = move.prev[k]!; });
-      set({ owner, undo: s.undo.slice(0, -1), dirty: s.dirty + 1 });
+      set({ owner, undo: s.undo.slice(0, -1), dirty: s.dirty + 1, hint: null, hintStep: 0 });
     },
 
     /** Wipes the board and the undo stack together — a stack whose entries no
@@ -311,7 +320,7 @@ export const useQuilt = create<GameState>((set, get) => {
     clearAll: () => {
       const s = get();
       if (s.status !== 'in_progress' || !s.owner.some((k) => k >= 0)) return;
-      set({ owner: s.owner.map(() => -1), undo: [], anchor: null, dirty: s.dirty + 1 });
+      set({ owner: s.owner.map(() => -1), undo: [], anchor: null, dirty: s.dirty + 1, hint: null, hintStep: 0 });
     },
 
     pause: () => {
@@ -335,5 +344,39 @@ export const useQuilt = create<GameState>((set, get) => {
       const c = Math.min(n - 1, Math.max(0, colOf(cur, n) + dc));
       set({ selected: r * n + c });
     },
+
+    showHint: () => {
+      const s = get();
+      if (!s.puzzle || s.status !== 'in_progress') return;
+      if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
+      const p = s.puzzle;
+      const hint = nextQuiltHint(p.n, p.clues, s.owner, p.solution, (k) => {
+        const colour = CROWNS_PALETTE[k % CROWNS_PALETTE.length]!.name;
+        return clueName(p.clues[k]!).replace(/^the /, `the ${colour} `);
+      });
+      set({ hint, hintStep: 0, selected: null, anchor: null });
+    },
+
+    setHintStep: (k) => {
+      const { hint } = get();
+      if (!hint) return;
+      set({ hintStep: Math.max(0, Math.min(hint.steps.length - 1, k)) });
+    },
+
+    applyHint: () => {
+      const s = get();
+      if (!s.hint || !s.puzzle) return;
+      const a = s.hint.action;
+      const n = s.puzzle.n;
+      if (a.kind === 'place') {
+        commit(a.rect.r * n + a.rect.c, (a.rect.r + a.rect.h - 1) * n + (a.rect.c + a.rect.w - 1));
+      } else {
+        const at = s.owner.indexOf(a.clue);
+        if (at >= 0) get().eraseAt(at);
+      }
+      set({ hint: null, hintStep: 0 });
+    },
+
+    dismissHint: () => set({ hint: null, hintStep: 0 }),
   };
 });
