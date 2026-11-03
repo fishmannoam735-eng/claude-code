@@ -41,5 +41,6 @@ export {
   type Grid, type Edge,
 } from './grid.js';
 export { humanSolve, TECHNIQUES, BEYOND } from './techniques.js';
+export { nextEclipseHint, type EclipseHint, type EclipseHintStep, type EclipseHintAction } from './hint.js';
 export { countSolutions } from './solver.js';
 export { fillGrid, carve, rateGrid, generateEclipse } from './generate.js';

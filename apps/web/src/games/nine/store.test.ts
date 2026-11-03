@@ -86,6 +86,33 @@ describe('nine store', () => {
     expect(useNine.getState().grid[i]).toBe(2);
   });
 
+  it('digit-first mode: the pad switches the locked digit, never writes into the last cell', () => {
+    const p = useNine.getState().puzzle!;
+    const empties = p.givens.map((v, k) => (v === 0 ? k : -1)).filter((k) => k >= 0);
+    const [a, b] = empties;
+    const s = useNine.getState();
+    s.tapDigit(2);
+    s.selectCell(a!);
+    s.tapDigit(5);                    // switch, not a write into a
+    expect(useNine.getState().grid[a!]).toBe(2);
+    expect(useNine.getState().lockedDigit).toBe(5);
+    s.selectCell(b!);
+    expect(useNine.getState().grid[b!]).toBe(5);
+    s.tapDigit(5);                    // same digit again unlocks
+    expect(useNine.getState().lockedDigit).toBe(null);
+  });
+
+  it('tapping the selected cell again deselects it, so a digit can be locked on a phone', () => {
+    const i = firstEmpty();
+    const s = useNine.getState();
+    s.selectCell(i);
+    s.selectCell(i);
+    expect(useNine.getState().selected).toBe(null);
+    s.tapDigit(3);
+    expect(useNine.getState().lockedDigit).toBe(3);
+    expect(useNine.getState().grid[i]).toBe(0);
+  });
+
   it('counts a wrong digit as a mistake and attributes it to the box', () => {
     const p = useNine.getState().puzzle!;
     const i = p.givens.findIndex((v) => v === 0);

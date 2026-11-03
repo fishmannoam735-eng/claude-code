@@ -31,7 +31,7 @@ export type Clue =
 /** Which clue owns each cell, by index into the clue list. -1 = unclaimed. */
 export type Owner = number[];
 
-export const SIDES = { easy: 6, normal: 7, hard: 8 } as const;
+export const SIDES = { easy: 8, normal: 9, hard: 10 } as const;
 
 export const rowOf = (i: number, n: number): number => Math.floor(i / n);
 export const colOf = (i: number, n: number): number => i % n;
@@ -54,8 +54,12 @@ export const rectContains = (rect: Rect, i: number, n: number): boolean => {
   return r >= rect.r && r < rect.r + rect.h && c >= rect.c && c < rect.c + rect.w;
 };
 
-/** Does a rectangle satisfy what its clue actually says? */
+/**
+ * Does a rectangle satisfy what its clue actually says? A single tile is never
+ * a patch, whatever the clue: every patch covers at least two cells.
+ */
 export function fitsClue(clue: Clue, rect: Rect): boolean {
+  if (rect.w * rect.h < 2) return false;
   switch (clue.kind) {
     case 'area': return rect.w * rect.h === clue.area;
     case 'shape': return shapeOf(rect.w, rect.h) === clue.shape;
@@ -139,7 +143,7 @@ export function brokenClues(owner: Owner, clues: readonly Clue[], n: number): bo
     // An area clue is only broken once the patch overshoots; a short patch is
     // simply unfinished. A shape clue has no such halfway state.
     if (clue.kind === 'area' && mine.length > clue.area) bad[k] = true;
-    if (clue.kind === 'shape' && shapeOf(b.rect.w, b.rect.h) !== clue.shape) bad[k] = true;
+    if (clue.kind === 'shape' && !fitsClue(clue, b.rect)) bad[k] = true;
   });
 
   return bad;

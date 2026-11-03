@@ -10,10 +10,16 @@ import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
 import { ThreadBoard } from './ThreadBoard';
 import { useThread, type Snapshot } from './store';
+import { useGameSounds, type Sound } from '../../lib/sound';
+
+// The line ticks along as it grows, and brushes back as it retracts.
+const threadBoard = (s: { path: number[] }) => s.path;
+const threadSound = (a: number[], b: number[]): Sound => (b.length < a.length ? 'erase' : 'mark');
 
 export function ThreadPage() {
   const { seed = '' } = useParams();
   const navigate = useNavigate();
+  useGameSounds(useThread, threadBoard, threadSound);
   const parsed = useMemo(() => parseSeed(seed), [seed]);
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);
@@ -29,7 +35,8 @@ export function ThreadPage() {
   const dirty = useThread((s) => s.dirty);
   const snapshot = useThread((s) => s.snapshot);
   const elapsed = useThread((s) => s.elapsed);
-  const { stepBack, stepDir, clearPath, pause, resume } = useThread.getState();
+  const hint = useThread((s) => s.hint);
+  const { stepBack, stepDir, clearPath, pause, resume, showHint } = useThread.getState();
 
   const [streak, setStreak] = useState<number | null>(null);
   const [shared, setShared] = useState<string | null>(null);
@@ -121,6 +128,8 @@ export function ThreadPage() {
         {paused && <PausedOverlay onResume={resume} />}
       </div>
 
+      {hint && !paused && <HintCard />}
+
       <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
         Drag one line through every cell, meeting the numbers in order.
         <br />
@@ -130,6 +139,7 @@ export function ThreadPage() {
       <div className="mt-auto flex gap-2.5 pt-4">
         <ActionButton label="Step back" onClick={stepBack} disabled={path.length < 2 || status === 'solved'}><Icon.Undo /></ActionButton>
         <ActionButton label="Clear" onClick={clearPath} disabled={path.length < 2 || status === 'solved'}><Icon.Sweep /></ActionButton>
+        <ActionButton label="Hint" onClick={showHint} active={hint !== null} disabled={status === 'solved' || paused}><Icon.Bulb /></ActionButton>
       </div>
 
       {status === 'solved' && (
@@ -144,6 +154,69 @@ export function ThreadPage() {
           difficulty={parsed.difficulty}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The hint, one short row at a time. Each row lights up the squares it talks
+ * about on the board, and the last row's button draws the line on (or backs
+ * it up to where it went wrong).
+ */
+function HintCard() {
+  const hint = useThread((s) => s.hint)!;
+  const step = useThread((s) => s.hintStep);
+  const setHintStep = useThread((s) => s.setHintStep);
+  const applyHint = useThread((s) => s.applyHint);
+  const dismissHint = useThread((s) => s.dismissHint);
+  const last = step >= hint.steps.length - 1;
+  const a = hint.action;
+  const doIt = a.kind === 'backup' ? 'Back up' : a.cells.length === 1 ? 'Draw it' : `Draw ${a.cells.length} squares`;
+  return (
+    <div role="status" className="relative mt-3 rounded-2xl border border-accent bg-accent-soft px-3 pb-3 pt-3 text-[13px] leading-snug text-ink">
+      <button type="button" aria-label="Close hint" onClick={dismissHint} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-ink-2">
+        <Icon.Close width={16} height={16} />
+      </button>
+      <div className="mb-2 flex items-center gap-1.5 px-1 pr-8 text-[11px] font-bold uppercase tracking-wider text-accent-text">
+        <Icon.Bulb width={14} height={14} /> {hint.wrong ? 'Check this part' : hint.revealed ? 'A nudge' : 'Hint'}
+        {hint.steps.length > 1 && (
+          <span className="font-semibold normal-case tracking-normal text-ink-2">· step {step + 1} of {hint.steps.length}</span>
+        )}
+      </div>
+      <p className="min-h-[3.4em] rounded-xl bg-surface px-3 py-2 text-[14px] font-medium leading-snug text-ink shadow-sm">
+        {hint.steps[step]!.text}
+      </p>
+      {hint.steps.length > 1 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1" role="tablist" aria-label="Hint steps">
+          {hint.steps.map((_, k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={k === step}
+              aria-label={`Step ${k + 1}`}
+              onClick={() => setHintStep(k)}
+              className={`h-2.5 rounded-full transition-all ${k === step ? 'w-6 bg-accent' : k < step ? 'w-2.5 bg-accent/50' : 'w-2.5 bg-line-major'}`}
+            />
+          ))}
+        </div>
+      )}
+      <div className="mt-2.5 flex gap-2 px-1">
+        {step > 0 && (
+          <button type="button" onClick={() => setHintStep(step - 1)} className="rounded-xl border border-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-text">
+            Back
+          </button>
+        )}
+        {last ? (
+          <button type="button" onClick={applyHint} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            {doIt}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setHintStep(step + 1)} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            Next
+          </button>
+        )}
+      </div>
     </div>
   );
 }

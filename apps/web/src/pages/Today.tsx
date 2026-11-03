@@ -53,6 +53,10 @@ function progressOf(s: AnySnapshot): number {
 
 type Board = Record<GameId, Record<Difficulty, TileState>>;
 
+/** A game's daily task is done once any one of its difficulties is solved. */
+const isDone = (states: Record<Difficulty, TileState>): boolean =>
+  DIFFS.some((d) => states[d].status === 'solved');
+
 const emptyBoard = (): Board =>
   Object.fromEntries(GAMES.map((g) => [g.id, { easy: BLANK, normal: BLANK, hard: BLANK }])) as Board;
 
@@ -103,7 +107,7 @@ export function Today() {
     }).catch(() => { /* offline is fine */ });
   }, [userId, today]);
 
-  const solvedToday = GAMES.filter((g) => board[g.id].normal.status === 'solved').length;
+  const solvedToday = GAMES.filter((g) => isDone(board[g.id])).length;
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col px-4 pb-10">
@@ -132,8 +136,8 @@ export function Today() {
           {GAMES.map((g) => (
             <span
               key={g.id}
-              className={`h-1.5 w-1.5 rounded-full ${board[g.id].normal.status === 'solved' ? '' : 'bg-line-major'}`}
-              style={board[g.id].normal.status === 'solved' ? { backgroundColor: GAME_COLOR[g.id] } : undefined}
+              className={`h-1.5 w-1.5 rounded-full ${isDone(board[g.id]) ? '' : 'bg-line-major'}`}
+              style={isDone(board[g.id]) ? { backgroundColor: GAME_COLOR[g.id] } : undefined}
             />
           ))}
         </span>
@@ -182,11 +186,13 @@ export function Today() {
  * that shows its own state at a glance.
  */
 function GameCard({ def, today, states }: { def: GameDef; today: string; states: Record<Difficulty, TileState> }) {
-  // Summarise whichever board is actually under way — normal when it is one of
-  // them, since that is the canonical daily. Pinning the bar to normal made a
-  // card read "Hard · Resume" with no progress shown anywhere.
-  const shown = DIFFS.find((d) => states[d].status !== 'none' && d === 'normal')
-    ?? DIFFS.find((d) => states[d].status !== 'none')
+  // Solving any one difficulty completes the game for the day, so a solved
+  // board is summarised first (normal if several are). Otherwise show whichever
+  // board is under way, preferring normal.
+  const prefer = (ok: (d: Difficulty) => boolean): Difficulty | undefined =>
+    (ok('normal') ? 'normal' : DIFFS.find(ok));
+  const shown = prefer((d) => states[d].status === 'solved')
+    ?? prefer((d) => states[d].status !== 'none')
     ?? 'normal';
   const normal = states[shown];
   const total = TOTAL[def.id](shown);
