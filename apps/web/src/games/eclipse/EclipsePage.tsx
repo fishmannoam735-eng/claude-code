@@ -25,6 +25,7 @@ export function EclipsePage() {
   const load = useEclipse((s) => s.load);
   const loadedSeed = useEclipse((s) => s.seed);
   const status = useEclipse((s) => s.status);
+  const hint = useEclipse((s) => s.hint);
   const running = useEclipse((s) => s.runningSince !== null);
   const canUndo = useEclipse((s) => s.undo.length > 0);
   const grid = useEclipse((s) => s.grid);
@@ -128,6 +129,8 @@ export function EclipsePage() {
         {paused && <PausedOverlay onResume={resume} />}
       </div>
 
+      {hint && !paused && <HintCard />}
+
       <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
         Three of each per row and column, never three alike in a row.
         <br />
@@ -137,6 +140,7 @@ export function EclipsePage() {
       <div className="mt-auto flex gap-2.5 pt-4">
         <ActionButton label="Undo" onClick={undoMove} disabled={!canUndo || status === 'solved'}><Icon.Undo /></ActionButton>
         <ActionButton label="Erase" onClick={erase} disabled={status === 'solved'}><Icon.Erase /></ActionButton>
+        <ActionButton label="Hint" onClick={() => useEclipse.getState().showHint()} active={hint !== null} disabled={status === 'solved' || paused}><Icon.Bulb /></ActionButton>
       </div>
 
       {status === 'solved' && (
@@ -149,6 +153,69 @@ export function EclipsePage() {
           difficulty={parsed.difficulty}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The hint, one short row at a time. Each row lights up the squares it talks
+ * about on the board, and the last row's button puts the sun or moon down (or
+ * clears a wrong one).
+ */
+function HintCard() {
+  const hint = useEclipse((s) => s.hint)!;
+  const step = useEclipse((s) => s.hintStep);
+  const setHintStep = useEclipse((s) => s.setHintStep);
+  const applyHint = useEclipse((s) => s.applyHint);
+  const dismissHint = useEclipse((s) => s.dismissHint);
+  const last = step >= hint.steps.length - 1;
+  const a = hint.action;
+  const doIt = a.kind === 'clear' ? 'Clear it' : a.value === SUN ? 'Place the sun' : 'Place the moon';
+  return (
+    <div role="status" className="relative mt-3 rounded-2xl border border-accent bg-accent-soft px-3 pb-3 pt-3 text-[13px] leading-snug text-ink">
+      <button type="button" aria-label="Close hint" onClick={dismissHint} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-ink-2">
+        <Icon.Close width={16} height={16} />
+      </button>
+      <div className="mb-2 flex items-center gap-1.5 px-1 pr-8 text-[11px] font-bold uppercase tracking-wider text-accent-text">
+        <Icon.Bulb width={14} height={14} /> {hint.wrong ? 'Check this one' : hint.revealed ? 'A nudge' : 'Hint'}
+        {hint.steps.length > 1 && (
+          <span className="font-semibold normal-case tracking-normal text-ink-2">· step {step + 1} of {hint.steps.length}</span>
+        )}
+      </div>
+      <p className="min-h-[3.4em] rounded-xl bg-surface px-3 py-2 text-[14px] font-medium leading-snug text-ink shadow-sm">
+        {hint.steps[step]!.text}
+      </p>
+      {hint.steps.length > 1 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1" role="tablist" aria-label="Hint steps">
+          {hint.steps.map((_, k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={k === step}
+              aria-label={`Step ${k + 1}`}
+              onClick={() => setHintStep(k)}
+              className={`h-2.5 rounded-full transition-all ${k === step ? 'w-6 bg-accent' : k < step ? 'w-2.5 bg-accent/50' : 'w-2.5 bg-line-major'}`}
+            />
+          ))}
+        </div>
+      )}
+      <div className="mt-2.5 flex gap-2 px-1">
+        {step > 0 && (
+          <button type="button" onClick={() => setHintStep(step - 1)} className="rounded-xl border border-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-text">
+            Back
+          </button>
+        )}
+        {last ? (
+          <button type="button" onClick={applyHint} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            {doIt}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setHintStep(step + 1)} className="rounded-xl bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-ink">
+            Next
+          </button>
+        )}
+      </div>
     </div>
   );
 }

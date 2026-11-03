@@ -8,7 +8,7 @@ export type { NinePuzzle } from './games/nine/index.js';
 
 export * as eclipseGame from './games/eclipse/index.js';
 export { eclipse } from './games/eclipse/index.js';
-export type { EclipsePuzzle } from './games/eclipse/index.js';
+export type { EclipsePuzzle, EclipseHint, EclipseHintStep } from './games/eclipse/index.js';
 
 export * as crownsGame from './games/crowns/index.js';
 export { crowns } from './games/crowns/index.js';

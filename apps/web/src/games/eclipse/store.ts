@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { eclipse, eclipseGame, parseSeed, type EclipsePuzzle } from '@pb/engine';
+import { eclipse, eclipseGame, parseSeed, type EclipseHint, type EclipsePuzzle } from '@pb/engine';
 import type { BaseSnapshot } from '../../lib/persistence';
 
-const { SUN, MOON, CELLS, N } = eclipseGame;
+const { SUN, MOON, CELLS, N, nextEclipseHint } = eclipseGame;
 
 /** Tapping a cell walks empty → sun → moon → empty. */
 const nextValue = (v: number): number => (v === 0 ? SUN : v === SUN ? MOON : 0);
@@ -31,6 +31,8 @@ interface GameState {
   completedAt: string | null;
   lastPlaced: number | null;
   dirty: number;
+  hint: EclipseHint | null;
+  hintStep: number;
 
   load: (seed: string, snapshot: Snapshot | null, puzzleDate: string | null) => boolean;
   snapshot: () => Snapshot;
@@ -42,6 +44,10 @@ interface GameState {
   pause: () => void;
   resume: () => void;
   moveSelection: (dr: number, dc: number) => void;
+  showHint: () => void;
+  setHintStep: (k: number) => void;
+  applyHint: () => void;
+  dismissHint: () => void;
 }
 
 export const useEclipse = create<GameState>((set, get) => {
@@ -77,7 +83,7 @@ export const useEclipse = create<GameState>((set, get) => {
     set({
       grid, undo: [...s.undo, { i, pv, nv }], mistakes, rowMistakes,
       lastPlaced: nv === 0 ? null : i, status, completedAt, elapsedBase, runningSince,
-      dirty: s.dirty + 1,
+      dirty: s.dirty + 1, hint: null, hintStep: 0,
     });
   }
 
@@ -85,13 +91,13 @@ export const useEclipse = create<GameState>((set, get) => {
     seed: null, puzzle: null, grid: [], undo: [], selected: null,
     elapsedBase: 0, runningSince: null, mistakes: 0, rowMistakes: new Array<number>(N).fill(0),
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(), completedAt: null,
-    lastPlaced: null, dirty: 0,
+    lastPlaced: null, dirty: 0, hint: null, hintStep: 0,
 
     load: (seed, snap, puzzleDate) => {
       const parsed = parseSeed(seed);
       if (!parsed || parsed.game !== 'eclipse') return false;
       const puzzle = eclipse.generate(seed);
-      const base = { seed, puzzle, selected: null, lastPlaced: null, dirty: 0 };
+      const base = { seed, puzzle, selected: null, lastPlaced: null, dirty: 0, hint: null, hintStep: 0 };
       if (snap && snap.v === 1 && snap.grid.length === CELLS) {
         set({
           ...base,
@@ -146,7 +152,7 @@ export const useEclipse = create<GameState>((set, get) => {
       if (!move || s.status !== 'in_progress') return;
       const grid = s.grid.slice();
       grid[move.i] = move.pv;
-      set({ grid, undo: s.undo.slice(0, -1), selected: move.i, lastPlaced: null, dirty: s.dirty + 1 });
+      set({ grid, undo: s.undo.slice(0, -1), selected: move.i, lastPlaced: null, dirty: s.dirty + 1, hint: null, hintStep: 0 });
     },
 
     pause: () => {
@@ -168,6 +174,30 @@ export const useEclipse = create<GameState>((set, get) => {
       const c = Math.min(N - 1, Math.max(0, (cur % N) + dc));
       set({ selected: r * N + c });
     },
+
+    showHint: () => {
+      const s = get();
+      if (!s.puzzle || s.status !== 'in_progress') return;
+      if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
+      set({ hint: nextEclipseHint(s.puzzle.givens, s.grid, s.puzzle.edges, s.puzzle.solution), hintStep: 0, selected: null });
+    },
+
+    setHintStep: (k) => {
+      const { hint } = get();
+      if (!hint) return;
+      set({ hintStep: Math.max(0, Math.min(hint.steps.length - 1, k)) });
+    },
+
+    applyHint: () => {
+      const { hint } = get();
+      if (!hint) return;
+      const a = hint.action;
+      if (a.kind === 'place') place(a.cell, a.value);
+      else place(a.cell, 0);
+      set({ hint: null, hintStep: 0 });
+    },
+
+    dismissHint: () => set({ hint: null, hintStep: 0 }),
   };
 });
 

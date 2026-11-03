@@ -68,6 +68,10 @@ export function EclipseBoard({ hidden }: { hidden: boolean }) {
   const puzzle = useEclipse((s) => s.puzzle);
   const grid = useEclipse((s) => s.grid);
   const selected = useEclipse((s) => s.selected);
+  const hint = useEclipse((s) => s.hint);
+  const hintStep = useEclipse((s) => s.hintStep);
+  // The hint row being read lights its squares; the rest of the board dims.
+  const row = hidden ? undefined : hint?.steps[hintStep];
   const lastPlaced = useEclipse((s) => s.lastPlaced);
   const status = useEclipse((s) => s.status);
   const tapCell = useEclipse((s) => s.tapCell);
@@ -118,6 +122,7 @@ export function EclipseBoard({ hidden }: { hidden: boolean }) {
           conflict={!hidden && !!bad[i]}
           pop={lastPlaced === i}
           onTap={tapCell}
+          hint={!row ? 0 : row.out?.includes(i) ? 3 : row.focus.includes(i) ? 2 : 1}
         />
       ))}
       {status === 'solved' && <div className="pb-sweep pointer-events-none absolute inset-0 opacity-60" />}
@@ -128,6 +133,8 @@ export function EclipseBoard({ hidden }: { hidden: boolean }) {
 interface CellProps {
   i: number; value: number; given: boolean; selected: boolean;
   conflict: boolean; pop: boolean; onTap: (i: number) => void;
+  /** 0 no hint showing, 1 dimmed, 2 looked at, 3 flagged by the hint. */
+  hint: 0 | 1 | 2 | 3;
 }
 
 const Cell = memo(function Cell(p: CellProps) {
@@ -136,7 +143,8 @@ const Cell = memo(function Cell(p: CellProps) {
   const tile = tileStyle(
     p.conflict ? `${CONFLICT_TINT}, ${face}` : face,
     side,
-    p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
+    p.hint === 2 ? 'var(--color-accent)' : p.hint === 3 ? 'var(--color-danger)'
+      : p.selected ? 'var(--color-accent)' : p.conflict ? 'var(--color-danger)' : undefined,
   );
 
   const name = p.value === SUN ? 'sun' : p.value === MOON ? 'moon' : 'empty';
@@ -156,6 +164,12 @@ const Cell = memo(function Cell(p: CellProps) {
       <span className="absolute flex items-center justify-center" style={tile}>
         {p.value === SUN && <span className={`flex h-full w-full items-center justify-center ${pop}`}><Sun given={p.given} /></span>}
         {p.value === MOON && <span className={`flex h-full w-full items-center justify-center ${pop}`}><Moon given={p.given} /></span>}
+        {p.hint === 1 && <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[rgb(40_28_16/0.38)]" />}
+        {p.hint === 3 && p.value === 0 && (
+          <svg viewBox="0 0 24 24" className="pointer-events-none absolute h-[46%] w-[46%] text-danger" fill="none" stroke="currentColor" strokeWidth={3.4} strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        )}
       </span>
     </button>
   );
