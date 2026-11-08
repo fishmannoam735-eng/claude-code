@@ -30,6 +30,7 @@ export function WoodTray({ grid, gridRef, children, overlay }: {
   };
   return (
     <div
+      data-tray
       className="relative aspect-square w-full select-none [container-type:inline-size]"
       style={{
         backgroundImage: `url(${trayUrl})`, backgroundSize: '100% 100%',

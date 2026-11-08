@@ -161,7 +161,7 @@ const Cell = memo(function Cell(p: CellProps) {
       onContextMenu={(e) => e.preventDefault()}
       className="relative outline-none"
     >
-      <span className="absolute flex items-center justify-center" style={tile}>
+      <span data-tile className="absolute flex items-center justify-center" style={tile}>
         {p.value === SUN && <span className={`flex h-full w-full items-center justify-center ${pop}`}><Sun given={p.given} /></span>}
         {p.value === MOON && <span className={`flex h-full w-full items-center justify-center ${pop}`}><Moon given={p.given} /></span>}
         {p.hint === 1 && <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[rgb(40_28_16/0.38)]" />}

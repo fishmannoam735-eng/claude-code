@@ -189,3 +189,56 @@ button { font-family: inherit; }
   .pb-draw { stroke-dasharray: none; }
   .pb-confetti { display: none; }
 }
+
+/* ---------------------------------------------------------- winning */
+@keyframes pb-veil-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pb-fade-out { to { opacity: 0; transform: translateY(-14px) scale(0.96); } }
+@keyframes pb-plaque-in {
+  0% { opacity: 0; transform: translateY(40px) scale(0.6) rotate(-4deg); }
+  55% { opacity: 1; transform: translateY(-6px) scale(1.06) rotate(1deg); }
+  75% { transform: translateY(2px) scale(0.98) rotate(0); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes pb-crown-in {
+  0% { opacity: 0; transform: translate(-50%, -80px) scale(1.6) rotate(-20deg); }
+  60% { opacity: 1; transform: translate(-50%, 6px) scale(0.92) rotate(6deg); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0); }
+}
+@keyframes pb-rays-spin { from { transform: translate(-50%, -50%) rotate(0deg) scale(0.4); opacity: 0; } 15% { opacity: 1; } to { transform: translate(-50%, -50%) rotate(70deg) scale(1); opacity: 1; } }
+@keyframes pb-shine-text { from { background-position: 200% 0; } to { background-position: -100% 0; } }
+@keyframes pb-flow-run { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pb-ripple-out { 0% { transform: scale(0.8); opacity: 0.9; } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes pb-coin-flip { 0% { transform: scale(0.6); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+.pb-win-veil {
+  background: radial-gradient(70% 50% at 50% 38%, rgb(255 236 190 / 0.55), rgb(40 25 10 / 0.35));
+  animation: pb-veil-in 450ms ease-out 850ms both;
+}
+.pb-win-out { animation: pb-fade-out 480ms ease-in both !important; }
+.pb-rays {
+  border-radius: 9999px;
+  background: repeating-conic-gradient(from 0deg, rgb(255 222 140 / 0.55) 0deg 9deg, transparent 9deg 22deg);
+  mask-image: radial-gradient(closest-side, black 25%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, black 25%, transparent 100%);
+  animation: pb-rays-spin 3.2s cubic-bezier(.2,.7,.3,1) 900ms both;
+}
+.pb-plaque {
+  background: linear-gradient(160deg, #FFF3CF 0%, #F6D98A 38%, #E8B44A 70%, #C98A22 100%);
+  box-shadow: 0 5px 0 #9A6410, 0 22px 40px -10px rgb(80 45 5 / 0.6), inset 0 2px 0 rgb(255 255 255 / 0.75), inset 0 -3px 0 rgb(150 95 15 / 0.35);
+  border: 1px solid rgb(255 245 210 / 0.8);
+  animation: pb-plaque-in 720ms cubic-bezier(.2,.8,.2,1) 950ms both;
+}
+.pb-crown-drop { animation: pb-crown-in 700ms cubic-bezier(.2,.8,.2,1) 1200ms both; }
+.pb-word {
+  background: linear-gradient(100deg, #5A3606 0%, #5A3606 40%, #A8701A 50%, #5A3606 60%, #5A3606 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: pb-shine-text 1.8s ease-in-out 1500ms both;
+}
+.pb-flow { animation: pb-flow-run 2.4s linear infinite; }
+.pb-ripple { animation: pb-ripple-out 1.6s ease-out infinite; }
+.pb-coin { animation: pb-coin-flip 380ms cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) {
+  .pb-win-veil, .pb-rays, .pb-plaque, .pb-crown-drop, .pb-word, .pb-flow, .pb-ripple, .pb-coin { animation: none; }
+  .pb-crown-drop { transform: translateX(-50%); }
+}

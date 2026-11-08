@@ -4,6 +4,7 @@ import { fetchPlay, fetchStreaks } from '@pb/data';
 import { parseSeed } from '@pb/engine';
 import { Icon } from '../../components/Icon';
 import { ActionButton, GameHeader, PausedOverlay, SolvedCard } from '../../components/GameChrome';
+import { WinCelebration } from '../../components/Celebrate';
 import { localKey, usePersistence } from '../../lib/persistence';
 import { buildShareText, mistakeRows, share } from '../../lib/share';
 import { supabase, useSession } from '../../lib/session';
@@ -125,6 +126,7 @@ export function NinePage() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col px-[15px] pb-5 pt-3.5">
+      <WinCelebration game="nine" elapsed={elapsed} />
       <GameHeader
         title="Nine"
         parsed={parsed}

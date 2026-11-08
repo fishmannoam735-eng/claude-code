@@ -130,7 +130,7 @@ export function SolvedCard(props: {
   difficulty: Difficulty;
 }) {
   return (
-    <div className="mt-5 rounded-2xl border border-line-minor bg-raised p-5">
+    <div data-solved-card className="pb-rise mt-5 rounded-2xl border border-line-minor bg-raised p-5">
       <div className="flex items-center gap-2 text-success">
         <Icon.Check />
         <span className="text-lg font-bold">Solved</span>

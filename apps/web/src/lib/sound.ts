@@ -141,13 +141,21 @@ const SOUNDS: Record<Sound, () => void> = {
     tone('triangle', 300, 190, 0.8, 0.004, 0.2);
     hiss(700, 0.8, 0.25, 0.003, 0.07);
   },
-  // Solved: one knock, then a soft rising three-note chime.
+  // Solved: a knock, a rising arpeggio, a warm chord and a sparkle on top.
   solve: () => {
     SOUNDS.place();
-    [1046.5, 1318.5, 1568].forEach((f, k) => {
-      tone('sine', f, f, 0.38, 0.006, 1.3, 0.12 + k * 0.11);
-      tone('sine', f * 2.01, f * 2.01, 0.08, 0.006, 0.6, 0.12 + k * 0.11);
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+    notes.forEach((f, k) => {
+      tone('triangle', f, f, 0.32, 0.005, 0.5, 0.08 + k * 0.075);
+      tone('sine', f * 2.01, f * 2.01, 0.07, 0.005, 0.35, 0.08 + k * 0.075);
     });
+    [523.25, 659.25, 783.99, 1046.5].forEach((f) => {
+      tone('sine', f, f, 0.22, 0.02, 1.8, 0.5);
+    });
+    [2093, 2637, 3136, 2637, 3520].forEach((f, k) => {
+      tone('sine', vary(f, 0.01), vary(f, 0.01), 0.07, 0.002, 0.25, 0.62 + k * 0.06);
+    });
+    hiss(6000, 0.6, 0.35, 0.05, 0.6, 0.55);
   },
 };
 
@@ -172,7 +180,12 @@ export function useGameSounds<S extends Watched, B>(
 ): void {
   useEffect(() => store.subscribe((s, prev) => {
     if (s.seed !== prev.seed) return;
-    if (s.status === 'solved' && prev.status !== 'solved') { play('solve'); return; }
+    if (s.status === 'solved' && prev.status !== 'solved') {
+      // The win animation listens for this, so it plays exactly when the solve sound does.
+      window.dispatchEvent(new Event('pb:win'));
+      play('solve');
+      return;
+    }
     if ((s.mistakes ?? 0) > (prev.mistakes ?? 0)) { play('error'); return; }
     const a = board(prev), b = board(s);
     if (a === b) return;

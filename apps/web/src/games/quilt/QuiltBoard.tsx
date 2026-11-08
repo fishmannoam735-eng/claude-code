@@ -134,7 +134,7 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
       {/* Loose ivory tiles: the cloth before any patch is cut. */}
       <div className="pointer-events-none absolute inset-0 grid" style={cols} aria-hidden="true">
         {Array.from({ length: n * n }, (_, i) => (
-          <div key={i} className="relative"><span className="absolute" style={tileStyle(EMPTY.face, EMPTY.side)} /></div>
+          <div key={i} className="relative"><span data-tile className="absolute" style={tileStyle(EMPTY.face, EMPTY.side)} /></div>
         ))}
       </div>
 
@@ -149,7 +149,7 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
             className="pointer-events-none absolute"
             style={{ left: pc(p.rect.c), top: pc(p.rect.r), width: pc(p.rect.w), height: pc(p.rect.h) }}
           >
-            <span className="absolute" style={tileStyle(
+            <span data-tile className="absolute" style={tileStyle(
               p.broken ? `${CONFLICT_TINT}, ${face}` : face,
               side,
               p.broken ? 'var(--color-danger)' : undefined,

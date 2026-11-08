@@ -138,7 +138,7 @@ const Cell = memo(function Cell(p: CellProps) {
       onContextMenu={(e) => e.preventDefault()}
       className="relative outline-none"
     >
-      <span className="absolute flex items-center justify-center" style={tile}>
+      <span data-tile className="absolute flex items-center justify-center" style={tile}>
         {p.value === CROWN && (
           <img
             src={crownUrl} alt="" draggable={false}
