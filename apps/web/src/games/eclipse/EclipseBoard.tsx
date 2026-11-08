@@ -19,7 +19,7 @@ const GIVEN = {
 const CONFLICT_TINT = 'linear-gradient(rgb(180 80 60 / 0.32), rgb(180 80 60 / 0.32))';
 
 /** A glossy gold sun: a domed disc with eight short rays. */
-function Sun({ given }: { given: boolean }) {
+export function Sun({ given }: { given: boolean }) {
   const id = useId();
   return (
     <svg viewBox="0 0 24 24" className="h-[66%] w-[66%]" aria-hidden="true"
@@ -45,7 +45,7 @@ function Sun({ given }: { given: boolean }) {
 }
 
 /** A glossy silver-blue crescent moon. */
-function Moon({ given }: { given: boolean }) {
+export function Moon({ given }: { given: boolean }) {
   const id = useId();
   return (
     <svg viewBox="0 0 24 24" className="h-[62%] w-[62%]" aria-hidden="true"

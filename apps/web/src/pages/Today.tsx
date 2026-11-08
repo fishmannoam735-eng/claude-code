@@ -6,7 +6,9 @@ import {
   type Difficulty, type GameId,
 } from '@pb/engine';
 import { Icon } from '../components/Icon';
-import { GAME_COLOR, GAME_INK, GameTile } from '../components/GameMark';
+import { GAME_COLOR, GAME_INK, GameMark, GameTile } from '../components/GameMark';
+import { MiniBoard } from '../components/TodayArt';
+import crownUrl from '../games/crowns/assets/crown.webp';
 import { fmtDate, fmtTime, DIFF_LABEL } from '../lib/format';
 import { supabase, useSession } from '../lib/session';
 import { readJSON } from '../lib/storage';
@@ -110,82 +112,171 @@ export function Today() {
   const solvedToday = GAMES.filter((g) => isDone(board[g.id])).length;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col px-4 pb-10">
-      <header className="flex items-end justify-between pb-3 pt-5">
-        <div>
-          <div className="text-[22px] font-bold tracking-tight">Puzzle Break</div>
-          <div className="text-[13px] text-ink-2">{fmtDate(today)}</div>
-        </div>
-        <div
-          className="flex items-center gap-1.5 rounded-full border border-line-minor bg-accent-soft px-3 py-1.5 text-[13px] font-semibold text-accent-text"
-          title="Longest current streak"
-        >
-          <Icon.Flame width={14} height={14} />
-          <span>{streak ?? (sessionStatus === 'offline' ? '–' : '…')}</span>
-        </div>
-      </header>
+    <div className="relative min-h-dvh overflow-x-hidden">
+      {/* A warm wash behind the header, like light falling on the table. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
+        style={{ background: 'radial-gradient(120% 70% at 50% -10%, color-mix(in srgb, var(--color-accent) 22%, transparent) 0%, transparent 70%)' }}
+      />
+      <div className="relative mx-auto flex w-full max-w-[440px] flex-col px-4 pb-12">
+        <header className="pb-rise flex items-start justify-between pb-4 pt-6">
+          <div>
+            <div className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent-text">{fmtDate(today)}</div>
+            <h1 className="mt-1 flex items-center gap-2 text-[30px] font-bold leading-none tracking-[-0.02em]">
+              Puzzle Break
+              <img src={crownUrl} alt="" className="pb-float h-8 w-8" style={{ filter: 'drop-shadow(0 3px 3px rgb(90 60 10 / 0.35))' }} />
+            </h1>
+          </div>
+          <div
+            className="mt-1 flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-accent)_35%,transparent)] bg-raised px-3 py-1.5 text-[14px] font-bold text-accent-text shadow-[0_4px_12px_-6px_rgb(120_80_20/0.5)]"
+            title="Longest current streak"
+          >
+            <span className="pb-flicker inline-flex text-[#E07A1F]"><Icon.Flame width={19} height={19} strokeWidth={2.3} /></span>
+            <span className="tabular-nums">{streak ?? (sessionStatus === 'offline' ? '–' : '…')}</span>
+          </div>
+        </header>
 
-      {sessionStatus === 'offline' && (
-        <div className="mb-3 rounded-xl border border-line-minor bg-raised px-3 py-2 text-[12px] text-ink-2">
-          Playing offline — progress is saved on this device only.
-        </div>
-      )}
+        <TodayPlank board={board} solved={solvedToday} />
 
-      <div className="mb-3 flex items-center gap-2 text-[12px] text-ink-2">
-        <span className="flex gap-1">
-          {GAMES.map((g) => (
-            <span
-              key={g.id}
-              className={`h-1.5 w-1.5 rounded-full ${isDone(board[g.id]) ? '' : 'bg-line-major'}`}
-              style={isDone(board[g.id]) ? { backgroundColor: GAME_COLOR[g.id] } : undefined}
-            />
-          ))}
-        </span>
-        <span>{solvedToday} of {GAMES.length} done today</span>
-      </div>
+        {sessionStatus === 'offline' && (
+          <div className="pb-rise mt-3 flex items-center gap-2 rounded-xl bg-raised-2/70 px-3 py-2 text-[12px] text-ink-2" style={{ ['--d' as string]: '120ms' }}>
+            <span className="h-1.5 w-1.5 rounded-full bg-line-major" />
+            Playing offline. Progress is saved on this device.
+          </div>
+        )}
 
-      <div className="flex flex-col gap-3">
-        {GAMES.map((g) => <GameCard key={g.id} def={g} today={today} states={board[g.id]} />)}
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-line-minor bg-raised p-4">
-        <div className="text-[14px] font-bold">Practice</div>
-        <div className="mt-0.5 text-[12px] text-ink-2">
-          Unlimited puzzles, fresh every time. They don't count toward your streak.
-        </div>
-        <div className="mt-3 flex flex-col gap-2">
-          {GAMES.map((g) => (
-            <div key={g.id} className="flex items-center gap-2.5">
-              <GameTile game={g.id} className="h-7 w-7 rounded-lg" />
-              <span className="w-[58px] flex-shrink-0 text-[13px] font-semibold">{g.name}</span>
-              <div className="flex flex-grow gap-1.5">
-                {DIFFS.map((d) => (
-                  <Link
-                    key={d}
-                    to={`/practice/${g.id}/${d}`}
-                    className="flex h-8 flex-grow items-center justify-center rounded-lg border border-line-minor bg-raised-2 text-[12px] font-semibold text-ink-2"
-                  >
-                    {DIFF_LABEL[d]}
-                  </Link>
-                ))}
-              </div>
-            </div>
+        <div className="mt-5 flex flex-col gap-3.5">
+          {GAMES.map((g, k) => (
+            <GameCard key={g.id} def={g} today={today} states={board[g.id]} index={k} />
           ))}
         </div>
+
+        <Practice />
       </div>
     </div>
   );
 }
 
+const CHEERS = ['Five fresh boards are waiting.', 'Nice start. Keep it rolling.', 'Two down, three to go.', 'Past halfway. Lovely.', 'One more and the set is yours.', 'All five solved. See you tomorrow!'];
+
 /**
- * One card per game, with the day's three boards inside it.
- *
- * The three difficulties used to be three separate cards stacked below the
- * game, which meant every game appeared on this screen four times over and two
- * of the labels collided at 390px. Folding them in makes each game one object
- * that shows its own state at a glance.
+ * The day at a glance: five tiles set into a wooden plank, one per game. A
+ * solved game's tile turns its own glossy colour with a check on it.
  */
-function GameCard({ def, today, states }: { def: GameDef; today: string; states: Record<Difficulty, TileState> }) {
+function TodayPlank({ board, solved }: { board: Board; solved: number }) {
+  const all = solved === GAMES.length;
+  return (
+    <section
+      className="pb-rise pb-wood relative rounded-[20px] p-3.5"
+      style={{ ['--d' as string]: '60ms' }}
+      aria-label={`${solved} of ${GAMES.length} games done today`}
+    >
+      <div className="flex items-baseline justify-between px-0.5 pb-2.5 text-[#FFF4E2]">
+        <span className="text-[15px] font-bold tracking-tight [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">Today&apos;s set</span>
+        <span className="text-[13px] font-semibold tabular-nums opacity-90 [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">
+          {solved} of {GAMES.length} done
+        </span>
+      </div>
+      <div className="grid grid-cols-5 gap-[5px] rounded-[12px] p-[5px]" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }}>
+        {GAMES.map((g, k) => {
+          const done = isDone(board[g.id]);
+          const c = GAME_COLOR[g.id];
+          return (
+            <div
+              key={g.id}
+              className="pb-in relative aspect-square rounded-[9px]"
+              style={{
+                ['--d' as string]: `${180 + k * 70}ms`,
+                background: done
+                  ? `linear-gradient(140deg, color-mix(in srgb, ${c} 55%, white) 0%, ${c} 55%, color-mix(in srgb, ${c} 80%, black) 100%)`
+                  : 'linear-gradient(135deg, rgb(255 251 240) 0%, rgb(250 243 226) 45%, rgb(232 220 196) 100%)',
+                boxShadow: `0 3px 0 ${done ? `color-mix(in srgb, ${c} 60%, black)` : 'rgb(176 158 126)'}, inset 1px 1px 0 rgb(255 255 255 / 0.5)`,
+                marginBottom: 3,
+              }}
+              title={g.name}
+            >
+              <div className={`absolute inset-[22%] ${done ? 'text-white' : 'text-[#8C7A60] opacity-70'}`}>
+                <GameMark game={g.id} />
+              </div>
+              {done && (
+                <span
+                  className="pb-stamp absolute -right-1 -top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-success text-white ring-2 ring-[#5C4028]"
+                  style={{ ['--d' as string]: `${520 + k * 90}ms` }}
+                >
+                  <Icon.Check width={11} height={11} strokeWidth={3.4} />
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2.5 px-0.5 text-[12.5px] font-medium text-[#FBE9CC] [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">
+        {CHEERS[solved]}
+      </div>
+      {all && <Confetti />}
+    </section>
+  );
+}
+
+/** A one-off shower of little glossy tiles when the whole set is solved. */
+function Confetti() {
+  const colours = ['#C4B2EC', '#F7C4A8', '#AAE0C6', '#A0C8F0', '#F8E496', '#F0A094', '#ECA6D4'];
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-0" aria-hidden="true">
+      {Array.from({ length: 22 }, (_, i) => (
+        <span
+          key={i}
+          className="pb-confetti absolute top-2 block h-2.5 w-2.5 rounded-[3px]"
+          style={{
+            left: `${6 + ((i * 37) % 88)}%`,
+            background: colours[i % colours.length],
+            boxShadow: '0 1.5px 0 rgb(0 0 0 / 0.18)',
+            ['--dx' as string]: `${((i * 53) % 60) - 30}px`,
+            ['--rot' as string]: `${((i * 97) % 540) - 270}deg`,
+            ['--d' as string]: `${700 + (i % 6) * 70}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Practice() {
+  return (
+    <section className="pb-rise mt-7" style={{ ['--d' as string]: '520ms' }}>
+      <div className="flex items-baseline justify-between px-1">
+        <h2 className="text-[17px] font-bold tracking-tight">Practice</h2>
+        <span className="text-[12px] text-ink-2">Fresh every time, no streak</span>
+      </div>
+      <div className="mt-3 flex flex-col gap-2.5 rounded-[20px] border border-line-minor bg-raised p-3.5 shadow-[0_8px_24px_-14px_rgb(60_40_20/0.35)]">
+        {GAMES.map((g) => (
+          <div key={g.id} className="flex items-center gap-2.5">
+            <GameTile game={g.id} className="h-8 w-8 rounded-[10px]" />
+            <span className="w-[60px] flex-shrink-0 text-[13.5px] font-semibold">{g.name}</span>
+            <div className="flex flex-grow gap-1.5">
+              {DIFFS.map((d) => (
+                <Link
+                  key={d}
+                  to={`/practice/${g.id}/${d}`}
+                  className="pb-key flex h-8 flex-grow items-center justify-center rounded-[10px] bg-raised-2 text-[12px] font-semibold text-ink-2"
+                >
+                  {DIFF_LABEL[d]}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * One card per game: its board in a little wooden tray, what's happening with
+ * it today, and the three difficulties as tiles you press.
+ */
+function GameCard({ def, today, states, index }: { def: GameDef; today: string; states: Record<Difficulty, TileState>; index: number }) {
   // Solving any one difficulty completes the game for the day, so a solved
   // board is summarised first (normal if several are). Otherwise show whichever
   // board is under way, preferring normal.
@@ -194,53 +285,82 @@ function GameCard({ def, today, states }: { def: GameDef; today: string; states:
   const shown = prefer((d) => states[d].status === 'solved')
     ?? prefer((d) => states[d].status !== 'none')
     ?? 'normal';
-  const normal = states[shown];
+  const cur = states[shown];
   const total = TOTAL[def.id](shown);
-  const started = normal.status !== 'none';
+  const started = cur.status !== 'none';
+  const solved = cur.status === 'solved';
+  const delayMs = 200 + index * 80;
+  const pct = Math.min(100, Math.round((cur.placed / total) * 100));
 
   return (
     <div
-      className="rounded-[18px] border border-line-minor bg-raised p-4 shadow-[0_1px_2px_rgba(26,24,20,0.04)]"
-      style={{ ['--pb-game' as string]: GAME_COLOR[def.id] }}
+      className="pb-rise relative overflow-hidden rounded-[22px] border border-line-minor bg-raised p-3.5 shadow-[0_10px_28px_-16px_rgb(60_40_20/0.45)]"
+      style={{
+        ['--d' as string]: `${delayMs}ms`,
+        ['--card-d' as string]: `${delayMs}ms`,
+        ['--glint' as string]: `${2 + index * 1.3}s`,
+      }}
     >
-      <div className="flex items-center gap-3.5">
-        <GameTile game={def.id} />
-        <div className="flex flex-grow flex-col gap-0.5">
-          <span className="text-[17px] font-bold tracking-tight">{def.name}</span>
-          <span className="text-[12px] text-ink-2">{def.blurb}</span>
+      {/* The game's colour as a soft light in the card's corner. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full"
+        style={{ background: `radial-gradient(closest-side, color-mix(in srgb, ${GAME_COLOR[def.id]} 20%, transparent), transparent)` }}
+      />
+      <div className="relative flex items-center gap-3.5">
+        <Link
+          to={`/g/${makeSeed(def.id, today, shown)}`}
+          className="relative w-[92px] flex-shrink-0 transition-transform active:scale-[0.96]"
+          aria-label={`Play ${def.name}`}
+        >
+          <MiniBoard game={def.id} />
+          {solved && (
+            <span
+              className="pb-stamp absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-success text-white shadow-[0_3px_8px_rgb(30_60_40/0.45)] ring-[3px] ring-raised"
+              style={{ ['--d' as string]: `${delayMs + 650}ms` }}
+            >
+              <Icon.Check width={15} height={15} strokeWidth={3.2} />
+            </span>
+          )}
+        </Link>
+        <div className="flex min-w-0 flex-grow flex-col">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[19px] font-bold tracking-[-0.01em]">{def.name}</span>
+            {started && (
+              <span
+                className={`text-[13.5px] font-semibold tabular-nums ${solved ? 'text-success' : ''}`}
+                style={solved ? undefined : { color: GAME_INK[def.id] }}
+              >
+                {fmtTime(cur.elapsedMs)}
+              </span>
+            )}
+          </div>
+          <span className="mt-0.5 text-[12.5px] leading-snug text-ink-2">{def.blurb}</span>
+          <div className="mt-2.5">
+            <div className="h-[6px] w-full overflow-hidden rounded-full bg-raised-2 shadow-[inset_0_1px_1px_rgb(60_40_20/0.12)]">
+              {started && (
+                <div
+                  className="pb-grow h-full rounded-full"
+                  style={{
+                    width: `${solved ? 100 : Math.max(pct, 4)}%`,
+                    background: solved
+                      ? 'linear-gradient(90deg, var(--color-success), color-mix(in srgb, var(--color-success) 70%, white))'
+                      : `linear-gradient(90deg, ${GAME_COLOR[def.id]}, color-mix(in srgb, ${GAME_COLOR[def.id]} 65%, white))`,
+                    ['--d' as string]: `${delayMs + 300}ms`,
+                  }}
+                />
+              )}
+            </div>
+            <div className="mt-1 text-[11.5px] font-medium text-ink-2">
+              {solved ? `Solved on ${DIFF_LABEL[shown].toLowerCase()}`
+                : started ? `${cur.placed} of ${total} on ${DIFF_LABEL[shown].toLowerCase()}`
+                  : 'Not started yet'}
+            </div>
+          </div>
         </div>
-        {normal.status === 'solved' && (
-          <span className="flex items-center gap-1 text-[14px] font-semibold text-success">
-            <Icon.Check width={15} height={15} /> {fmtTime(normal.elapsedMs)}
-          </span>
-        )}
-        {normal.status === 'in_progress' && (
-          <span className="text-[14px] font-semibold tabular-nums" style={{ color: GAME_INK[def.id] }}>
-            {fmtTime(normal.elapsedMs)}
-          </span>
-        )}
       </div>
 
-      {started && (
-        <div className="mt-3">
-          <div className="h-[5px] w-full overflow-hidden rounded-full bg-raised-2">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${Math.min(100, Math.round((normal.placed / total) * 100))}%`,
-                backgroundColor: normal.status === 'solved' ? 'var(--color-success)' : GAME_COLOR[def.id],
-              }}
-            />
-          </div>
-          <div className="mt-1 text-[11.5px] text-ink-2">
-            {normal.status === 'solved'
-              ? `Solved on ${DIFF_LABEL[shown].toLowerCase()}`
-              : `${normal.placed} of ${total} on ${DIFF_LABEL[shown].toLowerCase()}`}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-3 flex gap-1.5">
+      <div className="relative mt-3.5 flex gap-2">
         {DIFFS.map((d) => (
           <DifficultyChip key={d} game={def.id} today={today} difficulty={d} state={states[d]} />
         ))}
@@ -250,32 +370,42 @@ function GameCard({ def, today, states }: { def: GameDef; today: string; states:
 }
 
 /**
- * A difficulty, its state, and a link to it. The chip carries a tint of the
- * game's colour once it has been touched, so a glance across the card says
- * which of the three you are part-way through — never colour alone, though:
- * the word under it says the same thing.
+ * A difficulty as a tile you press: ivory to play, the game's colour while
+ * under way, green once solved. The word on it says the same thing, so colour
+ * is never the only channel.
  */
 function DifficultyChip(props: { game: GameId; today: string; difficulty: Difficulty; state: TileState }) {
   const { game, today, difficulty, state } = props;
-  const touched = state.status !== 'none';
+  const c = GAME_COLOR[game];
   const label = state.status === 'solved' ? 'Solved'
     : state.status === 'in_progress' ? 'Resume'
       : 'Play';
+  const look: React.CSSProperties = state.status === 'solved'
+    ? {
+      // Fixed greens rather than the theme token, so the white text keeps its contrast in dark mode too.
+      background: 'linear-gradient(160deg, #6FA27D, #437A55)',
+      color: '#fff', ['--key-side' as string]: '#2E5A3C',
+    }
+    : state.status === 'in_progress'
+      ? {
+        background: `linear-gradient(160deg, color-mix(in srgb, ${c} 14%, var(--color-raised)), color-mix(in srgb, ${c} 26%, var(--color-raised)))`,
+        color: GAME_INK[game], ['--key-side' as string]: `color-mix(in srgb, ${c} 55%, var(--color-raised))`,
+      }
+      : {
+        background: 'linear-gradient(160deg, var(--color-raised), var(--color-raised-2))',
+        ['--key-side' as string]: 'var(--color-line-major)',
+      };
 
   return (
     <Link
       to={`/g/${makeSeed(game, today, difficulty)}`}
-      aria-label={`${DIFF_LABEL[difficulty]} — ${label}`}
-      className={`flex flex-grow basis-0 flex-col items-center justify-center gap-0.5 rounded-xl border py-2 ${
-        touched ? 'pb-game' : 'border-line-minor bg-raised-2'
-      }`}
-      style={touched ? { borderColor: GAME_COLOR[game] } : undefined}
+      aria-label={`${DIFF_LABEL[difficulty]}, ${label}`}
+      className="pb-key mb-[3px] flex h-[50px] flex-grow basis-0 flex-col items-center justify-center gap-[3px] rounded-[13px]"
+      style={look}
     >
-      <span className="text-[12.5px] font-bold leading-none">{DIFF_LABEL[difficulty]}</span>
-      <span
-        className="text-[10.5px] font-semibold leading-none"
-        style={{ color: state.status === 'solved' ? 'var(--color-success)' : touched ? GAME_INK[game] : 'var(--color-ink-2)' }}
-      >
+      <span className="text-[13px] font-bold leading-none">{DIFF_LABEL[difficulty]}</span>
+      <span className={`flex items-center gap-1 text-[10.5px] font-semibold leading-none ${state.status === 'none' ? 'text-ink-2' : 'opacity-90'}`}>
+        {state.status === 'solved' && <Icon.Check width={10} height={10} strokeWidth={3.4} />}
         {label}
       </span>
     </Link>
