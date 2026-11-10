@@ -19,7 +19,6 @@ const IVORY = {
  * the round joins become elbows of a bent tube.
  */
 const PIPE = {
-  shadow: 'rgb(60 36 14 / 0.38)',
   rim: '#14505C',
   body: '#2A8798',
   mid: '#4FB4C6',
@@ -125,9 +124,6 @@ export function ThreadBoard({ hidden }: { hidden: boolean }) {
 
       <svg viewBox={`0 0 ${n} ${n}`} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
         <defs>
-          <filter id={`${id}blur`} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation={0.05} />
-          </filter>
           <radialGradient id={`${id}gold`} cx="38%" cy="32%" r="72%">
             <stop offset="0" stopColor="#FFF6C4" />
             <stop offset="0.45" stopColor="#F2C14A" />
@@ -148,7 +144,8 @@ export function ThreadBoard({ hidden }: { hidden: boolean }) {
         {/* the pipe */}
         {!hidden && path.length > 1 && (
           <g>
-            <g transform="translate(0.05 0.09)" filter={`url(#${id}blur)`}>{route(PIPE.shadow, 0.44)}</g>
+            {/* A soft shadow from two plain strokes; a blur filter would repaint slowly on phones. */}
+            <g transform="translate(0.05 0.09)">{route('rgb(60 36 14 / 0.16)', 0.52)}{route('rgb(60 36 14 / 0.22)', 0.4)}</g>
             {route(PIPE.rim, 0.42)}
             {route(PIPE.body, 0.35)}
             <g transform="translate(-0.035 -0.035)">{route(PIPE.mid, 0.2)}</g>
@@ -183,7 +180,7 @@ export function ThreadBoard({ hidden }: { hidden: boolean }) {
           const lit = onPath.has(cell);
           return (
             <g key={`n${cell}`}>
-              <circle cx={x + 0.03} cy={y + 0.06} r={0.31} fill="rgb(40 24 10 / 0.35)" filter={`url(#${id}blur)`} />
+              <circle cx={x + 0.03} cy={y + 0.06} r={0.33} fill="rgb(40 24 10 / 0.25)" />
               <circle
                 key={lit ? 'lit' : 'dark'}
                 cx={x} cy={y} r={0.3}
