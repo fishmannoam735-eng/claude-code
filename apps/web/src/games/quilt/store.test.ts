@@ -50,6 +50,27 @@ describe('quilt store', () => {
     expect(st().patches()[0]!.broken).toBe(false);
   });
 
+  it('picks a drawn patch up by its far corner, so a drag stretches it', () => {
+    const { first, last } = solvedRect(0);
+    drag(first, last);
+    const drawn = owner().slice();
+    // Press on the patch's last cell, wander off and come back: the patch is
+    // anchored at its opposite corner, so it ends up exactly as it was.
+    st().beginAt(last);
+    expect(st().dragFrom).toBe(first);
+    st().dragOver(first);
+    st().dragOver(last);
+    st().endDrag();
+    expect(owner()).toEqual(drawn);
+  });
+
+  it('still rubs a patch out with a tap that never moves', () => {
+    const { first, last } = solvedRect(0);
+    drag(first, last);
+    drag(last, last);
+    expect(owner().some((k) => k === 0)).toBe(false);
+  });
+
   /**
    * The rule the whole game rests on: one clue per patch. A drag spanning two
    * of them has no sensible reading, so it must change nothing at all rather

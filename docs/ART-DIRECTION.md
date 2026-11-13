@@ -143,6 +143,23 @@ channel, not the only one:
   top of the fill.
 - Region borders always drawn, never implied by a colour change alone.
 
+Crowns has since moved to its own look: a wooden tray (a Kling render) packed
+with glossy pastel tiles and gold crowns, palette in
+`apps/web/src/games/crowns/palette.ts`. Seams are the same width everywhere,
+as in the approved render (wider seams at region edges read as uneven spacing),
+so on this board region identity rests on colour alone. The per-region
+pattern toggle above is the fallback still to build.
+
+Eclipse sits in the same tray (`components/WoodTray.tsx` holds the tray and
+the tile style both games share): ivory tiles for entered cells, sand for
+givens, a glossy gold sun and silver-blue moon, and the = / × clues as small
+dark wooden chips on the seams.
+
+Quilt uses the tray too, LinkedIn Patches style: every clue is a pastel badge
+(round with a number for a size, a square, wide or tall chip for a shape, a
+"?" for any rectangle), and the patch drawn around it becomes one glossy
+piece in that badge's colour. The old hatched region palette is gone.
+
 Nine avoids this entirely — digits carry the information.
 
 ### Type

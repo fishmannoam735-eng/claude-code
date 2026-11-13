@@ -38,5 +38,6 @@ export {
   type Grid, type Regions,
 } from './grid.js';
 export { humanSolve, TECHNIQUES, BEYOND } from './techniques.js';
+export { nextCrownsHint, type CrownsHint, type CrownsHintStep, type CrownsHintAction } from './hint.js';
 export { countSolutions, findSolutions } from './solver.js';
 export { placeCrowns, growRegions, refineRegions, rateRegions, generateCrowns } from './generate.js';

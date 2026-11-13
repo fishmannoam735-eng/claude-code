@@ -3,6 +3,7 @@ import { upsertPlay, type Json } from '@pb/data';
 import { parseSeed, type GameId } from '@pb/engine';
 import { supabase, useSession } from './session';
 import { writeJSON } from './storage';
+import { readAssists } from './assists';
 
 export const localKey = (gameId: GameId, seed: string): string => `pb:${gameId}:${seed}`;
 
@@ -50,6 +51,8 @@ export function usePersistence<S extends BaseSnapshot>(opts: {
         state: snap as unknown as Json,
         duration_ms: snap.elapsedMs,
         mistakes: snap.mistakes,
+        hints: readAssists(seed).hints,
+        fills: readAssists(seed).fills,
         completed_at: snap.completedAt,
       });
     } catch (e) {

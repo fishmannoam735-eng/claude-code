@@ -97,6 +97,10 @@ export type Database = {
       }
       plays: {
         Row: {
+          contest: boolean
+          fills: number
+          hints: number
+          score: number | null
           completed_at: string | null
           difficulty: Database["public"]["Enums"]["difficulty"]
           duration_ms: number | null
@@ -115,6 +119,10 @@ export type Database = {
           validated: boolean
         }
         Insert: {
+          contest?: boolean
+          fills?: number
+          hints?: number
+          score?: number | null
           completed_at?: string | null
           difficulty: Database["public"]["Enums"]["difficulty"]
           duration_ms?: number | null
@@ -133,6 +141,10 @@ export type Database = {
           validated?: boolean
         }
         Update: {
+          contest?: boolean
+          fills?: number
+          hints?: number
+          score?: number | null
           completed_at?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty"]
           duration_ms?: number | null
@@ -162,18 +174,27 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar: number
+          nickname: string | null
+          transfer_hash: string | null
           created_at: string
           handle: string | null
           id: string
           is_anonymous: boolean
         }
         Insert: {
+          avatar?: number
+          nickname?: string | null
+          transfer_hash?: string | null
           created_at?: string
           handle?: string | null
           id: string
           is_anonymous?: boolean
         }
         Update: {
+          avatar?: number
+          nickname?: string | null
+          transfer_hash?: string | null
           created_at?: string
           handle?: string | null
           id?: string
@@ -218,7 +239,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_transfer_code: { Args: { code: string }; Returns: string }
+      contest_stats: { Args: { p_today?: string }; Returns: Json }
+      leaderboard: {
+        Args: { p_game?: Database["public"]["Enums"]["game_id"]; p_limit?: number; p_period: string; p_today?: string }
+        Returns: { avatar: number; hintless: number; is_me: boolean; nickname: string; rank: number; score: number; solves: number; total_ms: number }[]
+      }
+      make_transfer_code: { Args: Record<PropertyKey, never>; Returns: string }
+      my_stats: { Args: { p_today?: string }; Returns: Json }
+      score_play: {
+        Args: { d: Database["public"]["Enums"]["difficulty"]; fills: number; g: Database["public"]["Enums"]["game_id"]; hints: number; mistakes: number; ms: number }
+        Returns: number
+      }
     }
     Enums: {
       difficulty: "easy" | "normal" | "hard"

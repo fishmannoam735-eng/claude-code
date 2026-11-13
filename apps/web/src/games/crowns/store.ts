@@ -1,13 +1,16 @@
 import { create } from 'zustand';
-import { crowns, crownsGame, parseSeed, type CrownsPuzzle } from '@pb/engine';
+import { noteHint } from '../../lib/assists';
+import { crowns, crownsGame, parseSeed, type CrownsHint, type CrownsPuzzle } from '@pb/engine';
+import { crownsRegionName } from './palette';
 import type { BaseSnapshot } from '../../lib/persistence';
 
-const { EMPTY, MARK, CROWN, CELLS, N, rowOf, colOf } = crownsGame;
+const { EMPTY, MARK, CROWN, CELLS, N, rowOf, colOf, nextCrownsHint } = crownsGame;
 
 /** Tapping a cell walks empty → mark → crown → empty. */
 const nextValue = (v: number): number => (v === EMPTY ? MARK : v === MARK ? CROWN : EMPTY);
 
-export interface Move { i: number; pv: number; nv: number }
+/** One change; `more` holds the rest of a change made in one go (a hint's ✕s), undone together. */
+export interface Move { i: number; pv: number; nv: number; more?: { i: number; pv: number; nv: number }[] }
 
 export interface Snapshot extends BaseSnapshot {
   grid: number[];
@@ -31,6 +34,8 @@ interface GameState {
   completedAt: string | null;
   lastPlaced: number | null;
   dirty: number;
+  hint: CrownsHint | null;
+  hintStep: number;
 
   load: (seed: string, snapshot: Snapshot | null, puzzleDate: string | null) => boolean;
   snapshot: () => Snapshot;
@@ -43,6 +48,10 @@ interface GameState {
   pause: () => void;
   resume: () => void;
   moveSelection: (dr: number, dc: number) => void;
+  showHint: () => void;
+  setHintStep: (k: number) => void;
+  applyHint: () => void;
+  dismissHint: () => void;
 }
 
 export const useCrowns = create<GameState>((set, get) => {
@@ -82,20 +91,33 @@ export const useCrowns = create<GameState>((set, get) => {
       grid, undo: [...s.undo, { i, pv, nv }], mistakes, rowMistakes,
       lastPlaced: nv === CROWN ? i : null,
       status, completedAt, elapsedBase, runningSince, dirty: s.dirty + 1,
+      hint: null, hintStep: 0,
     });
+  }
+
+  /** Several ✕s at once, as one undo step. */
+  function markAll(cells: number[]): void {
+    const s = get();
+    if (!s.puzzle || s.status !== 'in_progress') return;
+    const grid = s.grid.slice();
+    const changes = cells.filter((i) => grid[i] === EMPTY).map((i) => ({ i, pv: EMPTY, nv: MARK }));
+    if (!changes.length) { set({ hint: null, hintStep: 0 }); return; }
+    for (const c of changes) grid[c.i] = MARK;
+    const [first, ...more] = changes;
+    set({ grid, undo: [...s.undo, { ...first!, more }], lastPlaced: null, dirty: s.dirty + 1, hint: null, hintStep: 0 });
   }
 
   return {
     seed: null, puzzle: null, grid: [], undo: [], selected: null,
     elapsedBase: 0, runningSince: null, mistakes: 0, rowMistakes: new Array<number>(N).fill(0),
     status: 'in_progress', puzzleDate: null, startedAt: new Date().toISOString(), completedAt: null,
-    lastPlaced: null, dirty: 0,
+    lastPlaced: null, dirty: 0, hint: null, hintStep: 0,
 
     load: (seed, snap, puzzleDate) => {
       const parsed = parseSeed(seed);
       if (!parsed || parsed.game !== 'crowns') return false;
       const puzzle = crowns.generate(seed);
-      const base = { seed, puzzle, selected: null, lastPlaced: null, dirty: 0 };
+      const base = { seed, puzzle, selected: null, lastPlaced: null, dirty: 0, hint: null, hintStep: 0 };
       if (snap && snap.v === 1 && snap.grid.length === CELLS) {
         set({
           ...base,
@@ -147,7 +169,8 @@ export const useCrowns = create<GameState>((set, get) => {
       if (!move || s.status !== 'in_progress') return;
       const grid = s.grid.slice();
       grid[move.i] = move.pv;
-      set({ grid, undo: s.undo.slice(0, -1), selected: move.i, lastPlaced: null, dirty: s.dirty + 1 });
+      for (const m of move.more ?? []) grid[m.i] = m.pv;
+      set({ grid, undo: s.undo.slice(0, -1), selected: move.i, lastPlaced: null, dirty: s.dirty + 1, hint: null, hintStep: 0 });
     },
 
     /**
@@ -157,7 +180,7 @@ export const useCrowns = create<GameState>((set, get) => {
     clearMarks: () => {
       const s = get();
       if (s.status !== 'in_progress' || !s.grid.some((v) => v === MARK)) return;
-      set({ grid: s.grid.map((v) => (v === MARK ? EMPTY : v)), undo: [], dirty: s.dirty + 1 });
+      set({ grid: s.grid.map((v) => (v === MARK ? EMPTY : v)), undo: [], dirty: s.dirty + 1, hint: null, hintStep: 0 });
     },
 
     pause: () => {
@@ -179,6 +202,32 @@ export const useCrowns = create<GameState>((set, get) => {
       const c = Math.min(N - 1, Math.max(0, colOf(cur) + dc));
       set({ selected: r * N + c });
     },
+
+    showHint: () => {
+      const s = get();
+      if (!s.puzzle || s.status !== 'in_progress') return;
+      if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
+      const hint = nextCrownsHint(s.grid, s.puzzle.regions, s.puzzle.solution, crownsRegionName);
+      noteHint(s.seed, s.grid);
+      set({ hint, hintStep: 0, selected: null });
+    },
+
+    setHintStep: (k) => {
+      const { hint } = get();
+      if (!hint) return;
+      set({ hintStep: Math.max(0, Math.min(hint.steps.length - 1, k)) });
+    },
+
+    applyHint: () => {
+      const { hint } = get();
+      if (!hint) return;
+      const a = hint.action;
+      if (a.kind === 'crown') place(a.cell, CROWN);
+      else if (a.kind === 'clear') place(a.cells[0]!, EMPTY);
+      else markAll(a.cells);
+    },
+
+    dismissHint: () => set({ hint: null, hintStep: 0 }),
   };
 });
 
