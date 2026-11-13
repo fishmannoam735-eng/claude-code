@@ -241,3 +241,17 @@ button { font-family: inherit; }
   .pb-crown-drop { transform: translateX(-50%); }
   .pb-rays { transform: translate(-50%, -50%); }
 }
+
+/* ---------------------------------------------------------- contest */
+.pb-plaque-sm {
+  background: linear-gradient(160deg, #FFF3CF 0%, #F6D98A 38%, #E8B44A 70%, #C98A22 100%);
+  box-shadow: 0 3px 0 #9A6410, inset 0 1px 0 rgb(255 255 255 / 0.75);
+}
+@keyframes pb-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.pb-grow-y { transform-origin: bottom; animation: pb-grow-y 700ms cubic-bezier(.2,.8,.2,1) var(--d, 0ms) both; }
+@keyframes pb-podium { from { transform: translateY(100%); } to { transform: none; } }
+.pb-podium { animation: pb-podium 700ms cubic-bezier(.2,.8,.2,1) var(--d, 0ms) both; }
+.pb-medal-1 { background: linear-gradient(160deg, #FFF3CF 0%, #F6D98A 38%, #E8B44A 70%, #C98A22 100%); box-shadow: 0 4px 0 #9A6410, inset 0 2px 0 rgb(255 255 255 / 0.75); color: #4E2E04; }
+.pb-medal-2 { background: linear-gradient(160deg, #FFFFFF 0%, #E4E7EC 40%, #C3C8D1 75%, #9AA1AD 100%); box-shadow: 0 4px 0 #737A86, inset 0 2px 0 rgb(255 255 255 / 0.8); color: #2E333B; }
+.pb-medal-3 { background: linear-gradient(160deg, #FBE1C8 0%, #E9B48A 40%, #CD8A55 75%, #A9683A 100%); box-shadow: 0 4px 0 #7C4A26, inset 0 2px 0 rgb(255 255 255 / 0.6); color: #3E220E; }
+@media (prefers-reduced-motion: reduce) { .pb-grow-y, .pb-podium { animation: none; } }

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { noteHint } from '../../lib/assists';
 import { eclipse, eclipseGame, parseSeed, type EclipseHint, type EclipsePuzzle } from '@pb/engine';
 import type { BaseSnapshot } from '../../lib/persistence';
 
@@ -179,6 +180,7 @@ export const useEclipse = create<GameState>((set, get) => {
       const s = get();
       if (!s.puzzle || s.status !== 'in_progress') return;
       if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
+      noteHint(s.seed, s.grid);
       set({ hint: nextEclipseHint(s.puzzle.givens, s.grid, s.puzzle.edges, s.puzzle.solution), hintStep: 0, selected: null });
     },
 

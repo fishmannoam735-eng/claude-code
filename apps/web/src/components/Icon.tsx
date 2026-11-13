@@ -22,5 +22,8 @@ export const Icon = {
   Fill: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" strokeWidth="2.6" /></svg>,
   Close: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>,
   Sound: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></svg>,
+  Trophy: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M8 4h8v5a4 4 0 0 1-8 0V4z" /><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" /><path d="M12 13v4M8.5 20h7M10 17h4" /></svg>,
+  User: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><circle cx="12" cy="8" r="4" /><path d="M4 20a8 8 0 0 1 16 0" /></svg>,
+  Chart: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></svg>,
   Mute: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M17 9.5l5 5M22 9.5l-5 5" /></svg>,
 };

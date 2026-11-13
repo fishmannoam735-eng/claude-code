@@ -146,13 +146,14 @@ export function ThreadPage() {
 
       {status === 'solved' && (
         <SolvedCard
+          seed={seed}
+          scoreMistakes={0}
           elapsedMs={elapsed()}
           mistakes={backtracks}
           mistakeWord="step back"
           streak={streak}
           shareLabel={shared}
           onShare={() => { void onShare(); }}
-          practiceHref={parsed.isDaily ? null : `/practice/thread/${parsed.difficulty}`}
           difficulty={parsed.difficulty}
         />
       )}

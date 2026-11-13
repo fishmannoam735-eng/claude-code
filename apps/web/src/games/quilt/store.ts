@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { noteHint } from '../../lib/assists';
 import { quilt, quiltGame, parseSeed, type QuiltHint, type QuiltPuzzle } from '@pb/engine';
 import { CROWNS_PALETTE } from '../crowns/palette';
 import type { BaseSnapshot } from '../../lib/persistence';
@@ -350,6 +351,7 @@ export const useQuilt = create<GameState>((set, get) => {
       if (!s.puzzle || s.status !== 'in_progress') return;
       if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
       const p = s.puzzle;
+      noteHint(s.seed, s.owner);
       const hint = nextQuiltHint(p.n, p.clues, s.owner, p.solution, (k) => {
         const colour = CROWNS_PALETTE[k % CROWNS_PALETTE.length]!.name;
         return clueName(p.clues[k]!).replace(/^the /, `the ${colour} `);

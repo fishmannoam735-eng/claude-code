@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { noteHint } from '../../lib/assists';
 import { crowns, crownsGame, parseSeed, type CrownsHint, type CrownsPuzzle } from '@pb/engine';
 import { crownsRegionName } from './palette';
 import type { BaseSnapshot } from '../../lib/persistence';
@@ -207,6 +208,7 @@ export const useCrowns = create<GameState>((set, get) => {
       if (!s.puzzle || s.status !== 'in_progress') return;
       if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
       const hint = nextCrownsHint(s.grid, s.puzzle.regions, s.puzzle.solution, crownsRegionName);
+      noteHint(s.seed, s.grid);
       set({ hint, hintStep: 0, selected: null });
     },
 

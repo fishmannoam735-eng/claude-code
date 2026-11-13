@@ -160,12 +160,13 @@ export function NinePage() {
 
       {status === 'solved' && (
         <SolvedCard
+          seed={seed}
+          scoreMistakes={mistakes}
           elapsedMs={elapsed()}
           mistakes={mistakes}
           streak={streak}
           shareLabel={shared}
           onShare={() => { void onShare(); }}
-          practiceHref={parsed.isDaily ? null : `/practice/nine/${parsed.difficulty}`}
           difficulty={parsed.difficulty}
         />
       )}

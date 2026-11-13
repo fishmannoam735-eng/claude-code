@@ -181,13 +181,14 @@ export function QuiltPage() {
 
       {status === 'solved' && (
         <SolvedCard
+          seed={seed}
+          scoreMistakes={mistakes}
           elapsedMs={elapsed()}
           mistakes={mistakes}
           mistakeWord="misfit"
           streak={streak}
           shareLabel={shared}
           onShare={() => { void onShare(); }}
-          practiceHref={parsed.isDaily ? null : `/practice/quilt/${parsed.difficulty}`}
           difficulty={parsed.difficulty}
         />
       )}

@@ -147,11 +147,12 @@ export function EclipsePage() {
 
       {status === 'solved' && (
         <SolvedCard
+          seed={seed}
+          scoreMistakes={0}
           elapsedMs={elapsed()}
           streak={streak}
           shareLabel={shared}
           onShare={() => { void onShare(); }}
-          practiceHref={parsed.isDaily ? null : `/practice/eclipse/${parsed.difficulty}`}
           difficulty={parsed.difficulty}
         />
       )}

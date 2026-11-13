@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { noteFill, noteHint } from '../../lib/assists';
 import { nine, nineGame, parseSeed, type NinePuzzle } from '@pb/engine';
 
 /** One undoable action. Placing a digit also strips that digit from peers' notes. */
@@ -262,6 +263,7 @@ export const useNine = create<GameState>((set, get) => {
     showHint: () => {
       const s = get();
       if (!s.puzzle || s.status !== 'in_progress') return;
+      noteHint(s.seed, s.grid);
       // A wrong digit poisons every deduction after it, so that comes first.
       const bad = s.grid.findIndex((v, i) => v !== 0 && s.puzzle!.givens[i] === 0 && v !== s.puzzle!.solution[i]);
       if (bad >= 0) {
@@ -309,6 +311,7 @@ export const useNine = create<GameState>((set, get) => {
         if (s.grid[i] === 0 && notes[i] !== cand[i]) { changed.push([i, notes[i]!]); notes[i] = cand[i]!; }
       }
       if (!changed.length) return;
+      noteFill(s.seed);
       // One undo step for the whole fill: the first cell carries the move and
       // the rest ride along as `peers`, whose notes undo restores.
       const [first, ...rest] = changed;

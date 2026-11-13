@@ -18,6 +18,9 @@ import type { Snapshot as CrownsSnapshot } from '../games/crowns/store';
 import type { Snapshot as ThreadSnapshot } from '../games/thread/store';
 import type { Snapshot as QuiltSnapshot } from '../games/quilt/store';
 import { localKey } from '../lib/persistence';
+import { Avatar } from '../components/Avatar';
+import { fetchLeaderboard } from '@pb/data';
+import { fmtPoints, ordinal, useMe } from '../lib/contest';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
@@ -78,6 +81,7 @@ export function Today() {
   const sessionStatus = useSession((s) => s.status);
   const userId = useSession((s) => s.userId);
   const [streak, setStreak] = useState<number | null>(null);
+  const me = useMe((s) => s.stats);
   const [board, setBoard] = useState<Board>(() => localBoard(today));
 
   useEffect(() => {
@@ -128,16 +132,24 @@ export function Today() {
               <img src={crownUrl} alt="" className="pb-float h-8 w-8" style={{ filter: 'drop-shadow(0 3px 3px rgb(90 60 10 / 0.35))' }} />
             </h1>
           </div>
-          <div
-            className="mt-1 flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-accent)_35%,transparent)] bg-raised px-3 py-1.5 text-[14px] font-bold text-accent-text shadow-[0_4px_12px_-6px_rgb(120_80_20/0.5)]"
-            title="Longest current streak"
-          >
-            <span className="pb-flicker inline-flex text-[#E07A1F]"><Icon.Flame width={19} height={19} strokeWidth={2.3} /></span>
-            <span className="tabular-nums">{streak ?? (sessionStatus === 'offline' ? '–' : '…')}</span>
+          <div className="mt-1 flex items-center gap-2">
+            <div
+              className="flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-accent)_35%,transparent)] bg-raised px-3 py-1.5 text-[14px] font-bold text-accent-text shadow-[0_4px_12px_-6px_rgb(120_80_20/0.5)]"
+              title="Longest current streak"
+            >
+              <span className="pb-flicker inline-flex text-[#E07A1F]"><Icon.Flame width={19} height={19} strokeWidth={2.3} /></span>
+              <span className="tabular-nums">{streak ?? (sessionStatus === 'offline' ? '–' : '…')}</span>
+            </div>
+            {me && (
+              <Link to="/me" aria-label="Your profile" className="transition-transform active:scale-95">
+                <Avatar name={me.nickname} colour={me.avatar} size={36} />
+              </Link>
+            )}
           </div>
         </header>
 
         <TodayPlank board={board} solved={solvedToday} />
+        {sessionStatus === 'online' && <ContestStrip />}
 
         {sessionStatus === 'offline' && (
           <div className="pb-rise mt-3 flex items-center gap-2 rounded-xl bg-raised-2/70 px-3 py-2 text-[12px] text-ink-2" style={{ ['--d' as string]: '120ms' }}>
@@ -247,7 +259,7 @@ function Practice() {
     <section className="pb-rise mt-7" style={{ ['--d' as string]: '520ms' }}>
       <div className="flex items-baseline justify-between px-1">
         <h2 className="text-[17px] font-bold tracking-tight">Practice</h2>
-        <span className="text-[12px] text-ink-2">Fresh every time, no streak</span>
+        <span className="text-[12px] text-ink-2">New boards, points for your score</span>
       </div>
       <div className="mt-3 flex flex-col gap-2.5 rounded-[20px] border border-line-minor bg-raised p-3.5 shadow-[0_8px_24px_-14px_rgb(60_40_20/0.35)]">
         {GAMES.map((g) => (
@@ -408,6 +420,43 @@ function DifficultyChip(props: { game: GameId; today: string; difficulty: Diffic
         {state.status === 'solved' && <Icon.Check width={10} height={10} strokeWidth={3.4} />}
         {label}
       </span>
+    </Link>
+  );
+}
+
+/**
+ * Today's contest in one line under the plank: where you stand, and the way
+ * into the full rankings.
+ */
+function ContestStrip() {
+  const today = localDateKey();
+  const userId = useSession((s) => s.userId);
+  const [mine, setMine] = useState<{ rank: number; score: number; players: number } | null>(null);
+  const [players, setPlayers] = useState<number | null>(null);
+  useEffect(() => {
+    if (!supabase) return;
+    void fetchLeaderboard(supabase, 'day', today, null, 500).then((rows) => {
+      setPlayers(rows.length);
+      const r = rows.find((x) => x.is_me);
+      setMine(r ? { rank: r.rank, score: r.score, players: rows.length } : null);
+    }).catch(() => { /* fine */ });
+  }, [today, userId]);
+
+  return (
+    <Link
+      to="/rankings"
+      className="pb-rise pb-key mt-3 flex items-center gap-3 rounded-[16px] px-3.5 py-2.5"
+      style={{ ['--d' as string]: '140ms', background: 'linear-gradient(160deg, #FFF3CF 0%, #F6D98A 45%, #E8B44A 100%)', color: '#4E2E04', ['--key-side' as string]: '#9A6410' }}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgb(255_255_255/0.45)]"><Icon.Trophy width={20} height={20} /></span>
+      <span className="flex-grow">
+        <span className="block text-[14px] font-extrabold leading-tight">Today&apos;s contest</span>
+        <span className="block text-[12px] font-semibold opacity-80">
+          {mine ? `You are ${ordinal(mine.rank)} of ${mine.players} · ${fmtPoints(mine.score)} pts`
+            : players ? `${players} player${players === 1 ? '' : 's'} so far. Solve a board to join.` : 'Solve a board to get on the board.'}
+        </span>
+      </span>
+      <span className="text-[13px] font-bold">Rankings ›</span>
     </Link>
   );
 }

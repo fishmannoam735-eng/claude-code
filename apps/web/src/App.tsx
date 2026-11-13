@@ -3,6 +3,9 @@ import { Navigate, Route, Routes, useParams } from 'react-router';
 import { localDateKey, makeSeed, parseSeed, randomToken, type Difficulty, type GameId } from '@pb/engine';
 import { useSession } from './lib/session';
 import { Today } from './pages/Today';
+import { Rankings } from './pages/Rankings';
+import { Profile } from './pages/Profile';
+import { useMe } from './lib/contest';
 import { NinePage } from './games/nine/NinePage';
 import { EclipsePage } from './games/eclipse/EclipsePage';
 import { CrownsPage } from './games/crowns/CrownsPage';
@@ -44,11 +47,15 @@ function Board() {
 
 export function App() {
   const init = useSession((s) => s.init);
+  const userId = useSession((s) => s.userId);
   useEffect(() => { void init(); }, [init]);
+  useEffect(() => { if (userId) void useMe.getState().refresh(); }, [userId]);
 
   return (
     <Routes>
       <Route path="/" element={<Today />} />
+      <Route path="/rankings" element={<Rankings />} />
+      <Route path="/me" element={<Profile />} />
       <Route path="/:game" element={<DailyRedirect />} />
       <Route path="/:game/:difficulty" element={<DailyRedirect />} />
       <Route path="/practice/:game" element={<PracticeRedirect />} />

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { noteHint } from '../../lib/assists';
 import { thread, threadGame, parseSeed, type ThreadHint, type ThreadPuzzle } from '@pb/engine';
 import type { BaseSnapshot } from '../../lib/persistence';
 
@@ -214,6 +215,7 @@ export const useThread = create<GameState>((set, get) => {
       if (!s.puzzle || s.status !== 'in_progress') return;
       if (s.hint) { set({ hint: null, hintStep: 0 }); return; }
       const p = s.puzzle;
+      noteHint(s.seed, s.path);
       set({ hint: nextThreadHint(s.path, p.n, p.walls, p.waypoints, p.solution), hintStep: 0 });
     },
 

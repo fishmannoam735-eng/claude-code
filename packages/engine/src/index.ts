@@ -24,3 +24,5 @@ export type { QuiltPuzzle, QuiltHint, QuiltHintStep } from './games/quilt/index.
 
 /** Both games use a plain number[] board; import the game namespace for its own helpers. */
 export type Grid = number[];
+
+export * from './score.js';
