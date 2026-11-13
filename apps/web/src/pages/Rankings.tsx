@@ -72,7 +72,7 @@ export function Rankings() {
           <MeChip />
         </header>
 
-        {!supabase || sessionStatus === 'offline' ? (
+        {!supabase ? (
           <Notice text="Rankings need an internet connection. Your games still save on this phone." />
         ) : (
           <>
@@ -316,14 +316,14 @@ function Infographics({ stats }: { stats: ContestStats }) {
         <Card delay={240} title="Most daily wins" flush>
           <PeopleList
             empty="No winners yet."
-            items={stats.champions.map((c) => ({ ...c, value: `${c.wins} win${c.wins === 1 ? '' : 's'}` }))}
+            items={stats.champions.filter((c) => c.nickname).map((c) => ({ ...c, value: `${c.wins} win${c.wins === 1 ? '' : 's'}` }))}
             medal
           />
         </Card>
         <Card delay={280} title="Longest streaks" flush>
           <PeopleList
             empty="No streaks yet."
-            items={stats.streaks.map((s) => ({ ...s, value: <span className="flex items-center gap-0.5"><Icon.Flame width={13} height={13} className="text-[#E07A1F]" />{s.current}</span> }))}
+            items={stats.streaks.filter((c) => c.nickname).map((s) => ({ ...s, value: <span className="flex items-center gap-0.5"><Icon.Flame width={13} height={13} className="text-[#E07A1F]" />{s.current}</span> }))}
           />
         </Card>
       </div>

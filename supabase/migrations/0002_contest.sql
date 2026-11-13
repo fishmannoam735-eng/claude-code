@@ -133,59 +133,7 @@ update public.plays
  where status = 'solved' and score is null;
 
 -- A contest entry can't be deleted and replayed.
-drop policy "plays: delete own" on public.plays;
-create policy "plays: delete own" on public.plays for delete using (user_id = auth.uid() and not contest);
-
--- ----------------------------------------------------- moving phones
--- A code shown on the profile page; typing it on another phone moves
--- everything (plays, streaks, name) onto that phone's player.
-create function public.make_transfer_code() returns text
-language plpgsql volatile security definer set search_path = public as $$
-declare
-  alphabet text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  code text := '';
-begin
-  if auth.uid() is null then raise exception 'not signed in'; end if;
-  for i in 1..10 loop
-    code := code || substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1);
-  end loop;
-  update public.profiles set transfer_hash = encode(sha256(convert_to(code, 'UTF8')), 'hex') where id = auth.uid();
-  return substr(code, 1, 5) || '-' || substr(code, 6, 5);
-end $$;
-
-create function public.claim_transfer_code(code text) returns text
-language plpgsql volatile security definer set search_path = public as $$
-declare
-  me uuid := auth.uid();
-  clean text := upper(regexp_replace(coalesce(code, ''), '[^A-Za-z0-9]', '', 'g'));
-  old public.profiles%rowtype;
-begin
-  if me is null then raise exception 'not signed in'; end if;
-  select * into old from public.profiles where transfer_hash = encode(sha256(convert_to(clean, 'UTF8')), 'hex');
-  if not found then raise exception 'code not found' using errcode = 'P0002'; end if;
-  if old.id = me then return old.nickname; end if;
-
-  perform set_config('pb.merging', 'on', true);
-  -- The older player's boards win wherever both played the same one.
-  delete from public.plays where user_id = me and seed in (select seed from public.plays where user_id = old.id);
-  -- Keep one contest entry per game per day.
-  update public.plays m set contest = false
-   where m.user_id = me and m.contest and exists (
-     select 1 from public.plays o where o.user_id = old.id and o.contest
-        and o.game_id = m.game_id and o.puzzle_date = m.puzzle_date);
-  update public.plays set user_id = me where user_id = old.id;
-  delete from public.streaks where user_id = me and game_id in (select game_id from public.streaks where user_id = old.id);
-  update public.streaks set user_id = me where user_id = old.id;
-  delete from public.challenge_entries where user_id = me and challenge_id in (select challenge_id from public.challenge_entries where user_id = old.id);
-  update public.challenge_entries set user_id = me where user_id = old.id;
-  update public.challenges set creator_id = me where creator_id = old.id;
-  perform set_config('pb.merging', 'off', true);
-
-  update public.profiles set nickname = null, transfer_hash = null where id = old.id;
-  update public.profiles set nickname = old.nickname, avatar = old.avatar where id = me;
-  delete from auth.users where id = old.id and coalesce(is_anonymous, true);
-  return old.nickname;
-end $$;
+alter policy "plays: delete own" on public.plays using (user_id = auth.uid() and not contest);
 
 -- ------------------------------------------------------------ rankings
 -- Public reads. They expose a nickname, an avatar and numbers — never ids.
@@ -328,11 +276,7 @@ $$;
 revoke all on function public.leaderboard(text, date, public.game_id, integer) from public;
 revoke all on function public.contest_stats(date) from public;
 revoke all on function public.my_stats(date) from public;
-revoke all on function public.make_transfer_code() from public;
-revoke all on function public.claim_transfer_code(text) from public;
 revoke all on function public.random_nickname() from public, anon, authenticated;
 grant execute on function public.leaderboard(text, date, public.game_id, integer) to anon, authenticated;
 grant execute on function public.contest_stats(date) to anon, authenticated;
 grant execute on function public.my_stats(date) to authenticated;
-grant execute on function public.make_transfer_code() to authenticated;
-grant execute on function public.claim_transfer_code(text) to authenticated;
