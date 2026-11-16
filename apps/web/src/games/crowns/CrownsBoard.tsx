@@ -62,10 +62,14 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
   // most. touch-action covers most browsers; a non-passive touchmove that
   // cancels itself covers the in-app web views that ignore it.
   const boardRef = useRef<HTMLDivElement>(null);
+  // Once the board is solved or paused, a swipe on it scrolls the page.
+  const live = !hidden && status === 'in_progress';
+  const playing = useRef(live);
+  playing.current = live;
   useEffect(() => {
     const el = boardRef.current;
     if (!el) return;
-    const stop = (e: TouchEvent): void => { if (e.cancelable) e.preventDefault(); };
+    const stop = (e: TouchEvent): void => { if (e.cancelable && playing.current) e.preventDefault(); };
     el.addEventListener('touchmove', stop, { passive: false });
     return () => el.removeEventListener('touchmove', stop);
   }, [puzzle]);
@@ -83,7 +87,7 @@ export function CrownsBoard({ hidden }: { hidden: boolean }) {
       grid={{
         role: 'grid',
         'aria-label': 'Crowns board',
-        className: 'grid touch-none select-none grid-cols-8 grid-rows-8 [-webkit-touch-callout:none]',
+        className: `grid ${live ? 'touch-none' : ''} select-none grid-cols-8 grid-rows-8 [-webkit-touch-callout:none]`,
         onDragStart: (e) => e.preventDefault(),
         onPointerDown, onPointerMove, onPointerUp,
         onPointerCancel: () => { press.current = null; },

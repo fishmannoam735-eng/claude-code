@@ -81,7 +81,8 @@ export function ThreadBoard({ hidden }: { hidden: boolean }) {
     <WoodTray
       gridRef={boxRef}
       grid={{
-        className: `touch-none ${solved ? 'pb-thread-solved' : ''}`,
+        // A solved or paused board lets a swipe scroll the page.
+        className: !hidden && !solved ? 'touch-none' : solved ? 'pb-thread-solved' : '',
         // Pressing on a number and moving makes the browser start a native drag,
         // which fires pointercancel and kills every pointer event after the
         // first — the line would extend but never retract. Suppressing the

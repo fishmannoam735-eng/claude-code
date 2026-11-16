@@ -183,7 +183,9 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
         </span>
       ) : undefined}
       grid={{
-        className: 'touch-none',
+        // Only a board in play keeps the finger for drawing; once it is solved
+        // or paused, a swipe on it scrolls the page like anywhere else.
+        className: !hidden && status === 'in_progress' ? 'touch-none' : '',
         // Same native-drag trap Thread hit: pressing on a glyph and moving starts
         // a browser drag, which fires pointercancel and kills every event after
         // the first, so a rectangle could grow but never shrink.

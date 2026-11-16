@@ -31,8 +31,12 @@ export function WoodTray({ grid, gridRef, children, overlay }: {
   return (
     <div
       data-tray
-      className="relative aspect-square w-full select-none [container-type:inline-size]"
+      className="relative mx-auto aspect-square select-none [container-type:inline-size]"
       style={{
+        // On a short screen the board shrinks so there is always room around
+        // it to scroll the page with a thumb: a swipe that starts on a board in
+        // play draws instead of scrolling.
+        width: 'min(100%, max(280px, calc(100svh - 250px)))',
         backgroundImage: `url(${trayUrl})`, backgroundSize: '100% 100%',
         boxShadow: '0.6cqw 1.4cqw 2.6cqw rgb(60 40 20 / 0.28)',
       }}
