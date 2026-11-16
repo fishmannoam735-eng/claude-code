@@ -10,7 +10,7 @@ import { audio, useSoundSetting } from './sound';
  * to load or license. Each game has its own key, tempo and instruments:
  *
  *   Nine     "Study"     a music box over warm pads, slow and thoughtful
- *   Eclipse  "Night sky" glass bells drifting over a dark, wide pad
+ *   Eclipse  "Sun and moon" a warm electric-piano lullaby with a written tune
  *   Crowns   "Court"     a harp waltz in three
  *   Thread   "Flow"      a running stream of soft plucks with a light brush
  *   Quilt    "Cottage"   a cosy marimba tune with a shaker
@@ -36,7 +36,7 @@ export const useMusicSetting = create<{ on: boolean; toggle: () => void }>((set,
   },
 }));
 
-type Voice = 'bell' | 'box' | 'harp' | 'pluck' | 'marimba';
+type Voice = 'bell' | 'box' | 'harp' | 'pluck' | 'marimba' | 'epiano';
 
 interface Song {
   bpm: number;
@@ -49,6 +49,10 @@ interface Song {
   lead: { voice: Voice; gain: number; scale: number[]; chance: number; on: (step: number) => boolean };
   bass: { gain: number; steps: number[]; fifthOn?: number[] };
   perc?: { brush?: number[]; shaker?: number[]; gain: number };
+  /** A written melody over the whole loop, [step, MIDI note]; the B pass plays it an octave down. */
+  tune?: { voice: Voice; gain: number; notes: [number, number][] };
+  /** Soft chords played together on these steps of each bar. */
+  comp?: { voice: Voice; gain: number; steps: number[] };
 }
 
 const off = null;
@@ -66,18 +70,36 @@ const SONGS: Record<GameId, Song> = {
     lead: { voice: 'bell', gain: 0.1, scale: [72, 74, 76, 79, 81, 84], chance: 0.16, on: (s) => s % 2 === 0 },
     bass: { gain: 0.14, steps: [0] },
   },
+  // "Sun and moon": a warm electric-piano lullaby in D major with a written
+  // melody, soft chords swaying on the beat and a light brush. (The first
+  // Eclipse loop, dark pads and drifting glass bells, didn't land.)
   eclipse: {
-    bpm: 58, beats: 4, sub: 2, barsPerChord: 2,
+    bpm: 76, beats: 4, sub: 2, barsPerChord: 2,
     chords: [
-      { tones: [50, 53, 57, 60, 64], bass: 38 }, // Dm9
-      { tones: [46, 50, 53, 57], bass: 46 },     // Bbmaj7
-      { tones: [53, 57, 60, 64], bass: 41 },     // Fmaj7
-      { tones: [48, 52, 55, 57, 62], bass: 48 }, // C6/9
+      { tones: [62, 66, 69, 73], bass: 50 },  // Dmaj7
+      { tones: [59, 62, 66, 69], bass: 47 },  // Bm7
+      { tones: [55, 59, 62, 66], bass: 43 },  // Gmaj7
+      { tones: [57, 61, 64, 67], bass: 45 },  // A7
     ],
-    pad: { gain: 0.06, cutoff: 900, type: 'sawtooth' },
-    arp: { voice: 'bell', gain: 0.1, up: 24, pattern: [0, off, off, 2, off, 4, off, off], chance: 0.7 },
-    lead: { voice: 'bell', gain: 0.08, scale: [74, 76, 77, 81, 84, 86], chance: 0.14, on: (s) => s % 2 === 1 },
-    bass: { gain: 0.12, steps: [0] },
+    pad: { gain: 0.025, cutoff: 900, type: 'sine' },
+    arp: { voice: 'box', gain: 0.07, up: 12, pattern: [off, off, off, 3, off, off, off, 1], chance: 0.6 },
+    lead: { voice: 'bell', gain: 0, scale: [], chance: 0, on: () => false },
+    bass: { gain: 0.15, steps: [0, 6], fifthOn: [6] },
+    comp: { voice: 'epiano', gain: 0.05, steps: [0, 3, 4] },
+    perc: { brush: [2, 6], gain: 0.03 },
+    tune: {
+      voice: 'epiano', gain: 0.17,
+      notes: [
+        [0, 78], [3, 81], [6, 79],            // D:  F#  A  G
+        [8, 78], [12, 76],                    //     F#  E
+        [16, 74], [19, 78], [22, 76],         // Bm: D   F#  E
+        [24, 74], [28, 71],                   //     D   B
+        [32, 79], [35, 78], [38, 76],         // G:  G   F#  E
+        [40, 74], [42, 76], [44, 78],         //     D   E   F#
+        [48, 76], [51, 73], [54, 76],         // A:  E   C#  E
+        [56, 81], [60, 79], [62, 76],         //     A   G   E
+      ],
+    },
   },
   crowns: {
     bpm: 84, beats: 3, sub: 2, barsPerChord: 2,
@@ -184,6 +206,23 @@ function play(b: Bus, voice: Voice, f: number, at: number, v: number): void {
       osc(b, 'sawtooth', f, at, v * 0.25, 0.002, 0.2, lp);
       break;
     }
+    case 'epiano': { // a soft electric piano: round tone, a gentle bell on the attack, a slow wobble
+      const trem = b.ctx.createGain();
+      trem.gain.value = 1;
+      const lfo = b.ctx.createOscillator();
+      lfo.frequency.value = 4.5;
+      const depth = b.ctx.createGain();
+      depth.gain.value = 0.12;
+      lfo.connect(depth).connect(trem.gain);
+      lfo.start(at);
+      lfo.stop(at + 2.4);
+      trem.connect(b.dest);
+      osc(b, 'sine', f, at, v, 0.006, 2.2, trem);
+      osc(b, 'sine', f * 1.003, at, v * 0.5, 0.006, 1.6, trem);
+      osc(b, 'sine', f * 2, at, v * 0.18, 0.003, 0.5, trem);
+      osc(b, 'sine', f * 3, at, v * 0.08, 0.002, 0.15, trem);
+      break;
+    }
     case 'marimba':  // a wooden bar: round tone and a quick knock on top
       osc(b, 'sine', f, at, v, 0.002, 0.6);
       osc(b, 'sine', f * 4, at, v * 0.25, 0.001, 0.06);
@@ -267,6 +306,20 @@ function scheduleStep(b: Bus, s: Song, step: number, at: number): void {
     const pool = r() < 0.7 && fits.length ? fits : s.lead.scale;
     const m = pool[Math.floor(r() * pool.length)]!;
     play(b, s.lead.voice, hz(m), human(), s.lead.gain * (0.85 + r() * 0.3));
+  }
+
+  if (s.comp?.steps.includes(inBar)) {
+    const v = s.comp.gain * (inBar === 0 ? 1 : 0.7);
+    for (const m of chord.tones) play(b, s.comp.voice, hz(m), human(), v);
+  }
+
+  if (s.tune) {
+    const loop = s.barsPerChord * s.chords.length * perBar;
+    const at8 = step % loop;
+    const down = Math.floor(step / loop) % 2 === 1 ? -12 : 0;
+    for (const [k, m] of s.tune.notes) {
+      if (k === at8) play(b, s.tune.voice, hz(m + down), human(), s.tune.gain * (0.9 + r() * 0.15));
+    }
   }
 
   if (s.perc) {
