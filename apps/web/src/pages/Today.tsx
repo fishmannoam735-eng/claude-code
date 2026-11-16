@@ -19,8 +19,8 @@ import type { Snapshot as ThreadSnapshot } from '../games/thread/store';
 import type { Snapshot as QuiltSnapshot } from '../games/quilt/store';
 import { localKey } from '../lib/persistence';
 import { Avatar } from '../components/Avatar';
-import { fetchLeaderboard } from '@pb/data';
-import { fmtPoints, ordinal, useMe } from '../lib/contest';
+import { LeadersStage } from '../components/LeadersStage';
+import { useMe } from '../lib/contest';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
@@ -149,7 +149,7 @@ export function Today() {
         </header>
 
         <TodayPlank board={board} solved={solvedToday} />
-        {sessionStatus === 'online' && <ContestStrip />}
+        {sessionStatus === 'online' && <LeadersStage />}
 
         {sessionStatus === 'offline' && (
           <div className="pb-rise mt-3 flex items-center gap-2 rounded-xl bg-raised-2/70 px-3 py-2 text-[12px] text-ink-2" style={{ ['--d' as string]: '120ms' }}>
@@ -306,13 +306,17 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
 
   return (
     <div
-      className="pb-rise relative overflow-hidden rounded-[22px] border border-line-minor bg-raised p-3.5 shadow-[0_10px_28px_-16px_rgb(60_40_20/0.45)]"
+      className="pb-rise relative overflow-hidden rounded-[22px] p-3.5 pl-[18px] shadow-[0_2px_0_rgb(120_90_50/0.18),0_14px_30px_-14px_rgb(60_40_20/0.55)]"
       style={{
+        background: `linear-gradient(150deg, color-mix(in srgb, ${GAME_COLOR[def.id]} 16%, var(--color-raised)) 0%, var(--color-raised) 55%)`,
+        border: `1.5px solid color-mix(in srgb, ${GAME_COLOR[def.id]} 45%, transparent)`,
         ['--d' as string]: `${delayMs}ms`,
         ['--card-d' as string]: `${delayMs}ms`,
         ['--glint' as string]: `${2 + index * 1.3}s`,
       }}
     >
+      {/* A band of the game's colour down the left edge, so each card stands off the table. */}
+      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[6px]" style={{ background: `linear-gradient(180deg, color-mix(in srgb, ${GAME_COLOR[def.id]} 70%, white), ${GAME_COLOR[def.id]})` }} />
       {/* The game's colour as a soft light in the card's corner. */}
       <div
         aria-hidden="true"
@@ -420,43 +424,6 @@ function DifficultyChip(props: { game: GameId; today: string; difficulty: Diffic
         {state.status === 'solved' && <Icon.Check width={10} height={10} strokeWidth={3.4} />}
         {label}
       </span>
-    </Link>
-  );
-}
-
-/**
- * Today's contest in one line under the plank: where you stand, and the way
- * into the full rankings.
- */
-function ContestStrip() {
-  const today = localDateKey();
-  const userId = useSession((s) => s.userId);
-  const [mine, setMine] = useState<{ rank: number; score: number; players: number } | null>(null);
-  const [players, setPlayers] = useState<number | null>(null);
-  useEffect(() => {
-    if (!supabase) return;
-    void fetchLeaderboard(supabase, 'day', today, null, 500).then((rows) => {
-      setPlayers(rows.length);
-      const r = rows.find((x) => x.is_me);
-      setMine(r ? { rank: r.rank, score: r.score, players: rows.length } : null);
-    }).catch(() => { /* fine */ });
-  }, [today, userId]);
-
-  return (
-    <Link
-      to="/rankings"
-      className="pb-rise pb-key mt-3 flex items-center gap-3 rounded-[16px] px-3.5 py-2.5"
-      style={{ ['--d' as string]: '140ms', background: 'linear-gradient(160deg, #FFF3CF 0%, #F6D98A 45%, #E8B44A 100%)', color: '#4E2E04', ['--key-side' as string]: '#9A6410' }}
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgb(255_255_255/0.45)]"><Icon.Trophy width={20} height={20} /></span>
-      <span className="flex-grow">
-        <span className="block text-[14px] font-extrabold leading-tight">Today&apos;s contest</span>
-        <span className="block text-[12px] font-semibold opacity-80">
-          {mine ? `You are ${ordinal(mine.rank)} of ${mine.players} · ${fmtPoints(mine.score)} pts`
-            : players ? `${players} player${players === 1 ? '' : 's'} so far. Solve a board to join.` : 'Solve a board to get on the board.'}
-        </span>
-      </span>
-      <span className="text-[13px] font-bold">Rankings ›</span>
     </Link>
   );
 }

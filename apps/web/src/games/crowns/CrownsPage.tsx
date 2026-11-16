@@ -12,6 +12,7 @@ import { readJSON } from '../../lib/storage';
 import { CrownsBoard } from './CrownsBoard';
 import { CROWN, EMPTY, MARK, useCrowns, type Snapshot } from './store';
 import { useGameSounds, type Sound } from '../../lib/sound';
+import { HowToPlay } from '../../components/HowToPlay';
 
 // A crown is a piece set down, a ✕ is a fingertip note, anything else lifts off.
 const crownsBoard = (s: { grid: number[] }) => s.grid;
@@ -142,11 +143,7 @@ export function CrownsPage() {
 
       {hint && !paused && <HintCard />}
 
-      <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
-        One crown per row, column and colour. No two crowns may touch, even corner to corner.
-        <br />
-        Tap to cycle ✕ → crown → blank, or drag to ✕ several tiles. The ✕ is just your own note.
-      </p>
+      <HowToPlay game="crowns" />
 
       <div className="mt-auto flex gap-2.5 pt-4">
         <ActionButton label="Undo" onClick={undoMove} disabled={!canUndo || status === 'solved'}><Icon.Undo /></ActionButton>

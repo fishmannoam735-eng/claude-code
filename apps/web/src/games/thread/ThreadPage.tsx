@@ -12,6 +12,7 @@ import { readJSON } from '../../lib/storage';
 import { ThreadBoard } from './ThreadBoard';
 import { useThread, type Snapshot } from './store';
 import { useGameSounds, type Sound } from '../../lib/sound';
+import { HowToPlay } from '../../components/HowToPlay';
 
 // The line ticks along as it grows, and brushes back as it retracts.
 const threadBoard = (s: { path: number[] }) => s.path;
@@ -132,11 +133,7 @@ export function ThreadPage() {
 
       {hint && !paused && <HintCard />}
 
-      <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
-        Drag one line through every cell, meeting the numbers in order.
-        <br />
-        Thick bars are walls the line cannot cross. Drag back — or use the arrow keys — to undo a step.
-      </p>
+      <HowToPlay game="thread" />
 
       <div className="mt-auto flex gap-2.5 pt-4">
         <ActionButton label="Step back" onClick={stepBack} disabled={path.length < 2 || status === 'solved'}><Icon.Undo /></ActionButton>

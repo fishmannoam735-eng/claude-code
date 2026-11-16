@@ -12,6 +12,7 @@ import { readJSON } from '../../lib/storage';
 import { EclipseBoard } from './EclipseBoard';
 import { MOON, SUN, useEclipse, type Snapshot } from './store';
 import { byCount, useGameSounds } from '../../lib/sound';
+import { HowToPlay } from '../../components/HowToPlay';
 
 const eclipseBoard = (s: { grid: number[] }) => s.grid;
 
@@ -133,11 +134,7 @@ export function EclipsePage() {
 
       {hint && !paused && <HintCard />}
 
-      <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2">
-        Three of each per row and column, never three alike in a row.
-        <br />
-        Tap a cell to cycle sun → moon → blank. <span className="font-semibold">=</span> means the pair matches, <span className="font-semibold">×</span> means it differs.
-      </p>
+      <HowToPlay game="eclipse" />
 
       <div className="mt-auto flex gap-2.5 pt-4">
         <ActionButton label="Undo" onClick={undoMove} disabled={!canUndo || status === 'solved'}><Icon.Undo /></ActionButton>

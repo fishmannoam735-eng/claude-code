@@ -14,6 +14,7 @@ import { NumberPad } from './NumberPad';
 import { useNine, type Snapshot } from './store';
 import { useNoteHighlight } from './settings';
 import { byCount, useGameSounds, type Sound } from '../../lib/sound';
+import { HowToPlay } from '../../components/HowToPlay';
 
 // Digits are pieces; pencil marks are light taps.
 const nineBoard = (s: { grid: number[]; notes: number[] }) => s;
@@ -157,6 +158,7 @@ export function NinePage() {
       </div>
 
       <NotesHighlightToggle />
+      <HowToPlay game="nine" />
 
       {status === 'solved' && (
         <SolvedCard

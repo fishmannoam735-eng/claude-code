@@ -43,7 +43,7 @@ interface Theme {
 
 const LIGHT: Theme = {
   name: 'light',
-  surface: '#FAF7F2', raised: '#FFFFFF', raised2: '#F4EEE3', ink: '#1A1814', ink2: '#6E6A5E',
+  surface: '#EDE3D1', raised: '#FFFFFF', raised2: '#F4EEE3', ink: '#1A1814', ink2: '#625E52',
   games: {
     nine:    { base: '#B87A22', text: '#8A5E18' },
     eclipse: { base: '#4F5BD5', text: '#3F49B0' },

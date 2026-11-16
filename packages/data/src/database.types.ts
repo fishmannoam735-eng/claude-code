@@ -98,6 +98,10 @@ export type Database = {
       plays: {
         Row: {
           contest: boolean
+          attempts: number
+          best_hints: number | null
+          best_ms: number | null
+          last_solved_at: string | null
           fills: number
           hints: number
           score: number | null
@@ -120,6 +124,10 @@ export type Database = {
         }
         Insert: {
           contest?: boolean
+          attempts?: number
+          best_hints?: number | null
+          best_ms?: number | null
+          last_solved_at?: string | null
           fills?: number
           hints?: number
           score?: number | null
@@ -142,6 +150,10 @@ export type Database = {
         }
         Update: {
           contest?: boolean
+          attempts?: number
+          best_hints?: number | null
+          best_ms?: number | null
+          last_solved_at?: string | null
           fills?: number
           hints?: number
           score?: number | null

@@ -86,7 +86,8 @@ export async function fetchLeaderboard(client: DataClient, period: Period, today
 
 export interface PlayerRef { nickname: string; avatar: number; isMe?: boolean }
 export interface ContestStats {
-  today: { players: number; solves: number; avgScore: number; hintFreePct: number };
+  today: { players: number; solves: number; avgScore: number; hintFreePct: number; attempts?: number };
+  yesterday?: (PlayerRef & { score: number }) | null;
   games: { game: GameEnum; started: number; solved: number; avgMs: number | null; hintPct: number;
            best: (PlayerRef & { ms: number; difficulty: string; score: number }) | null }[];
   trend: { date: string; players: number; solves: number }[];

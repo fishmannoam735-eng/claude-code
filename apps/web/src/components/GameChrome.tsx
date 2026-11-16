@@ -9,7 +9,10 @@ import { fmtTime, DIFF_LABEL } from '../lib/format';
 import { useSoundSetting } from '../lib/sound';
 import { readAssists } from '../lib/assists';
 import { supabase, useSession } from '../lib/session';
-import { fmtPoints, ordinal, useMe } from '../lib/contest';
+import { GAME_NAME, fmtPoints, ordinal, useMe } from '../lib/contest';
+import { restartBoard } from '../lib/restart';
+import { localKey } from '../lib/persistence';
+import { readJSON } from '../lib/storage';
 
 /** Re-renders once a second while the clock runs, and not at all when it doesn't. */
 export function Timer({ elapsed, running }: { elapsed: () => number; running: boolean }) {
@@ -136,6 +139,7 @@ export function SolvedCard(props: {
   difficulty: Difficulty;
 }) {
   const parsed = parseSeed(props.seed);
+  const [busy, setBusy] = useState(false);
   return (
     <div data-solved-card className="pb-rise mt-5 rounded-2xl border border-line-minor bg-raised p-5">
       <div className="flex items-center gap-2 text-success">
@@ -158,29 +162,41 @@ export function SolvedCard(props: {
         )}
       </div>
       {parsed && <ScorePanel seed={props.seed} elapsedMs={props.elapsedMs} mistakes={props.scoreMistakes} />}
-      <div className="mt-4 flex gap-2.5">
-        <button type="button" onClick={props.onShare} className="pb-key flex h-12 flex-grow basis-0 items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-ink" style={{ ['--key-side' as string]: '#94621C' }}>
-          <Icon.Share /> {props.shareLabel ?? 'Share'}
-        </button>
-        {parsed && (
+      {parsed && (
+        <div className="mt-4 flex gap-2.5">
+          <button
+            type="button"
+            onClick={() => { setBusy(true); void restartBoard(props.seed); }}
+            disabled={busy}
+            className="pb-key flex h-12 flex-grow basis-0 items-center justify-center gap-2 rounded-xl text-sm font-bold disabled:opacity-60"
+            style={{ background: 'linear-gradient(160deg, #FFF3CF 0%, #F6D98A 45%, #E8B44A 100%)', color: '#4E2E04', ['--key-side' as string]: '#9A6410' }}
+          >
+            <Icon.Undo width={16} height={16} /> {busy ? 'Starting…' : 'Try again'}
+          </button>
           <Link
             to={`/practice/${parsed.game}/${props.difficulty}`}
             className="pb-key flex h-12 flex-grow basis-0 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white"
             style={{ background: 'linear-gradient(160deg, #6FA27D, #437A55)', ['--key-side' as string]: '#2E5A3C' }}
           >
-            <Icon.Play width={16} height={16} /> Play again
+            <Icon.Play width={16} height={16} /> New board
           </Link>
-        )}
-      </div>
-      <div className="mt-2.5 flex gap-2.5">
+        </div>
+      )}
+      <p className="mt-2 text-center text-[11.5px] leading-snug text-ink-2">
+        <b className="text-ink">Try again</b> replays this board as often as you like; your best try counts.
+        {' '}<b className="text-ink">New board</b> gives a fresh {DIFF_LABEL[props.difficulty].toLowerCase()} {parsed ? GAME_NAME[parsed.game] : ''} board for your personal score.
+      </p>
+      <div className="mt-2.5 flex gap-2">
+        <button type="button" onClick={props.onShare} className="pb-key flex h-11 flex-grow basis-0 items-center justify-center gap-1.5 rounded-xl bg-raised-2 text-[13px] font-semibold text-ink">
+          <Icon.Share width={16} height={16} /> {props.shareLabel ?? 'Share'}
+        </button>
         <Link to="/rankings" className="pb-key flex h-11 flex-grow basis-0 items-center justify-center gap-1.5 rounded-xl bg-raised-2 text-[13px] font-semibold text-ink">
           <Icon.Trophy width={16} height={16} /> Rankings
         </Link>
         <Link to="/" className="pb-key flex h-11 flex-grow basis-0 items-center justify-center rounded-xl bg-raised-2 text-[13px] font-semibold text-ink">
-          Back to today
+          Today
         </Link>
       </div>
-      <p className="mt-2 text-center text-[11.5px] text-ink-2">Play again gives you a new {DIFF_LABEL[props.difficulty].toLowerCase()} board of the same game.</p>
     </div>
   );
 }
@@ -198,7 +214,8 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
     game: parsed.game, difficulty: parsed.difficulty, durationMs: elapsedMs,
     hints: assists.hints, mistakes, fills: assists.fills,
   });
-  const [server, setServer] = useState<{ score: number; contest: boolean } | null>(null);
+  const [server, setServer] = useState<{ best: number; contest: boolean; attempts: number } | null>(null);
+  const completedAt = readJSON<{ completedAt: string | null }>(localKey(parsed.game, seed))?.completedAt ?? null;
   const [rank, setRank] = useState<{ rank: number; players: number } | null>(null);
   const [offline, setOffline] = useState(false);
 
@@ -211,8 +228,10 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
       try {
         const row = await fetchPlay(supabase!, userId, seed);
         if (!alive) return;
-        if (row && row.status === 'solved' && row.score !== null) {
-          setServer({ score: row.score, contest: row.contest });
+        const thisTry = !completedAt || !row?.last_solved_at
+          || Math.abs(new Date(row.last_solved_at).getTime() - new Date(completedAt).getTime()) < 1500;
+        if (row && row.status === 'solved' && row.score !== null && (thisTry || tries >= 6)) {
+          setServer({ best: row.score, contest: row.contest, attempts: row.attempts });
           void useMe.getState().refresh();
           if (row.contest && row.puzzle_date) {
             const rows = await fetchLeaderboard(supabase!, 'day', row.puzzle_date, null, 500);
@@ -227,9 +246,10 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
     };
     const t = window.setTimeout(() => { void poll(); }, 700);
     return () => { alive = false; window.clearTimeout(t); };
-  }, [seed, userId]);
+  }, [seed, userId, completedAt]);
 
-  const total = server?.score ?? local.total;
+  const total = local.total;
+  const isBest = server ? local.total >= server.best : false;
   const rows: [string, number][] = [
     [`${DIFF_LABEL[parsed.difficulty]} board`, local.base],
     [local.speed >= 0 ? 'Speed bonus' : 'Slow finish', local.speed],
@@ -241,13 +261,14 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
   let note: string;
   if (!parsed.isDaily) note = 'Practice board. The points go to your personal score.';
   else if (!server) note = offline ? 'Offline: points will be saved when you are back online.' : 'Sending your score…';
-  else if (server.contest) note = rank ? `Counts for today's contest. You are ${ordinal(rank.rank)} of ${rank.players} today.` : "Counts for today's contest.";
-  else note = 'Your first daily board of this game already counts for the contest, so these points go to your personal score.';
+  else if (server.contest) note = rank ? `Your best try counts for today's contest. You are ${ordinal(rank.rank)} of ${rank.players} today.` : "Your best try counts for today's contest.";
+  else note = "This board can't enter today's contest (an older day, or solved too fast), so it goes to your personal score.";
+  if (!parsed.isDaily) note = 'Practice board. Your best try here goes to your personal score.';
 
   return (
     <div className="mt-4 overflow-hidden rounded-xl border border-line-minor">
       <div className="pb-wood relative flex items-center justify-between px-3.5 py-2.5 text-[#FFF4E2]">
-        <span className="text-[13px] font-bold tracking-tight [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">Points</span>
+        <span className="text-[13px] font-bold tracking-tight [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">This try</span>
         <span className="pb-plaque-sm pb-stamp rounded-lg px-3 py-0.5 text-[22px] font-extrabold tabular-nums text-[#4E2E04]" style={{ ['--d' as string]: '300ms' }}>
           +{fmtPoints(total)}
         </span>
@@ -260,6 +281,15 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
           </div>
         ))}
       </dl>
+      {server && (
+        <div className="flex items-center justify-between border-t border-line-minor bg-raised px-3.5 py-2 text-[12.5px]">
+          <span className="text-ink-2">Your best on this board{server.attempts > 1 ? ` · ${server.attempts} tries` : ''}</span>
+          <span className="flex items-center gap-1.5 font-bold tabular-nums">
+            {isBest && server.attempts > 1 && <span className="pb-stamp rounded-full bg-success px-2 py-0.5 text-[10.5px] font-bold text-white">New best!</span>}
+            {fmtPoints(server.best)}
+          </span>
+        </div>
+      )}
       <div className={`flex items-center gap-2 px-3.5 py-2 text-[12px] font-medium ${server?.contest ? 'bg-accent-soft text-accent-text' : 'bg-raised-2 text-ink-2'}`}>
         {server?.contest ? <Icon.Trophy width={14} height={14} /> : <Icon.Check width={13} height={13} />}
         {note}

@@ -9,9 +9,10 @@ import { localKey, usePersistence } from '../../lib/persistence';
 import { buildShareText, mistakeRows, share } from '../../lib/share';
 import { supabase, useSession } from '../../lib/session';
 import { readJSON } from '../../lib/storage';
-import { ClueBadge, QuiltBoard } from './QuiltBoard';
+import { QuiltBoard } from './QuiltBoard';
 import { useQuilt, type Snapshot } from './store';
 import { useGameSounds, type Sound } from '../../lib/sound';
+import { HowToPlay } from '../../components/HowToPlay';
 
 // Cutting a patch is a piece set down; rubbing one out lifts it off.
 const quiltBoard = (s: { owner: number[] }) => s.owner;
@@ -147,26 +148,14 @@ export function QuiltPage() {
 
       {hint && !paused && <HintCard />}
 
-      <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2" aria-live="polite">
-        Cut the board into rectangles, one badge in each; the patch takes the
-        badge's colour.{' '}
-        <ClueBadge clue={{ cell: 0, kind: 'area', area: 4 }} k={3} className="inline-block h-4 w-4 translate-y-[2px]" />{' '}
-        is the patch's size,{' '}
-        <span className="inline-flex translate-y-[2px] items-center gap-[3px]" aria-hidden="true">
-          <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'wide' }} k={1} className="h-4 w-4" />
-          <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'tall' }} k={2} className="h-4 w-4" />
-          <ClueBadge clue={{ cell: 0, kind: 'shape', shape: 'square' }} k={0} className="h-4 w-4" />
-        </span>{' '}
-        its shape (wide, tall or square), and{' '}
-        <ClueBadge clue={{ cell: 0, kind: 'any' }} k={6} className="inline-block h-4 w-4 translate-y-[2px]" />{' '}
-        can be any rectangle. Every patch is at least two tiles.
-        <br />
-        {status === 'solved' ? null : refused > 0
-          ? <span className="font-semibold text-danger">A patch can hold only one clue — that rectangle covered two.</span>
-          : anchor !== null
-            ? <>Corner set. Move to the far corner and press <b>Enter</b>.</>
-            : <>Drag to draw, or drag from inside a patch to stretch or shrink it. Tap a patch to rub it out; press <b>Space</b> to set a corner by keyboard.</>}
-      </p>
+      {status !== 'solved' && (refused > 0 || anchor !== null) && (
+        <p className="mt-3 text-center text-[11.5px] leading-snug text-ink-2" aria-live="polite">
+          {refused > 0
+            ? <span className="font-semibold text-danger">A patch can hold only one clue. That rectangle covered two.</span>
+            : <>Corner set. Move to the far corner and press <b>Enter</b>.</>}
+        </p>
+      )}
+      <HowToPlay game="quilt" />
 
       <div className="mt-auto flex gap-2.5 pt-4">
         <ActionButton label="Undo" onClick={undoMove} disabled={!canUndo || status === 'solved'}><Icon.Undo /></ActionButton>
