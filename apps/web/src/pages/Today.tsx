@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { fetchPlaysForDate, fetchStreaks } from '@pb/data';
 import {
@@ -21,6 +21,7 @@ import { localKey } from '../lib/persistence';
 import { Avatar } from '../components/Avatar';
 import { LeadersStage } from '../components/LeadersStage';
 import { useMe } from '../lib/contest';
+import { playInvite } from '../lib/sound';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
@@ -303,18 +304,32 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
   const solved = cur.status === 'solved';
   const delayMs = 200 + index * 80;
   const pct = Math.min(100, Math.round((cur.placed / total) * 100));
+  const { live, handlers: liveHandlers } = useCardLive(index);
 
   return (
     <div
-      className="pb-rise relative overflow-hidden rounded-[22px] p-3.5 pl-[18px] shadow-[0_2px_0_rgb(120_90_50/0.18),0_14px_30px_-14px_rgb(60_40_20/0.55)]"
+      className="pb-rise pb-card-wrap relative"
+      data-live={live || undefined}
+      style={{ ['--d' as string]: `${delayMs}ms` }}
+      {...liveHandlers}
+    >
+    {/* A soft light of the game's colour behind the card, shown when it comes alive. */}
+    <div
+      aria-hidden="true"
+      className="pb-card-glow pointer-events-none absolute inset-0 rounded-[22px]"
+      style={{ boxShadow: `0 0 0 2px color-mix(in srgb, ${GAME_COLOR[def.id]} 70%, white), 0 18px 44px -8px color-mix(in srgb, ${GAME_COLOR[def.id]} 75%, transparent), 0 26px 40px -22px rgb(60 40 20 / 0.6)` }}
+    />
+    <div
+      className="pb-card relative overflow-hidden rounded-[22px] p-3.5 pl-[18px] shadow-[0_2px_0_rgb(120_90_50/0.18),0_14px_30px_-14px_rgb(60_40_20/0.55)]"
       style={{
         background: `linear-gradient(150deg, color-mix(in srgb, ${GAME_COLOR[def.id]} 16%, var(--color-raised)) 0%, var(--color-raised) 55%)`,
         border: `1.5px solid color-mix(in srgb, ${GAME_COLOR[def.id]} 45%, transparent)`,
-        ['--d' as string]: `${delayMs}ms`,
         ['--card-d' as string]: `${delayMs}ms`,
         ['--glint' as string]: `${2 + index * 1.3}s`,
       }}
     >
+      {/* A sweep of light across the card as it lifts. */}
+      <div aria-hidden="true" className="pb-card-shine pointer-events-none absolute inset-y-0 left-0 w-[45%]" />
       {/* A band of the game's colour down the left edge, so each card stands off the table. */}
       <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[6px]" style={{ background: `linear-gradient(180deg, color-mix(in srgb, ${GAME_COLOR[def.id]} 70%, white), ${GAME_COLOR[def.id]})` }} />
       {/* The game's colour as a soft light in the card's corner. */}
@@ -326,7 +341,7 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
       <div className="relative flex items-center gap-3.5">
         <Link
           to={`/g/${makeSeed(def.id, today, shown)}`}
-          className="relative w-[92px] flex-shrink-0 transition-transform active:scale-[0.96]"
+          className="pb-card-art relative w-[92px] flex-shrink-0"
           aria-label={`Play ${def.name}`}
         >
           <MiniBoard game={def.id} />
@@ -382,7 +397,42 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
         ))}
       </div>
     </div>
+    </div>
   );
+}
+
+/**
+ * A card comes alive under the mouse, or under a finger that rests on it: it
+ * lifts and grows, glows in its game's colour, a light sweeps across, and a
+ * soft sound invites you in. On touch it waits a moment, so a finger that is
+ * only scrolling past (the browser cancels that touch) never sets it off.
+ */
+function useCardLive(index: number) {
+  const [live, setLive] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  const on = useRef(false);
+  const set = (v: boolean) => { on.current = v; setLive(v); };
+  const wake = () => { if (!on.current) playInvite(index); set(true); };
+  const clear = () => { window.clearTimeout(timer.current); timer.current = undefined; };
+  useEffect(() => clear, []);
+  const handlers = {
+    onPointerEnter: (e: React.PointerEvent) => { if (e.pointerType === 'mouse') wake(); },
+    onPointerLeave: (e: React.PointerEvent) => { if (e.pointerType === 'mouse') { clear(); set(false); } },
+    onPointerDown: (e: React.PointerEvent) => {
+      if (e.pointerType === 'mouse') return;
+      clear();
+      timer.current = window.setTimeout(() => { timer.current = undefined; wake(); }, 90);
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      if (e.pointerType === 'mouse') return;
+      if (timer.current !== undefined) { clear(); wake(); }
+      timer.current = window.setTimeout(() => set(false), 420);
+    },
+    onPointerCancel: (e: React.PointerEvent) => { if (e.pointerType !== 'mouse') { clear(); set(false); } },
+    onFocus: () => wake(),
+    onBlur: (e: React.FocusEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) set(false); },
+  };
+  return { live, handlers };
 }
 
 /**

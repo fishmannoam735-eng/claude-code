@@ -278,3 +278,30 @@ button { font-family: inherit; }
 .pb-step-2 { background: linear-gradient(160deg, #FFFFFF 0%, #E4E7EC 35%, #BFC5CF 70%, #8E96A3 100%); color: #2E333B; box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.8), inset 0 -6px 12px rgb(40 50 60 / 0.2); }
 .pb-step-3 { background: linear-gradient(160deg, #FBE1C8 0%, #E9B48A 35%, #CD8A55 70%, #9A5C30 100%); color: #3E220E; box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.6), inset 0 -6px 12px rgb(90 40 10 / 0.25); }
 @media (prefers-reduced-motion: reduce) { .pb-spot, .pb-twinkle { animation: none; } .pb-twinkle { opacity: 0.7; } }
+
+/* Today's game cards come alive under the mouse or a resting finger:
+   lift and grow, a glow of the game's colour, a light sweeping across,
+   the little board tilting forward. Transform and opacity only. */
+.pb-card { transition: transform 420ms cubic-bezier(.2,1.5,.4,1); transform-origin: 50% 60%; }
+.pb-card-glow { opacity: 0; transition: opacity 260ms ease, transform 420ms cubic-bezier(.2,1.5,.4,1); transform-origin: 50% 60%; }
+.pb-card-art { transition: transform 460ms cubic-bezier(.2,1.6,.4,1); }
+.pb-card-shine {
+  opacity: 0; transform: translateX(-130%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55) 50%, transparent);
+}
+.pb-card-wrap[data-live] { z-index: 2; }
+.pb-card-wrap[data-live] .pb-card,
+.pb-card-wrap[data-live] .pb-card-glow { transform: translateY(-6px) scale(1.04); }
+.pb-card-wrap[data-live] .pb-card-glow { opacity: 1; }
+.pb-card-wrap[data-live] .pb-card-art { transform: rotate(-4deg) scale(1.1); }
+.pb-card-wrap[data-live] .pb-card-shine { animation: pb-card-shine 820ms cubic-bezier(.3,.6,.3,1) 60ms both; }
+@keyframes pb-card-shine {
+  0% { opacity: 0; transform: translateX(-130%) skewX(-18deg); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(330%) skewX(-18deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-card, .pb-card-glow, .pb-card-art { transition: opacity 200ms ease; }
+  .pb-card-wrap[data-live] .pb-card, .pb-card-wrap[data-live] .pb-card-glow, .pb-card-wrap[data-live] .pb-card-art { transform: none; }
+  .pb-card-wrap[data-live] .pb-card-shine { animation: none; }
+}

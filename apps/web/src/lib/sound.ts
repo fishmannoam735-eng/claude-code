@@ -159,6 +159,30 @@ const SOUNDS: Record<Sound, () => void> = {
   },
 };
 
+/**
+ * The invitation a game card gives when a finger or the mouse rests on it:
+ * a soft breath of air, a muffled wooden touch and a small bell. Each game
+ * rings its own note of one pentatonic chord, so running a finger down the
+ * list plays a little tune. Kept well under the move sounds and rate-limited.
+ */
+const INVITE_NOTES = [659.25, 783.99, 880, 1046.5, 1174.66];
+let lastInvite = 0;
+export function playInvite(index: number): void {
+  if (!useSoundSetting.getState().on) return;
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  if (now - lastInvite < 260) return;
+  lastInvite = now;
+  try {
+    const f = INVITE_NOTES[index % INVITE_NOTES.length]!;
+    hiss(vary(1400, 0.06), 0.35, 0.55, 0.07, 0.32);           // breath of air
+    hiss(vary(5200, 0.05), 0.9, 0.22, 0.04, 0.22, 0.03);       // silky top
+    tone('triangle', f * 0.5, f * 0.48, 0.32, 0.003, 0.09);    // soft wooden touch
+    tone('sine', f, f, 0.2, 0.012, 0.9, 0.04);                 // the bell
+    tone('sine', f * 2.005, f * 2.005, 0.05, 0.01, 0.5, 0.04); // its shimmer
+    tone('sine', f * 1.5, f * 1.5, 0.06, 0.02, 0.7, 0.12);     // a fifth, quietly after
+  } catch { /* audio is a nicety */ }
+}
+
 export function play(sound: Sound): void {
   if (!useSoundSetting.getState().on) return;
   try { SOUNDS[sound](); } catch { /* audio is a nicety; never break a move over it */ }
