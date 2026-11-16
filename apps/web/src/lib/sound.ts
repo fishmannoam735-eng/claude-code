@@ -29,7 +29,7 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
 
-function audio(): { ctx: AudioContext; out: GainNode; noise: AudioBuffer } | null {
+export function audio(): { ctx: AudioContext; out: GainNode; noise: AudioBuffer } | null {
   if (typeof window === 'undefined') return null;
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;

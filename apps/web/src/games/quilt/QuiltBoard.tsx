@@ -1,7 +1,7 @@
 import { useCallback, useId, useMemo, useRef } from 'react';
 import { quiltGame } from '@pb/engine';
-import { CROWNS_PALETTE, tileColours } from '../crowns/palette';
-import { WoodTray, tileStyle } from '../../components/WoodTray';
+import { quiltColourName, quiltFace, quiltRgb } from './palette';
+import { SEAM, WoodTray, tileStyle } from '../../components/WoodTray';
 import { patchesOf, spanOf, useQuilt } from './store';
 
 type Clue = quiltGame.Clue;
@@ -10,51 +10,112 @@ const { colOf, rowOf } = quiltGame;
 
 // Each clue owns one pastel, LinkedIn Patches style: its badge wears it, and
 // the patch you draw around it fills with it, so which clue a patch belongs
-// to is never in doubt. The palette is Crowns' tray pastels.
-const pick = (k: number) => CROWNS_PALETTE[k % CROWNS_PALETTE.length]!;
-const rgb = (k: number, f = 1): string =>
-  `rgb(${pick(k).rgb.map((v) => Math.min(255, Math.round(v * f))).join(' ')})`;
-export const clueColourName = (k: number): string => pick(k).name;
+// to is never in doubt.
+const rgb = quiltRgb;
+export const clueColourName = quiltColourName;
 
 // Unclaimed cells are plain ivory tiles, as on Eclipse.
 const EMPTY = {
   face: 'linear-gradient(135deg, rgb(255 251 240) 0%, rgb(250 243 226) 45%, rgb(238 228 206) 100%)',
   side: 'rgb(196 180 150)',
 };
-const CONFLICT_TINT = 'linear-gradient(rgb(180 80 60 / 0.32), rgb(180 80 60 / 0.32))';
+const CONFLICT_TINT = 'linear-gradient(rgb(200 70 50 / 0.34), rgb(200 70 50 / 0.34))';
+
+// A drawn patch is a padded piece of cloth: a lacquer-like gloss across its
+// top, a faint woven texture, a thick side and stitches sewn round its edge.
+// All of it is plain gradients and shadows, so nothing repaints per frame.
+const GLOSS = 'linear-gradient(172deg, rgb(255 255 255 / 0.5) 0%, rgb(255 255 255 / 0.16) 30%, rgb(255 255 255 / 0) 31%)';
+const WEAVE =
+  'repeating-linear-gradient(45deg, rgb(255 255 255 / 0.07) 0 0.35cqw, rgb(255 255 255 / 0) 0.35cqw 0.7cqw), ' +
+  'repeating-linear-gradient(-45deg, rgb(60 30 10 / 0.05) 0 0.35cqw, rgb(60 30 10 / 0) 0.35cqw 0.7cqw)';
+const PATCH_THICK = 0.95; // cqw, a little more than a loose tile: patches sit proud of the cloth
+
+function patchStyle(k: number, broken: boolean): React.CSSProperties {
+  const face = quiltFace(k);
+  const side = broken ? 'rgb(150 60 44)' : rgb(k, 0.66);
+  return {
+    top: `${SEAM}cqw`, bottom: `${SEAM + PATCH_THICK}cqw`, left: `${SEAM}cqw`, right: `${SEAM}cqw`,
+    borderRadius: '1.6cqw',
+    background: `${GLOSS}, ${WEAVE}, ${broken ? `${CONFLICT_TINT}, ` : ''}${face}`,
+    boxShadow:
+      `0 ${PATCH_THICK}cqw 0 ${side}, 0 ${PATCH_THICK + 0.5}cqw 1.2cqw rgb(40 22 8 / 0.38), ` +
+      `inset 0.25cqw 0.3cqw 0 rgb(255 255 255 / 0.55), inset -0.2cqw -0.35cqw 0 rgb(0 0 0 / 0.07)` +
+      (broken ? ', inset 0 0 0 0.6cqw var(--color-danger)' : ''),
+  };
+}
+
+/**
+ * The stitches round a patch. They sew themselves in when the patch is cut:
+ * a mask uncovers them along the edge, one short animation per patch.
+ */
+function Stitches({ w, h, k, broken }: { w: number; h: number; k: number; broken: boolean }) {
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const W = w * 100, H = h * 100;
+  // In hundredths of a cell. The face stops about a tenth of a cell above the
+  // patch's bottom, where its thick side shows, so the stitches stop short too.
+  const inset = 15;
+  const x = inset, y = inset, rw = W - inset * 2, rh = H - inset * 2 - 10;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
+      <defs>
+        <mask id={`${id}m`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+          <rect x={x} y={y} width={rw} height={rh} rx="13" fill="none" stroke="#fff" strokeWidth="14" pathLength={1} className="pb-sew" />
+        </mask>
+      </defs>
+      <g mask={`url(#${id}m)`}>
+        <rect x={x} y={y + 1.5} width={rw} height={rh} rx="13" fill="none" stroke={broken ? 'rgb(120 30 20 / 0.5)' : rgb(k, 0.55)} strokeOpacity={0.55} strokeWidth="3.2" strokeDasharray="9 7" strokeLinecap="round" />
+        <rect x={x} y={y} width={rw} height={rh} rx="13" fill="none" stroke="rgb(255 255 255 / 0.9)" strokeWidth="3.2" strokeDasharray="9 7" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
 
 const BADGE: Record<quiltGame.Shape, { x: number; y: number; w: number; h: number }> = {
-  square: { x: 3, y: 3, w: 18, h: 18 },
-  wide: { x: 0.5, y: 5.5, w: 23, h: 13 },
-  tall: { x: 5.5, y: 0.5, w: 13, h: 23 },
+  square: { x: 3.5, y: 3.5, w: 17, h: 17 },
+  wide: { x: 1, y: 6, w: 22, h: 12 },
+  tall: { x: 6, y: 1, w: 12, h: 22 },
 };
 
 /**
- * A clue badge: its outline is the patch's shape (square, wide or tall) or a
- * round chip for a size or a free patch, and it carries the number or a "?".
+ * A clue badge, made like an enamel button: a shadow on the cloth, a darker
+ * rim, a domed face lit from the top left and a glossy highlight. Its
+ * outline is the patch's shape (square, wide or tall), or round for a size or
+ * a free patch, and it carries the number or a "?". Shape badges carry a row
+ * of stitches, so they read as a little patch themselves.
  */
 export function ClueBadge({ clue, k, className }: { clue: Clue; k: number; className?: string }) {
-  const id = useId();
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const b = clue.kind === 'shape' ? BADGE[clue.shape] : null;
-  const ink = rgb(k, 0.42);
+  const ink = rgb(k, 0.36);
+  const shape = (dx: number, dy: number, grow: number, props: React.SVGProps<SVGRectElement & SVGCircleElement>) => b
+    ? <rect x={b.x + dx - grow} y={b.y + dy - grow} width={b.w + grow * 2} height={b.h + grow * 2} rx={3.2 + grow} {...props} />
+    : <circle cx={12 + dx} cy={12 + dy} r={9.6 + grow} {...props} />;
+  const label = clue.kind === 'area' ? String(clue.area) : clue.kind === 'any' ? '?' : null;
+  const size = clue.kind === 'area' && clue.area >= 10 ? 10.5 : 12.5;
   return (
-    <svg viewBox="0 0 24 24" className={className ?? 'h-[76%] w-[76%]'} aria-hidden="true"
-      style={{ filter: 'drop-shadow(0 0.25cqw 0.25cqw rgb(60 40 20 / 0.35))', overflow: 'visible' }}>
+    <svg viewBox="0 0 24 24" className={className ?? 'h-[78%] w-[78%]'} aria-hidden="true" style={{ overflow: 'visible' }}>
       <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor={rgb(k, 1.04)} />
-          <stop offset="1" stopColor={rgb(k, 0.84)} />
-        </linearGradient>
+        <radialGradient id={`${id}f`} cx="34%" cy="28%" r="80%">
+          <stop offset="0" stopColor={rgb(k, 1.14)} />
+          <stop offset="0.55" stopColor={rgb(k, 1)} />
+          <stop offset="1" stopColor={rgb(k, 0.8)} />
+        </radialGradient>
       </defs>
+      {shape(0.5, 1.4, 0.3, { fill: 'rgb(50 30 12 / 0.32)' })}
+      {shape(0, 0, 0.9, { fill: '#fff' })}
+      {shape(0, 0, 0, { fill: rgb(k, 0.62) })}
+      {shape(0, -0.45, -0.9, { fill: `url(#${id}f)` })}
+      {b && shape(0, -0.45, -3, { fill: 'none', stroke: 'rgb(255 255 255 / 0.85)', strokeWidth: 0.8, strokeDasharray: '1.6 1.3', strokeLinecap: 'round' })}
       {b
-        ? <rect x={b.x} y={b.y} width={b.w} height={b.h} rx="3" fill={`url(#${id})`} stroke="#fff" strokeWidth="1.5" />
-        : <circle cx="12" cy="12" r="9.5" fill={`url(#${id})`} stroke="#fff" strokeWidth="1.5" />}
-      {clue.kind !== 'shape' && (
-        <text x="12" y="12.4" textAnchor="middle" dominantBaseline="central" fill={ink}
-          fontSize={clue.kind === 'area' && clue.area >= 10 ? 10 : 12} fontWeight="800"
-          style={{ fontVariantNumeric: 'tabular-nums' }}>
-          {clue.kind === 'area' ? clue.area : '?'}
-        </text>
+        ? <rect x={b.x + 2} y={b.y + 1.2} width={b.w - 4} height={Math.min(4, b.h * 0.28)} rx={2} fill="#fff" opacity={0.45} />
+        : <ellipse cx={9.4} cy={7.2} rx={5} ry={2.4} fill="#fff" opacity={0.5} transform="rotate(-24 9.4 7.2)" />}
+      {label && (
+        <>
+          <text x="12" y="13.1" textAnchor="middle" dominantBaseline="central" fill="#fff" opacity={0.6}
+            fontSize={size} fontWeight="900" style={{ fontVariantNumeric: 'tabular-nums' }}>{label}</text>
+          <text x="12" y="12.4" textAnchor="middle" dominantBaseline="central" fill={ink}
+            fontSize={size} fontWeight="900" style={{ fontVariantNumeric: 'tabular-nums' }}>{label}</text>
+        </>
       )}
     </svg>
   );
@@ -107,6 +168,20 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
   return (
     <WoodTray
       gridRef={boxRef}
+      overlay={!hidden && preview && preview.w * preview.h > 1 ? (
+        // The size of the rectangle being drawn, on a tag pinned to its top
+        // edge (its bottom edge on the top row), above the badges.
+        <span
+          className="absolute whitespace-nowrap rounded-full bg-[rgb(255_252_244)] px-[1.6cqw] py-[0.5cqw] text-[3.3cqw] font-extrabold tabular-nums leading-none text-[rgb(70_48_24)] shadow-[0_0.45cqw_0_rgb(150_120_80),0_0.8cqw_1.4cqw_rgb(40_24_10/0.3)]"
+          style={{
+            left: pc(preview.c + preview.w / 2),
+            top: preview.r > 0 ? pc(preview.r) : pc(preview.r + preview.h),
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          {preview.w}×{preview.h}{preview.w > 1 && preview.h > 1 ? ` = ${preview.w * preview.h}` : ''}
+        </span>
+      ) : undefined}
       grid={{
         className: 'touch-none',
         // Same native-drag trap Thread hit: pressing on a glyph and moving starts
@@ -138,35 +213,50 @@ export function QuiltBoard({ hidden }: { hidden: boolean }) {
         ))}
       </div>
 
-      {/* A drawn patch is one glossy piece in its clue's colour. */}
+      {/* A drawn patch is one padded, stitched piece in its clue's colour. It
+          pops in when cut, and its stitches sew themselves round it. */}
       {!hidden && patches.map((p, k) => {
         if (!p.rect) return null;
-        const { face, side } = tileColours(k);
+        const { r, c, w, h } = p.rect;
         return (
           <div
-            key={`p${k}`}
+            key={`p${k}-${r}-${c}-${w}-${h}`}
             aria-hidden="true"
-            className="pointer-events-none absolute"
-            style={{ left: pc(p.rect.c), top: pc(p.rect.r), width: pc(p.rect.w), height: pc(p.rect.h) }}
+            className="pb-patch pointer-events-none absolute"
+            style={{ left: pc(c), top: pc(r), width: pc(w), height: pc(h) }}
           >
-            <span data-tile className="absolute" style={tileStyle(
-              p.broken ? `${CONFLICT_TINT}, ${face}` : face,
-              side,
-              p.broken ? 'var(--color-danger)' : undefined,
-            )} />
+            <span data-tile className="absolute overflow-hidden" style={patchStyle(k, p.broken)}>
+              <Stitches w={w} h={h} k={k} broken={p.broken} />
+            </span>
           </div>
         );
       })}
 
-      {!hidden && preview && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute"
-          style={{ left: pc(preview.c), top: pc(preview.r), width: pc(preview.w), height: pc(preview.h) }}
-        >
-          <span className="absolute inset-[0.4cqw] rounded-[1.1cqw] border-[0.7cqw] border-dashed border-accent bg-accent/20" />
-        </div>
-      )}
+      {/* The rectangle being drawn wears the colour of the clue it would
+          claim, or red if it covers two. Its size rides on a tag in the overlay. */}
+      {!hidden && preview && (() => {
+        const inside = puzzle.clues
+          .map((clue, k) => ({ clue, k }))
+          .filter(({ clue }) => {
+            const r = rowOf(clue.cell, n), c = colOf(clue.cell, n);
+            return r >= preview.r && r < preview.r + preview.h && c >= preview.c && c < preview.c + preview.w;
+          });
+        const one = inside.length === 1 ? inside[0]!.k : null;
+        const tint = inside.length > 1 ? 'rgb(214 80 60)' : one !== null ? rgb(one, 0.8) : 'var(--color-accent)';
+        const fill = inside.length > 1 ? 'rgb(214 80 60 / 0.28)' : one !== null ? `${rgb(one, 1.02).slice(0, -1)} / 0.62)` : 'rgb(255 255 255 / 0.25)';
+        return (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{ left: pc(preview.c), top: pc(preview.r), width: pc(preview.w), height: pc(preview.h) }}
+          >
+            <span
+              className="absolute inset-[0.35cqw] rounded-[1.5cqw] border-[0.6cqw] border-dashed"
+              style={{ borderColor: tint, background: fill, boxShadow: '0 0 0 0.35cqw rgb(255 255 255 / 0.55)' }}
+            />
+          </div>
+        );
+      })()}
 
       {/* The hint row being read: the rest of the board dims, its squares light
           up, and squares it rules out get a red cross. */}

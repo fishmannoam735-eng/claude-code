@@ -305,3 +305,18 @@ button { font-family: inherit; }
   .pb-card-wrap[data-live] .pb-card, .pb-card-wrap[data-live] .pb-card-glow, .pb-card-wrap[data-live] .pb-card-art { transform: none; }
   .pb-card-wrap[data-live] .pb-card-shine { animation: none; }
 }
+
+/* ---------------------------------------------------------- quilt */
+/* A patch drops onto the cloth with a soft bounce; its stitches sew round. */
+@keyframes pb-patch-in {
+  0% { transform: scale(0.82); opacity: 0.3; }
+  55% { transform: scale(1.05); opacity: 1; }
+  80% { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+@keyframes pb-sew-in { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.pb-patch { animation: pb-patch-in 340ms cubic-bezier(.2,.9,.3,1.2) both; }
+.pb-sew { stroke-dasharray: 1 1; stroke-dashoffset: 0; animation: pb-sew-in 700ms ease-in-out 120ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .pb-patch, .pb-sew { animation: none; }
+}

@@ -25,5 +25,6 @@ export const Icon = {
   Trophy: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M8 4h8v5a4 4 0 0 1-8 0V4z" /><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" /><path d="M12 13v4M8.5 20h7M10 17h4" /></svg>,
   User: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><circle cx="12" cy="8" r="4" /><path d="M4 20a8 8 0 0 1 16 0" /></svg>,
   Chart: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></svg>,
+  Music: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M9 18V5l11-2v13" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></svg>,
   Mute: (p: SVGProps<SVGSVGElement>) => <svg {...base} {...p}><path d="M4 9v6h4l5 4V5L8 9H4z" /><path d="M17 9.5l5 5M22 9.5l-5 5" /></svg>,
 };

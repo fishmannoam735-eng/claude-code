@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { noteHint } from '../../lib/assists';
 import { quilt, quiltGame, parseSeed, type QuiltHint, type QuiltPuzzle } from '@pb/engine';
-import { CROWNS_PALETTE } from '../crowns/palette';
+import { quiltColourName } from './palette';
 import type { BaseSnapshot } from '../../lib/persistence';
 
 const { boundsOf, clueName, colOf, fitsClue, nextQuiltHint, rectCells, rowOf } = quiltGame;
@@ -353,7 +353,7 @@ export const useQuilt = create<GameState>((set, get) => {
       const p = s.puzzle;
       noteHint(s.seed, s.owner);
       const hint = nextQuiltHint(p.n, p.clues, s.owner, p.solution, (k) => {
-        const colour = CROWNS_PALETTE[k % CROWNS_PALETTE.length]!.name;
+        const colour = quiltColourName(k);
         return clueName(p.clues[k]!).replace(/^the /, `the ${colour} `);
       });
       set({ hint, hintStep: 0, selected: null, anchor: null });

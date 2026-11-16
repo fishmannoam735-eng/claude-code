@@ -7,6 +7,7 @@ import { Icon } from './Icon';
 import { GAME_COLOR, GAME_INK } from './GameMark';
 import { fmtTime, DIFF_LABEL } from '../lib/format';
 import { useSoundSetting } from '../lib/sound';
+import { useGameMusic, useMusicSetting } from '../lib/music';
 import { readAssists } from '../lib/assists';
 import { supabase, useSession } from '../lib/session';
 import { GAME_NAME, fmtPoints, ordinal, useMe } from '../lib/contest';
@@ -35,6 +36,8 @@ export function GameHeader(props: {
   onTogglePause: () => void;
 }) {
   const paused = !props.solved && !props.running;
+  // Each game's own gentle loop, while the clock runs.
+  useGameMusic(props.parsed.game, props.running && !props.solved);
   const isToday = props.parsed.isDaily && props.parsed.key === localDateKey();
   return (
     <header className="flex h-13 items-center gap-3">
@@ -75,18 +78,77 @@ export function GameHeader(props: {
   );
 }
 
+/**
+ * The speaker button opens a small card with two switches: Sounds silences
+ * everything (moves and music), Music silences just the music.
+ */
 function SoundToggle() {
   const on = useSoundSetting((s) => s.on);
   const toggle = useSoundSetting((s) => s.toggle);
+  const music = useMusicSetting((s) => s.on);
+  const toggleMusic = useMusicSetting((s) => s.toggle);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event): void => {
+      if (!(e.target as Element | null)?.closest?.('[data-sound-menu]')) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent): void => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('pointerdown', close, true);
+    window.addEventListener('keydown', esc);
+    return () => { window.removeEventListener('pointerdown', close, true); window.removeEventListener('keydown', esc); };
+  }, [open]);
+  return (
+    <div className="relative" data-sound-menu>
+      <button
+        type="button"
+        aria-label="Sound and music"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-line-minor bg-raised text-ink-2"
+      >
+        {on ? <Icon.Sound /> : <Icon.Mute />}
+      </button>
+      {open && (
+        <div
+          role="group"
+          aria-label="Sound and music"
+          className="pb-in absolute right-0 top-12 z-30 w-[208px] origin-top-right rounded-2xl border border-line-minor bg-raised p-1.5 shadow-[0_14px_30px_-12px_rgb(40_24_10/0.45)]"
+          style={{ animationDuration: '220ms' }}
+        >
+          <SwitchRow icon={on ? <Icon.Sound /> : <Icon.Mute />} label="Sounds" note="Moves and music" on={on} onToggle={toggle} />
+          <SwitchRow icon={<Icon.Music />} label="Music" note="A soft tune per game" on={on && music} disabled={!on} onToggle={toggleMusic} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SwitchRow(p: { icon: ReactNode; label: string; note: string; on: boolean; disabled?: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
-      aria-label={on ? 'Mute sounds' : 'Turn sounds on'}
-      aria-pressed={on}
-      onClick={toggle}
-      className="flex h-10 w-10 items-center justify-center rounded-xl border border-line-minor bg-raised text-ink-2"
+      role="switch"
+      aria-checked={p.on}
+      disabled={p.disabled}
+      onClick={p.onToggle}
+      className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left disabled:opacity-45"
     >
-      {on ? <Icon.Sound /> : <Icon.Mute />}
+      <span className="text-ink-2">{p.icon}</span>
+      <span className="flex flex-grow flex-col">
+        <span className="text-[13.5px] font-semibold leading-tight text-ink">{p.label}</span>
+        <span className="text-[11px] leading-tight text-ink-2">{p.note}</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className={`relative h-[22px] w-[38px] flex-shrink-0 rounded-full transition-colors duration-200 ${p.on ? 'bg-accent' : 'bg-line-minor'}`}
+      >
+        <span
+          className="absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.3)] transition-transform duration-200"
+          style={{ transform: `translateX(${p.on ? 18 : 2}px)` }}
+        />
+      </span>
     </button>
   );
 }
