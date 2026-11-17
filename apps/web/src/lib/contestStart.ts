@@ -2,7 +2,7 @@ import { localDateKey, makeSeed, DIFFICULTIES, type GameId } from '@pb/engine';
 import { readJSON, removeKey, writeJSON } from './storage';
 
 const FLAG = 'pb:contest-start';
-const GAMES: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt'];
+const GAMES: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges'];
 
 /**
  * Runs once per phone when the contest version first opens. Boards played

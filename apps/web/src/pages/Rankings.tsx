@@ -16,7 +16,7 @@ const PERIODS: { id: Period; label: string }[] = [
   { id: 'week', label: 'This week' },
   { id: 'all', label: 'All time' },
 ];
-const GAMES: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt'];
+const GAMES: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges'];
 
 const shortDay = (key: string): string => {
   const [y, m, d] = key.split('-').map(Number);

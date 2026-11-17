@@ -269,7 +269,7 @@ export type Database = {
     }
     Enums: {
       difficulty: "easy" | "normal" | "hard"
-      game_id: "nine" | "crowns" | "eclipse" | "thread" | "quilt"
+      game_id: "nine" | "crowns" | "eclipse" | "thread" | "quilt" | "bridges"
       play_mode: "daily" | "practice" | "challenge"
       play_status: "in_progress" | "solved" | "abandoned"
     }
@@ -383,7 +383,7 @@ export const Constants = {
   public: {
     Enums: {
       difficulty: ["easy", "normal", "hard"],
-      game_id: ["nine", "crowns", "eclipse", "thread", "quilt"],
+      game_id: ["nine", "crowns", "eclipse", "thread", "quilt", "bridges"],
       play_mode: ["daily", "practice", "challenge"],
       play_status: ["in_progress", "solved", "abandoned"],
     },

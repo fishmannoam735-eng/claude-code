@@ -14,6 +14,7 @@ import { audio, useSoundSetting } from './sound';
  *   Crowns   "Court"     a harp waltz in three
  *   Thread   "Flow"      a running stream of soft plucks with a light brush
  *   Quilt    "Cottage"   a cosy marimba tune with a shaker
+ *   Bridges  "Garden"    a Japanese garden: koto, a breathy bamboo flute and a temple bowl
  *
  * A loop is a chord progression played round and round, with a melody that
  * is chosen afresh (from a fixed seed) on alternate passes so it doesn't feel
@@ -36,7 +37,7 @@ export const useMusicSetting = create<{ on: boolean; toggle: () => void }>((set,
   },
 }));
 
-type Voice = 'bell' | 'box' | 'harp' | 'pluck' | 'marimba' | 'epiano';
+type Voice = 'bell' | 'box' | 'harp' | 'pluck' | 'marimba' | 'epiano' | 'koto' | 'flute' | 'rin';
 
 interface Song {
   bpm: number;
@@ -53,6 +54,8 @@ interface Song {
   tune?: { voice: Voice; gain: number; notes: [number, number][] };
   /** Soft chords played together on these steps of each bar. */
   comp?: { voice: Voice; gain: number; steps: number[] };
+  /** A singing bowl struck on the first beat every `every` bars, on the chord's root. */
+  rin?: { gain: number; every: number };
 }
 
 const off = null;
@@ -142,6 +145,37 @@ const SONGS: Record<GameId, Song> = {
     bass: { gain: 0.15, steps: [0, 4], fifthOn: [4] },
     perc: { shaker: [1, 3, 5, 7], gain: 0.045 },
   },
+  // "Garden": slow and spacious, in the Japanese yo scale (D E G A B, no
+  // semitones, so nothing ever clashes). A koto plucks a sparse pattern over a
+  // quiet drone, a bamboo flute breathes a written phrase on alternate passes
+  // (an octave lower the second time), and a temple bowl rings now and then.
+  bridges: {
+    bpm: 62, beats: 4, sub: 2, barsPerChord: 2,
+    chords: [
+      { tones: [50, 57, 62, 64], bass: 38 },  // D  (D A D E)
+      { tones: [55, 59, 62, 64], bass: 43 },  // G6
+      { tones: [52, 55, 59, 62], bass: 40 },  // Em7
+      { tones: [57, 62, 64, 69], bass: 45 },  // Asus4
+    ],
+    pad: { gain: 0.03, cutoff: 760, type: 'sine' },
+    arp: { voice: 'koto', gain: 0.17, up: 12, pattern: [0, off, off, 2, off, 3, 1, off], chance: 0.8 },
+    lead: { voice: 'koto', gain: 0.09, scale: [74, 76, 79, 81, 83, 86], chance: 0.12, on: (s) => s % 2 === 1 },
+    bass: { gain: 0.11, steps: [0] },
+    rin: { gain: 0.08, every: 4 },
+    tune: {
+      voice: 'flute', gain: 0.13,
+      notes: [
+        [0, 74], [4, 76],                     // D:   D  E
+        [8, 79], [13, 76],                    //      G  E
+        [16, 81], [21, 79],                   // G:   A  G
+        [24, 76], [28, 74],                   //      E  D
+        [32, 71], [36, 74],                   // Em:  B  D
+        [40, 76], [43, 79], [46, 76],         //      E  G  E
+        [48, 74], [52, 69],                   // A:   D  A
+        [56, 71], [60, 74],                   //      B  D
+      ],
+    },
+  },
 };
 
 const hz = (m: number): number => 440 * 2 ** ((m - 69) / 12);
@@ -223,6 +257,73 @@ function play(b: Bus, voice: Voice, f: number, at: number, v: number): void {
       osc(b, 'sine', f * 3, at, v * 0.08, 0.002, 0.15, trem);
       break;
     }
+    case 'koto': {   // a silk string plucked with a pick: bright attack that mellows fast
+      const lp = b.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.Q.value = 3;
+      lp.frequency.setValueAtTime(5200, at);
+      lp.frequency.exponentialRampToValueAtTime(1100, at + 0.35);
+      lp.connect(b.dest);
+      osc(b, 'sawtooth', f, at, v * 0.45, 0.002, 1.4, lp);
+      osc(b, 'triangle', f, at, v * 0.8, 0.002, 1.8, lp);
+      osc(b, 'sine', f * 2.003, at, v * 0.18, 0.002, 0.6, lp);
+      break;
+    }
+    case 'flute': {  // a bamboo flute: scooped up into the note, breathy, swelling, with a late vibrato
+      const g = b.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(v * 0.7, at + 0.16);
+      g.gain.linearRampToValueAtTime(v, at + 0.9);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 2.6);
+      const lp = b.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 2400;
+      g.connect(lp).connect(b.dest);
+      const o = b.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f * 0.965, at);
+      o.frequency.exponentialRampToValueAtTime(f, at + 0.14);
+      const o2 = b.ctx.createOscillator();
+      o2.type = 'triangle';
+      o2.frequency.setValueAtTime(f * 0.965, at);
+      o2.frequency.exponentialRampToValueAtTime(f, at + 0.14);
+      const g2 = b.ctx.createGain();
+      g2.gain.value = 0.12;
+      const lfo = b.ctx.createOscillator();
+      lfo.frequency.value = 5.2;
+      const depth = b.ctx.createGain();
+      depth.gain.setValueAtTime(0, at);
+      depth.gain.linearRampToValueAtTime(f * 0.007, at + 1.1);
+      lfo.connect(depth);
+      depth.connect(o.frequency);
+      depth.connect(o2.frequency);
+      o.connect(g);
+      o2.connect(g2).connect(g);
+      for (const x of [o, o2, lfo]) { x.start(at); x.stop(at + 2.7); }
+      // the breath: filtered air on the attack, and a little under the whole note
+      const src = b.ctx.createBufferSource();
+      src.buffer = b.noise;
+      src.loop = true;
+      const bp = b.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = f * 2;
+      bp.Q.value = 1.2;
+      const bg = b.ctx.createGain();
+      bg.gain.setValueAtTime(0.0001, at);
+      bg.gain.exponentialRampToValueAtTime(v * 0.5, at + 0.05);
+      bg.gain.exponentialRampToValueAtTime(v * 0.08, at + 0.4);
+      bg.gain.exponentialRampToValueAtTime(0.0001, at + 2.4);
+      src.connect(bp).connect(bg).connect(b.dest);
+      src.start(at, Math.random() * 0.3);
+      src.stop(at + 2.5);
+      break;
+    }
+    case 'rin':      // a temple singing bowl: low, long, with slow beating partials
+      osc(b, 'sine', f, at, v, 0.01, 6);
+      osc(b, 'sine', f * 1.004, at, v * 0.6, 0.01, 5.5);
+      osc(b, 'sine', f * 2.71, at, v * 0.3, 0.005, 3.2);
+      osc(b, 'sine', f * 5.12, at, v * 0.08, 0.003, 1.4);
+      break;
     case 'marimba':  // a wooden bar: round tone and a quick knock on top
       osc(b, 'sine', f, at, v, 0.002, 0.6);
       osc(b, 'sine', f * 4, at, v * 0.25, 0.001, 0.06);
@@ -312,6 +413,8 @@ function scheduleStep(b: Bus, s: Song, step: number, at: number): void {
     const v = s.comp.gain * (inBar === 0 ? 1 : 0.7);
     for (const m of chord.tones) play(b, s.comp.voice, hz(m), human(), v);
   }
+
+  if (s.rin && inBar === 0 && bar % s.rin.every === 0) play(b, 'rin', hz(chord.bass + 36), at, s.rin.gain);
 
   if (s.tune) {
     const loop = s.barsPerChord * s.chords.length * perBar;

@@ -33,6 +33,7 @@ const LINE: Record<GameId, string> = {
   crowns: 'Every crown in its place',
   thread: 'One pipe through every square',
   quilt: 'Every patch stitched in',
+  bridges: 'Every island joined',
 };
 
 const reduced = (): boolean => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -191,7 +192,7 @@ function animateBoard(): void {
   }
 }
 
-type Kind = 'tile' | 'coin' | 'crown' | 'sun' | 'moon' | 'digit' | 'pipe' | 'patch';
+type Kind = 'tile' | 'coin' | 'crown' | 'sun' | 'moon' | 'digit' | 'pipe' | 'patch' | 'blossom' | 'plank';
 
 interface Bit {
   x: number; y: number; vx: number; vy: number;
@@ -205,6 +206,7 @@ const EXTRA: Record<GameId, Kind[]> = {
   nine: ['digit', 'digit', 'digit'],
   thread: ['pipe', 'pipe', 'pipe'],
   quilt: ['patch', 'patch', 'patch'],
+  bridges: ['blossom', 'blossom', 'blossom', 'plank'],
 };
 
 // Loaded as soon as the module is, so it is ready by the time anyone wins.
@@ -271,6 +273,33 @@ function paint(kind: Kind, colour: string, digit: number, px: number, dark: bool
       c.lineWidth = s * 0.08; c.strokeStyle = '#A6E6F0'; c.beginPath(); c.arc(-s * 0.34, -s * 0.34, s * 0.58, 0.12, Math.PI / 2 - 0.12); c.stroke();
       break;
     }
+    case 'blossom': {   // a five-petal cherry blossom
+      for (let k = 0; k < 5; k++) {
+        c.save();
+        c.rotate((k / 5) * Math.PI * 2);
+        const g = c.createLinearGradient(0, 0, 0, -s * 0.55);
+        g.addColorStop(0, '#F59AB4'); g.addColorStop(1, '#FFE4EC');
+        c.fillStyle = g;
+        c.beginPath();
+        c.moveTo(0, 0);
+        c.bezierCurveTo(-s * 0.3, -s * 0.18, -s * 0.24, -s * 0.5, -s * 0.06, -s * 0.52);
+        c.lineTo(0, -s * 0.44);
+        c.lineTo(s * 0.06, -s * 0.52);
+        c.bezierCurveTo(s * 0.24, -s * 0.5, s * 0.3, -s * 0.18, 0, 0);
+        c.fill();
+        c.restore();
+      }
+      c.fillStyle = '#E8A61C'; c.beginPath(); c.arc(0, 0, s * 0.09, 0, Math.PI * 2); c.fill();
+      break;
+    }
+    case 'plank': {     // a little bridge: planks between two red rails
+      const w = s, h = s * 0.42;
+      c.fillStyle = '#D9A066'; c.fillRect(-w / 2, -h / 2, w, h);
+      c.fillStyle = '#5A3818';
+      for (let x = -w / 2 + w / 6; x < w / 2; x += w / 6) c.fillRect(x - s * 0.015, -h / 2, s * 0.03, h);
+      c.fillStyle = '#C0392B'; c.fillRect(-w / 2, -h / 2, w, h * 0.16); c.fillRect(-w / 2, h / 2 - h * 0.16, w, h * 0.16);
+      break;
+    }
     case 'crown': {
       if (crownImg?.complete && crownImg.naturalWidth) c.drawImage(crownImg, -px * 0.48, -px * 0.48, px * 0.96, px * 0.96);
       break;
@@ -318,7 +347,7 @@ function Confetti({ game }: { game: GameId }) {
       const kind = pick(pool);
       const colour = kind === 'tile' || kind === 'patch' ? pick(PASTELS) : '';
       const digit = kind === 'digit' ? 1 + Math.floor(Math.random() * 9) : 0;
-      const size = kind === 'crown' ? 21 : kind === 'digit' ? 20 : (kind === 'tile' || kind === 'patch') ? 16 : 15;
+      const size = kind === 'crown' ? 21 : kind === 'digit' ? 20 : kind === 'blossom' ? 19 : (kind === 'tile' || kind === 'patch' || kind === 'plank') ? 16 : 15;
       const [front, back] = sprite(kind, colour, digit, size);
       bits.push({
         x, y,

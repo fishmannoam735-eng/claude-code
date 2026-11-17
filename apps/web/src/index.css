@@ -51,6 +51,8 @@
   --color-game-thread-text: #22606E;
   --color-game-quilt: #9B4F72;
   --color-game-quilt-text: #7E3F5C;
+  --color-game-bridges: #C0503A;
+  --color-game-bridges-text: #A03E2A;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -92,6 +94,8 @@
     --color-game-thread-text: #6FC0D3;
     --color-game-quilt: #D48CAF;
     --color-game-quilt-text: #DF9DBC;
+    --color-game-bridges: #E8846C;
+    --color-game-bridges-text: #F0937C;
   }
 }
 
@@ -382,4 +386,80 @@ button { font-family: inherit; }
   .pb-hero-pow, .pb-hero-medal, .pb-medal-sway, .pb-medal-glint > span { animation: none; }
   .pb-hero-shock, .pb-hero-speed { animation: none; opacity: 0; }
   .pb-hero-pow { transform: rotate(8deg); }
+}
+
+/* ---------------------------------------------------------- bridges: the pond */
+/* Water, fish and petals are painted once and only slid around (transform/opacity). */
+@keyframes pb-waves-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-6%, -3%, 0); } }
+@keyframes pb-caustic-a { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.9; } 50% { transform: translate3d(28%, 22%, 0) scale(1.15); opacity: 1; } }
+@keyframes pb-caustic-b { 0%, 100% { transform: translate3d(0, 0, 0) scale(1.1); } 50% { transform: translate3d(-24%, -18%, 0) scale(0.95); } }
+.pb-waves { will-change: transform; animation: pb-waves-drift 26s ease-in-out infinite alternate; }
+.pb-caustic { will-change: transform, opacity; animation: pb-caustic-a 19s ease-in-out infinite; }
+.pb-caustic-2 { animation-name: pb-caustic-b; animation-duration: 23s; }
+
+@keyframes pb-koi-a {
+  0%   { transform: translate3d(-18cqw, 18cqw, 0) rotate(14deg); }
+  22%  { transform: translate3d(18cqw, 30cqw, 0) rotate(24deg); }
+  45%  { transform: translate3d(46cqw, 52cqw, 0) rotate(8deg); }
+  70%  { transform: translate3d(72cqw, 50cqw, 0) rotate(-18deg); }
+  100% { transform: translate3d(108cqw, 30cqw, 0) rotate(-10deg); }
+}
+@keyframes pb-koi-b {
+  0%   { transform: translate3d(104cqw, 78cqw, 0) rotate(196deg); }
+  30%  { transform: translate3d(66cqw, 66cqw, 0) rotate(206deg); }
+  60%  { transform: translate3d(34cqw, 72cqw, 0) rotate(168deg); }
+  100% { transform: translate3d(-18cqw, 58cqw, 0) rotate(196deg); }
+}
+@keyframes pb-koi-wiggle { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+.pb-koi { will-change: transform; transform-origin: 50% 50%; }
+.pb-koi-1 { animation: pb-koi-a 34s linear infinite; }
+.pb-koi-2 { animation: pb-koi-b 41s linear -14s infinite; }
+.pb-koi-swim { transform-origin: 80% 50%; animation: pb-koi-wiggle 0.9s ease-in-out infinite alternate; }
+
+@keyframes pb-petal-drift {
+  0%   { transform: translate3d(var(--x0), -6cqw, 0) rotate(0deg); opacity: 0; }
+  8%   { opacity: 0.95; }
+  50%  { transform: translate3d(calc(var(--x0) + 18cqw), 48cqw, 0) rotate(160deg); }
+  92%  { opacity: 0.95; }
+  100% { transform: translate3d(calc(var(--x0) + 30cqw), 98cqw, 0) rotate(320deg); opacity: 0; }
+}
+.pb-petal { will-change: transform, opacity; animation: pb-petal-drift 24s linear infinite; opacity: 0; }
+.pb-petal-0 { --x0: 6cqw; animation-delay: -3s; }
+.pb-petal-1 { --x0: 40cqw; animation-delay: -11s; animation-duration: 29s; }
+.pb-petal-2 { --x0: 62cqw; animation-delay: -19s; animation-duration: 26s; }
+.pb-petal-3 { --x0: 22cqw; animation-delay: -25s; animation-duration: 31s; }
+
+@keyframes pb-isle-ripple { 0% { transform: scale(0.85); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.pb-isle-ripple { animation: pb-isle-ripple 900ms ease-out both; }
+
+/* A new bridge pushes out from the island it was dragged from. */
+@keyframes pb-bridge-build { from { transform: translateX(var(--from, -100%)); } 82% { transform: translateX(calc(var(--from, -100%) * -0.03)); } to { transform: none; } }
+.pb-bridge-build { animation: pb-bridge-build 420ms cubic-bezier(.25,.8,.3,1) both; }
+@keyframes pb-bridge-gone { from { opacity: 1; transform: scaleY(1); } to { opacity: 0; transform: scaleY(0.2) translateY(30%); } }
+.pb-bridge-gone { animation: pb-bridge-gone 300ms ease-in both; }
+@keyframes pb-splash { 0% { transform: scale(0.7); opacity: 0; } 15% { opacity: 0.95; } 100% { transform: scale(1.7); opacity: 0; } }
+.pb-splash { pointer-events: none; animation: pb-splash 700ms ease-out 330ms both; }
+@keyframes pb-bridge-flash { 0%, 100% { opacity: 1; } 25%, 75% { opacity: 0.35; } 50% { opacity: 1; } }
+.pb-bridge-flash { animation: pb-bridge-flash 650ms ease-in-out; }
+@keyframes pb-preview-pulse { from { opacity: 0.55; } to { opacity: 0.95; } }
+.pb-preview {
+  background: repeating-linear-gradient(90deg, rgb(255 248 225) 0 2cqw, transparent 2cqw 3.2cqw);
+  animation: pb-preview-pulse 600ms ease-in-out infinite alternate;
+}
+.pb-hint-ghost {
+  background: repeating-linear-gradient(90deg, var(--color-accent) 0 2cqw, transparent 2cqw 3.2cqw);
+  animation: pb-preview-pulse 700ms ease-in-out infinite alternate;
+}
+
+/* Solved: light runs along every bridge in turn. */
+@keyframes pb-deck-shine { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(260%) skewX(-20deg); } }
+.pb-pond-solved .pb-deck::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 45%;
+  background: linear-gradient(90deg, transparent, rgb(255 248 220 / 0.85), transparent);
+  will-change: transform;
+  animation: pb-deck-shine 900ms ease-in-out calc(var(--sd, 0ms) + 500ms) 2 both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pb-waves, .pb-caustic, .pb-koi, .pb-koi-swim, .pb-isle-ripple, .pb-bridge-build, .pb-bridge-gone, .pb-splash, .pb-bridge-flash, .pb-preview, .pb-hint-ghost, .pb-pond-solved .pb-deck::after { animation: none; }
+  .pb-petal, .pb-splash { display: none; }
 }

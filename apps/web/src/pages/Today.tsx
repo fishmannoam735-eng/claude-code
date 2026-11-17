@@ -17,6 +17,7 @@ import type { Snapshot as EclipseSnapshot } from '../games/eclipse/store';
 import type { Snapshot as CrownsSnapshot } from '../games/crowns/store';
 import type { Snapshot as ThreadSnapshot } from '../games/thread/store';
 import type { Snapshot as QuiltSnapshot } from '../games/quilt/store';
+import type { Snapshot as BridgesSnapshot } from '../games/bridges/store';
 import { localKey } from '../lib/persistence';
 import { Avatar } from '../components/Avatar';
 import { LeadersStage } from '../components/LeadersStage';
@@ -33,6 +34,7 @@ const GAMES: GameDef[] = [
   { id: 'crowns', name: 'Crowns', blurb: 'One crown per colour' },
   { id: 'thread', name: 'Thread', blurb: 'One line, every cell' },
   { id: 'quilt', name: 'Quilt', blurb: 'Cut it into patches' },
+  { id: 'bridges', name: 'Bridges', blurb: 'Join every island' },
 ];
 
 /** How much there is to fill, so a progress bar means the same thing everywhere. */
@@ -42,16 +44,19 @@ const TOTAL: Record<GameId, (d: Difficulty) => number> = {
   crowns: () => 8,
   thread: (d) => threadGame.SIDES[d] ** 2,
   quilt: (d) => quiltGame.SIDES[d] ** 2,
+  // A stand-in until a board is opened; its snapshot carries the real number.
+  bridges: (d) => ({ easy: 16, normal: 26, hard: 36 })[d],
 };
 
-interface TileState { status: 'none' | 'in_progress' | 'solved'; elapsedMs: number; placed: number }
+interface TileState { status: 'none' | 'in_progress' | 'solved'; elapsedMs: number; placed: number; total?: number }
 const BLANK: TileState = { status: 'none', elapsedMs: 0, placed: 0 };
 
 type AnySnapshot =
-  | NineSnapshot | EclipseSnapshot | CrownsSnapshot | ThreadSnapshot | QuiltSnapshot;
+  | NineSnapshot | EclipseSnapshot | CrownsSnapshot | ThreadSnapshot | QuiltSnapshot | BridgesSnapshot;
 
 /** How far along a snapshot is, whichever shape it happens to be. */
 function progressOf(s: AnySnapshot): number {
+  if ('bridges' in s) return s.bridges.reduce((a, b) => a + b, 0);
   if ('path' in s) return s.path.length;
   if ('owner' in s) return s.owner.filter((k) => k >= 0).length;
   return s.grid.filter((v) => v !== 0).length;
@@ -71,7 +76,7 @@ function localBoard(today: string): Board {
   for (const g of GAMES) {
     for (const d of DIFFS) {
       const s = readJSON<AnySnapshot>(localKey(g.id, makeSeed(g.id, today, d)));
-      if (s) out[g.id][d] = { status: s.status, elapsedMs: s.elapsedMs, placed: progressOf(s) };
+      if (s) out[g.id][d] = { status: s.status, elapsedMs: s.elapsedMs, placed: progressOf(s), ...('goal' in s && s.goal ? { total: s.goal } : {}) };
     }
   }
   return out;
@@ -102,6 +107,7 @@ export function Today() {
             status: row.status === 'solved' ? 'solved' : 'in_progress',
             elapsedMs: row.duration_ms ?? 0,
             placed: snap ? progressOf(snap) : 0,
+            ...(snap && 'goal' in snap && snap.goal ? { total: snap.goal } : {}),
           };
           const local = prev[g][row.difficulty];
           const better = local.status === 'none'
@@ -171,10 +177,10 @@ export function Today() {
   );
 }
 
-const CHEERS = ['Five fresh boards are waiting.', 'Nice start. Keep it rolling.', 'Two down, three to go.', 'Past halfway. Lovely.', 'One more and the set is yours.', 'All five solved. See you tomorrow!'];
+const CHEERS = ['Six fresh boards are waiting.', 'Nice start. Keep it rolling.', 'Two down, four to go.', 'Halfway there. Lovely.', 'Past halfway. Keep going.', 'One more and the set is yours.', 'All six solved. See you tomorrow!'];
 
 /**
- * The day at a glance: five tiles set into a wooden plank, one per game. A
+ * The day at a glance: six tiles set into a wooden plank, one per game. A
  * solved game's tile turns its own glossy colour with a check on it.
  */
 function TodayPlank({ board, solved }: { board: Board; solved: number }) {
@@ -191,7 +197,7 @@ function TodayPlank({ board, solved }: { board: Board; solved: number }) {
           {solved} of {GAMES.length} done
         </span>
       </div>
-      <div className="grid grid-cols-5 gap-[5px] rounded-[12px] p-[5px]" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }}>
+      <div className="grid grid-cols-6 gap-[5px] rounded-[12px] p-[5px]" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }}>
         {GAMES.map((g, k) => {
           const done = isDone(board[g.id]);
           const c = GAME_COLOR[g.id];
@@ -299,7 +305,7 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
     ?? prefer((d) => states[d].status !== 'none')
     ?? 'normal';
   const cur = states[shown];
-  const total = TOTAL[def.id](shown);
+  const total = cur.total ?? TOTAL[def.id](shown);
   const started = cur.status !== 'none';
   const solved = cur.status === 'solved';
   const delayMs = 200 + index * 80;

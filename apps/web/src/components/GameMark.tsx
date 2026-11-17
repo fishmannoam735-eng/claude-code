@@ -21,6 +21,7 @@ export const GAME_COLOR: Record<GameId, string> = {
   crowns: 'var(--color-game-crowns)',
   thread: 'var(--color-game-thread)',
   quilt: 'var(--color-game-quilt)',
+  bridges: 'var(--color-game-bridges)',
 };
 
 export const GAME_INK: Record<GameId, string> = {
@@ -29,6 +30,7 @@ export const GAME_INK: Record<GameId, string> = {
   crowns: 'var(--color-game-crowns-text)',
   thread: 'var(--color-game-thread-text)',
   quilt: 'var(--color-game-quilt-text)',
+  bridges: 'var(--color-game-bridges-text)',
 };
 
 const frame = {
@@ -124,12 +126,26 @@ function QuiltMark() {
   );
 }
 
+/** Two round islands joined by a double bridge, and a third by a single one. */
+function BridgesMark() {
+  return (
+    <svg {...frame} className="h-full w-full">
+      <path d="M8 6.2h8M8 9.8h8" strokeWidth="1.4" />
+      <path d="M6 10.5v6" strokeWidth="1.4" />
+      <circle cx="6" cy="8" r="3.2" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="18" cy="8" r="3.2" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="6" cy="18.5" r="3.2" fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  );
+}
+
 const MARKS: Record<GameId, () => React.JSX.Element> = {
   nine: NineMark,
   eclipse: EclipseMark,
   crowns: CrownsMark,
   thread: ThreadMark,
   quilt: QuiltMark,
+  bridges: BridgesMark,
 };
 
 /** The bare mark, inheriting colour from its parent. */

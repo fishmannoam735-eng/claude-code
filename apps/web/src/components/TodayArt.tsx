@@ -4,6 +4,7 @@ import { WoodTray, tileStyle } from './WoodTray';
 import { tileColours } from '../games/crowns/palette';
 import { Moon, Sun } from '../games/eclipse/EclipseBoard';
 import crownUrl from '../games/crowns/assets/crown.webp';
+import { Deck, Isle, WAVES } from '../games/bridges/BridgesBoard';
 
 /**
  * Small portraits of each game's real board for the start page: the same
@@ -201,8 +202,54 @@ function QuiltMini() {
   );
 }
 
+// ------------------------------------------------------------------ Bridges
+// Four islands on a pond, joined by a double across the top and singles down.
+const ISLES: [number, number, number][] = [[0, 0, 3], [0, 3, 3], [3, 0, 1], [3, 3, 1]];
+const SPANS: [number, number, number, number, number][] = [
+  // r, c, length (cells), vertical?, offset (cells)
+  [0, 0, 3, 0, -0.125], [0, 0, 3, 0, 0.125], [0, 0, 3, 1, 0], [0, 3, 3, 1, 0],
+];
+
+function BridgesMini() {
+  const u = 92.4 / 4;
+  return (
+    <WoodTray grid={{ style: { background: 'radial-gradient(ellipse at 38% 30%, #6CC0BC 0%, #3A8E98 42%, #1F5A6C 100%)' } }}>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="pb-waves absolute" style={{ inset: '-12%', backgroundImage: WAVES, backgroundSize: `${u * 1.5}cqw ${u * 0.75}cqw`, opacity: 0.12 }} />
+        <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 3cqw rgb(6 30 40 / 0.55)' }} />
+      </div>
+      {SPANS.map(([r, c, len, v, o], k) => {
+        const thick = o ? 0.17 : 0.25;
+        return (
+          <div
+            key={k}
+            className="absolute"
+            style={{ left: `${(c + 0.5) * u}cqw`, top: `${(r + 0.5) * u}cqw`, width: `${len * u}cqw`, height: 0, transformOrigin: '0 0', transform: `rotate(${v ? 90 : 0}deg) translateY(${o * u}cqw)` }}
+          >
+            <div className="absolute left-0 right-0 overflow-hidden" style={{ top: `${-thick * u / 2}cqw`, height: `${(thick + 0.12) * u}cqw` }}>
+              <div className="pb-bridge-build absolute inset-0" style={{ animationDelay: `calc(var(--card-d, 0ms) + ${400 + k * 260}ms)` }}>
+                <Deck u={u} thick={thick} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {ISLES.map(([r, c, need], k) => (
+        <div
+          key={k}
+          className="pb-in absolute"
+          style={{ left: `${(c + 0.5 - 0.39) * u}cqw`, top: `${(r + 0.5 - 0.39) * u}cqw`, width: `${0.78 * u}cqw`, height: `${0.78 * u}cqw`, ...delay(0.1 + k * 0.08) }}
+        >
+          <Isle u={u} need={need} state="done" />
+        </div>
+      ))}
+      <Sheen />
+    </WoodTray>
+  );
+}
+
 const MINIS: Record<GameId, () => React.JSX.Element> = {
-  nine: NineMini, eclipse: EclipseMini, crowns: CrownsMini, thread: ThreadMini, quilt: QuiltMini,
+  nine: NineMini, eclipse: EclipseMini, crowns: CrownsMini, thread: ThreadMini, quilt: QuiltMini, bridges: BridgesMini,
 };
 
 /** The game's little board in its tray. */

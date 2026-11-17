@@ -25,7 +25,7 @@ export const useMe = create<MeState>((set) => ({
   },
 }));
 
-export const GAME_NAME = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt' } as const;
+export const GAME_NAME = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt', bridges: 'Bridges' } as const;
 
 export const fmtPoints = (n: number): string => n.toLocaleString('en-US');
 

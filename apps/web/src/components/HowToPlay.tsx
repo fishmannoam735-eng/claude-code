@@ -148,9 +148,47 @@ const STEPS: Record<GameId, Step[]> = {
     { text: <>Every patch is <b>at least 2 squares</b>.</> },
     { text: <><b>Drag</b> from one corner to the other to draw a patch. Tap a patch to rub it out; drag its edge to resize.</> },
   ],
+  bridges: [
+    { text: <>Join the islands with <b>bridges</b>. Each island&apos;s number is <b>how many bridges</b> touch it.</>,
+      pic: <Pond w={4} h={1} isles={[[0, 0, 2], [0, 3, 2]]} spans={[[0, 0, 3, 0, -1], [0, 0, 3, 0, 1]]} /> },
+    { text: <>Bridges go <b>straight across or down</b>, never diagonally, and <b>at most two</b> join the same pair.</>,
+      pic: <Pond w={3} h={3} isles={[[0, 0, 1], [0, 2, 3], [2, 2, 2]]} spans={[[0, 0, 2, 0, 0], [0, 2, 2, 1, -1], [0, 2, 2, 1, 1]]} /> },
+    { text: <>Bridges <b>can&apos;t cross</b> each other.</>,
+      pic: <Pair left={<Pond w={3} h={3} isles={[[1, 0, 1], [1, 2, 1], [0, 1, 1], [2, 1, 1]]} spans={[[1, 0, 2, 0, 0], [0, 1, 2, 1, 0]]} bad />} right={<Tick ok={false} />} /> },
+    { text: <>In the end <b>every island is joined</b> into one group.</> },
+    { text: <><b>Drag</b> from an island towards another to build a bridge; do it again for a double, and once more to take it away. Tapping the water between two islands does the same.</> },
+  ],
 };
 
-const NAMES: Record<GameId, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt' };
+/** A little pond for the steps: islands as [row, col, number], spans as [row, col, length, down?, side]. */
+function Pond({ w, h, isles, spans, bad }: { w: number; h: number; isles: [number, number, number][]; spans: [number, number, number, number, number][]; bad?: boolean }) {
+  const s = 20;
+  const W = w * s + 6, H = h * s + 6;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={Math.min(120, W * 1.25)} className="flex-shrink-0" aria-hidden="true">
+      <rect x="0" y="0" width={W} height={H} rx="4" fill="#B98A55" />
+      <rect x="2" y="2" width={W - 4} height={H - 4} rx="2.5" fill="#2F7F8C" />
+      <g transform="translate(3 3)">
+        {spans.map(([r, c, len, down, side], k) => {
+          const x = c * s + s / 2, y = r * s + s / 2;
+          const off = side * 2.6;
+          return down
+            ? <line key={k} x1={x + off} y1={y} x2={x + off} y2={y + len * s} stroke={bad && k === 1 ? BAD : '#D9A066'} strokeWidth={side ? 2.6 : 3.6} />
+            : <line key={k} x1={x} y1={y + off} x2={x + len * s} y2={y + off} stroke={bad && k === 1 ? BAD : '#D9A066'} strokeWidth={side ? 2.6 : 3.6} />;
+        })}
+        {isles.map(([r, c, v], k) => (
+          <g key={k}>
+            <circle cx={c * s + s / 2} cy={r * s + s / 2} r="7.6" fill="#5E8E3E" />
+            <circle cx={c * s + s / 2} cy={r * s + s / 2} r="5.8" fill="#F3EEE2" />
+            <text x={c * s + s / 2} y={r * s + s / 2 + 3.2} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#2B2420" fontFamily="Inter, system-ui, sans-serif">{v}</text>
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+const NAMES: Record<GameId, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt', bridges: 'Bridges' };
 
 export function HowToPlay({ game }: { game: GameId }) {
   const key = `pb:howto:${game}`;
