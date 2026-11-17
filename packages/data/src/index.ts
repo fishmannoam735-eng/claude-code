@@ -73,18 +73,21 @@ type GameEnum = Database['public']['Enums']['game_id'];
 
 export interface RankRow {
   rank: number; nickname: string; avatar: number; score: number;
-  solves: number; total_ms: number; hintless: number; is_me: boolean;
+  solves: number; total_ms: number; hintless: number; is_me: boolean; photo?: string | null;
 }
 
 export async function fetchLeaderboard(client: DataClient, period: Period, today: string, game: GameEnum | null, limit = 50): Promise<RankRow[]> {
-  const { data, error } = await client.rpc('leaderboard', {
-    p_period: period, p_today: today, p_limit: limit, ...(game ? { p_game: game } : {}),
-  });
+  const args = { p_period: period, p_today: today, p_limit: limit, ...(game ? { p_game: game } : {}) };
+  // The rankings with pictures; falls back to the older call if the server
+  // doesn't have it yet.
+  const v2 = await (client as unknown as { rpc: (fn: string, a: object) => PromiseLike<{ data: unknown; error: unknown }> }).rpc('leaderboard_v2', args);
+  if (!v2.error) return (v2.data ?? []) as RankRow[];
+  const { data, error } = await client.rpc('leaderboard', args);
   if (error) throw error;
   return (data ?? []) as RankRow[];
 }
 
-export interface PlayerRef { nickname: string; avatar: number; isMe?: boolean }
+export interface PlayerRef { nickname: string; avatar: number; photo?: string | null; isMe?: boolean }
 export interface ContestStats {
   today: { players: number; solves: number; avgScore: number; hintFreePct: number; attempts?: number };
   yesterday?: (PlayerRef & { score: number }) | null;
@@ -103,7 +106,7 @@ export async function fetchContestStats(client: DataClient, today: string): Prom
 }
 
 export interface MyStats {
-  nickname: string; avatar: number;
+  nickname: string; avatar: number; photo?: string | null;
   personalScore: number; contestScore: number; solves: number; contestSolves: number;
   practiceSolves: number; hintFree: number; days: number; wins: number; streak: number; hasEmail: boolean;
   games: { game: GameEnum; solves: number; score: number; bestMs: number | null; avgScore: number }[];
@@ -116,7 +119,7 @@ export async function fetchMyStats(client: DataClient, today: string): Promise<M
   return (data as unknown as MyStats | null) ?? null;
 }
 
-export async function updateProfile(client: DataClient, userId: string, patch: { nickname?: string; avatar?: number }): Promise<void> {
+export async function updateProfile(client: DataClient, userId: string, patch: { nickname?: string; avatar?: number; photo?: string | null }): Promise<void> {
   const { error } = await client.from('profiles').update(patch).eq('id', userId);
   if (error) throw error;
 }

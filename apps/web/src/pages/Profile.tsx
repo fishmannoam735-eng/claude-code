@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { claimTransferCode, makeTransferCode, updateProfile } from '@pb/data';
 import { Icon } from '../components/Icon';
@@ -8,6 +8,7 @@ import { BarChart, StatTile } from '../components/Charts';
 import { fmtTime } from '../lib/format';
 import { supabase, useSession } from '../lib/session';
 import { GAME_NAME, fmtPoints, useMe } from '../lib/contest';
+import { squarePhoto } from '../lib/photo';
 
 const shortDay = (key: string): string => {
   const [y, m, d] = key.split('-').map(Number);
@@ -48,7 +49,7 @@ export function Profile() {
           <div className="mt-8 text-center text-[13px] text-ink-2">Loading…</div>
         ) : (
           <>
-            <NameCard nickname={stats.nickname} avatar={stats.avatar} userId={userId!} onSaved={refresh} />
+            <NameCard nickname={stats.nickname} avatar={stats.avatar} photo={stats.photo ?? null} userId={userId!} onSaved={refresh} />
 
             <div className="mt-4 grid grid-cols-2 gap-2.5">
               <StatTile value={fmtPoints(stats.personalScore)} label="Personal score" delay={60} />
@@ -110,12 +111,36 @@ export function Profile() {
   );
 }
 
-function NameCard({ nickname, avatar, userId, onSaved }: { nickname: string; avatar: number; userId: string; onSaved: () => Promise<void> }) {
+function NameCard({ nickname, avatar, photo, userId, onSaved }: { nickname: string; avatar: number; photo: string | null; userId: string; onSaved: () => Promise<void> }) {
   const [name, setName] = useState(nickname);
   const [colour, setColour] = useState(avatar);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { setName(nickname); setColour(avatar); }, [nickname, avatar]);
+
+  const [pic, setPic] = useState<string | null>(photo);
+  const [picBusy, setPicBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setPic(photo); }, [photo]);
+
+  const savePhoto = async (next: string | null): Promise<void> => {
+    setPicBusy(true);
+    const before = pic;
+    setPic(next);
+    try {
+      await updateProfile(supabase!, userId, { photo: next });
+      await onSaved();
+      setMsg(next ? 'Your picture is on your cube now.' : 'Picture removed. Your initials are back.');
+    } catch {
+      setPic(before);
+      setMsg('Could not save the picture. Try again.');
+    }
+    setPicBusy(false);
+  };
+  const pick = async (file: File | undefined): Promise<void> => {
+    if (!file) return;
+    try { await savePhoto(await squarePhoto(file)); } catch { setMsg('That picture could not be used. Try another.'); }
+  };
 
   const dirty = name.trim() !== nickname || colour !== avatar;
   const save = async (): Promise<void> => {
@@ -136,7 +161,24 @@ function NameCard({ nickname, avatar, userId, onSaved }: { nickname: string; ava
   return (
     <section className="pb-rise pb-wood rounded-[20px] p-3.5" style={{ ['--d' as string]: '40ms' }}>
       <div className="flex items-center gap-3.5">
-        <Avatar name={name || nickname} colour={colour} size={64} />
+        <div className="flex flex-shrink-0 flex-col items-center gap-1">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={picBusy}
+            aria-label={pic ? 'Change your picture' : 'Add your picture'}
+            className="relative transition-transform active:scale-95 disabled:opacity-60"
+          >
+            <Avatar name={name || nickname} colour={colour} size={64} photo={pic} />
+            <span className="absolute -bottom-0.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-[#4E2E04] shadow-[0_2px_0_#9A6410]" style={{ background: 'linear-gradient(160deg, #FFF3CF, #E8B44A)' }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+            </span>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
+          {pic
+            ? <button type="button" disabled={picBusy} onClick={() => { void savePhoto(null); }} className="text-[11px] font-semibold text-[#FBE9CC] underline underline-offset-2">Remove</button>
+            : <span className="text-[11px] font-semibold text-[#FBE9CC]">Add photo</span>}
+        </div>
         <div className="min-w-0 flex-grow">
           <label htmlFor="nick" className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-[#FBE9CC] [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">Your name in the rankings</label>
           <input

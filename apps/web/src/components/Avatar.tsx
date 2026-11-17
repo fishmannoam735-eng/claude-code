@@ -17,7 +17,11 @@ export function initials(name: string): string {
   return letters.toUpperCase();
 }
 
-export function Avatar({ name, colour, size = 36, ring }: { name: string; colour: number; size?: number; ring?: string | undefined }) {
+/**
+ * With a photo, the picture sits inside the same glossy cube: the player's
+ * colour becomes a thin frame around it, with a soft shine across the top.
+ */
+export function Avatar({ name, colour, size = 36, ring, photo }: { name: string; colour: number; size?: number; ring?: string | undefined; photo?: string | null | undefined }) {
   const rgb = AVATAR_COLOURS[((colour % AVATAR_COLOURS.length) + AVATAR_COLOURS.length) % AVATAR_COLOURS.length]!;
   return (
     <span
@@ -31,7 +35,18 @@ export function Avatar({ name, colour, size = 36, ring }: { name: string; colour
         marginBottom: Math.max(2, size / 14),
       }}
     >
-      {initials(name)}
+      {photo ? (
+        <>
+          <img
+            src={photo}
+            alt=""
+            draggable={false}
+            className="absolute rounded-[26%] object-cover"
+            style={{ inset: Math.max(2, Math.round(size * 0.07)), width: `calc(100% - ${2 * Math.max(2, Math.round(size * 0.07))}px)`, height: `calc(100% - ${2 * Math.max(2, Math.round(size * 0.07))}px)` }}
+          />
+          <span className="pointer-events-none absolute inset-0 rounded-[30%]" style={{ background: 'linear-gradient(160deg, rgb(255 255 255 / 0.38) 0%, rgb(255 255 255 / 0) 42%)' }} />
+        </>
+      ) : initials(name)}
     </span>
   );
 }

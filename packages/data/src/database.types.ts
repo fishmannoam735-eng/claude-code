@@ -187,6 +187,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar: number
+          photo: string | null
           nickname: string | null
           transfer_hash: string | null
           created_at: string
@@ -196,6 +197,7 @@ export type Database = {
         }
         Insert: {
           avatar?: number
+          photo?: string | null
           nickname?: string | null
           transfer_hash?: string | null
           created_at?: string
@@ -205,6 +207,7 @@ export type Database = {
         }
         Update: {
           avatar?: number
+          photo?: string | null
           nickname?: string | null
           transfer_hash?: string | null
           created_at?: string

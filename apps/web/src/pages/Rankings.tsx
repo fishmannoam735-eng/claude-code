@@ -105,7 +105,7 @@ export function Rankings() {
             </section>
 
             <p className="pb-rise mt-2.5 px-1 text-[12px] leading-snug text-ink-2" style={{ ['--d' as string]: '80ms' }}>
-              {period === 'day' ? 'Everyone plays the same boards today. Your first daily board of each game is your entry.'
+              {period === 'day' ? 'Everyone plays the same boards today. Replay them as often as you like; your best try at each game counts.'
                 : period === 'week' ? 'Contest points from the last seven days.' : 'Every contest point since the start.'}
               {' '}Hints, mistakes and Fill cost points.
             </p>
@@ -151,7 +151,7 @@ export function MeChip() {
   if (!stats) return null;
   return (
     <Link to="/me" aria-label="Your profile" className="flex items-center gap-2 rounded-full border border-line-minor bg-raised py-1 pl-1 pr-3 shadow-[0_4px_12px_-6px_rgb(120_80_20/0.5)]">
-      <Avatar name={stats.nickname} colour={stats.avatar} size={28} />
+      <Avatar name={stats.nickname} colour={stats.avatar} photo={stats.photo} size={28} />
       <span className="text-[13px] font-bold tabular-nums text-accent-text">{fmtPoints(stats.personalScore)}</span>
     </Link>
   );
@@ -189,7 +189,7 @@ function Podium({ rows }: { rows: RankRow[] }) {
           {row ? (
             <div className="pb-drop relative flex min-w-0 max-w-full flex-col items-center px-1" style={{ ['--d' as string]: `${d + 300}ms` }}>
               {place === 1 && <img src={crownUrl} alt="" className="pb-float absolute -top-7 h-8 w-8" style={{ filter: 'drop-shadow(0 3px 3px rgb(90 60 10 / 0.35))' }} />}
-              <Avatar name={row.nickname} colour={row.avatar} size={place === 1 ? 58 : 46} ring={row.is_me ? 'var(--color-accent)' : undefined} />
+              <Avatar name={row.nickname} colour={row.avatar} photo={row.photo} size={place === 1 ? 58 : 46} ring={row.is_me ? 'var(--color-accent)' : undefined} />
               <span className="mt-1.5 w-full truncate text-center text-[12.5px] font-bold">{row.is_me ? 'You' : row.nickname}</span>
               <span className="text-[12px] font-semibold tabular-nums text-accent-text">{fmtPoints(row.score)} pts</span>
             </div>
@@ -211,7 +211,7 @@ function Podium({ rows }: { rows: RankRow[] }) {
 function YouCard({ row, period }: { row: RankRow; period: Period }) {
   return (
     <div className="pb-rise mt-3 flex items-center gap-3 rounded-[16px] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] bg-accent-soft px-3.5 py-2.5" style={{ ['--d' as string]: '500ms' }}>
-      <Avatar name={row.nickname} colour={row.avatar} size={36} />
+      <Avatar name={row.nickname} colour={row.avatar} photo={row.photo} size={36} />
       <div className="flex-grow">
         <div className="text-[14px] font-bold">You are {ordinal(row.rank)}</div>
         <div className="text-[12px] text-ink-2">{period === 'day' ? 'today' : period === 'week' ? 'this week' : 'of all time'} · {row.solves} solve{row.solves === 1 ? '' : 's'}</div>
@@ -228,7 +228,7 @@ function RankLine({ row, index }: { row: RankRow; index: number }) {
       style={{ ['--d' as string]: `${420 + Math.min(index, 12) * 40}ms` }}
     >
       <span className="w-7 text-center text-[14px] font-extrabold tabular-nums text-ink-2">{row.rank}</span>
-      <Avatar name={row.nickname} colour={row.avatar} size={32} />
+      <Avatar name={row.nickname} colour={row.avatar} photo={row.photo} size={32} />
       <div className="min-w-0 flex-grow">
         <div className="truncate text-[14px] font-bold">{row.is_me ? `${row.nickname} (you)` : row.nickname}</div>
         <div className="text-[11.5px] text-ink-2">
@@ -292,7 +292,7 @@ function Infographics({ stats }: { stats: ContestStats }) {
                     {s.avgMs !== null && <span>· avg {fmtTime(s.avgMs)}</span>}
                     <span>· {s.hintPct}% used hints</span>
                     {s.best && (
-                      <span className="flex items-center gap-1">· top <Avatar name={s.best.nickname} colour={s.best.avatar} size={14} />
+                      <span className="flex items-center gap-1">· top <Avatar name={s.best.nickname} colour={s.best.avatar} photo={s.best.photo} size={14} />
                         <b className="text-ink">{s.best.nickname}</b> {fmtTime(s.best.ms)} on {DIFF_LABEL[s.best.difficulty as 'easy'].toLowerCase()}
                       </span>
                     )}
@@ -344,7 +344,7 @@ function Card({ title, children, delay = 0, flush }: { title?: string; children:
 }
 
 function PeopleList({ items, empty, medal }: {
-  items: { nickname: string; avatar: number; isMe?: boolean; value: React.ReactNode }[]; empty: string; medal?: boolean;
+  items: { nickname: string; avatar: number; photo?: string | null; isMe?: boolean; value: React.ReactNode }[]; empty: string; medal?: boolean;
 }) {
   if (!items.length) return <div className="text-[12.5px] text-ink-2">{empty}</div>;
   return (
@@ -354,7 +354,7 @@ function PeopleList({ items, empty, medal }: {
           {medal && i < 3
             ? <span className={`pb-medal-${i + 1} flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10.5px] font-extrabold`}>{i + 1}</span>
             : <span className="w-5 text-center text-[12px] font-bold text-ink-2">{i + 1}</span>}
-          <Avatar name={p.nickname} colour={p.avatar} size={24} />
+          <Avatar name={p.nickname} colour={p.avatar} photo={p.photo} size={24} />
           <span className={`min-w-0 flex-grow truncate text-[13px] ${p.isMe ? 'font-bold text-accent-text' : 'font-semibold'}`}>{p.isMe ? 'You' : p.nickname}</span>
           <span className="text-[12.5px] font-bold tabular-nums">{p.value}</span>
         </li>

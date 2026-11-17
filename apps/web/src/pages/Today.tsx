@@ -143,7 +143,7 @@ export function Today() {
             </div>
             {me && (
               <Link to="/me" aria-label="Your profile" className="transition-transform active:scale-95">
-                <Avatar name={me.nickname} colour={me.avatar} size={36} />
+                <Avatar name={me.nickname} colour={me.avatar} photo={me.photo} size={36} />
               </Link>
             )}
           </div>

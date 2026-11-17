@@ -131,7 +131,7 @@ export function LeadersStage() {
                       </>
                     )}
                     <div className="relative z-[2]">
-                      <Avatar name={row.nickname} colour={row.avatar} size={place === 1 ? 58 : 44} ring={row.is_me ? '#F6D98A' : undefined} />
+                      <Avatar name={row.nickname} colour={row.avatar} photo={row.photo} size={place === 1 ? 58 : 44} ring={row.is_me ? '#F6D98A' : undefined} />
                     </div>
                     <span className="relative z-[2] mt-1.5 w-full truncate text-center text-[12.5px] font-bold text-[#FFF4E2]">{row.is_me ? 'You' : row.nickname}</span>
                     <span className="relative z-[2] text-[12px] font-extrabold tabular-nums text-[#F6D98A]">{fmtPoints(row.score)}</span>
@@ -170,7 +170,7 @@ export function LeadersStage() {
         {champ && (
           <div className="flex items-center gap-2.5 rounded-[14px] px-3 py-2" style={{ background: 'linear-gradient(100deg, rgb(246 217 138 / 0.28), rgb(246 217 138 / 0.08))' }}>
             <img src={crownUrl} alt="" className="h-7 w-7 flex-shrink-0" />
-            <Avatar name={champ.nickname} colour={champ.avatar} size={28} />
+            <Avatar name={champ.nickname} colour={champ.avatar} photo={champ.photo} size={28} />
             <span className="min-w-0 flex-grow truncate text-[12.5px] text-[#FFF4E2]">
               <span className="font-semibold opacity-80">Yesterday&apos;s champion · </span>
               <b>{champ.isMe ? 'You!' : champ.nickname}</b>
