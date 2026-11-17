@@ -8,7 +8,7 @@ import { BarChart, StatTile } from '../components/Charts';
 import { fmtTime } from '../lib/format';
 import { supabase, useSession } from '../lib/session';
 import { GAME_NAME, fmtPoints, useMe } from '../lib/contest';
-import { squarePhoto } from '../lib/photo';
+import { AVATAR_ART, renderAvatarArt, squarePhoto } from '../lib/photo';
 
 const shortDay = (key: string): string => {
   const [y, m, d] = key.split('-').map(Number);
@@ -120,6 +120,7 @@ function NameCard({ nickname, avatar, photo, userId, onSaved }: { nickname: stri
 
   const [pic, setPic] = useState<string | null>(photo);
   const [picBusy, setPicBusy] = useState(false);
+  const [showArt, setShowArt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setPic(photo); }, [photo]);
 
@@ -130,7 +131,7 @@ function NameCard({ nickname, avatar, photo, userId, onSaved }: { nickname: stri
     try {
       await updateProfile(supabase!, userId, { photo: next });
       await onSaved();
-      setMsg(next ? 'Your picture is on your cube now.' : 'Picture removed. Your initials are back.');
+      setMsg(next ? 'Your new look is on your cube now.' : 'Picture removed. Your initials are back.');
     } catch {
       setPic(before);
       setMsg('Could not save the picture. Try again.');
@@ -177,7 +178,7 @@ function NameCard({ nickname, avatar, photo, userId, onSaved }: { nickname: stri
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
           {pic
             ? <button type="button" disabled={picBusy} onClick={() => { void savePhoto(null); }} className="text-[11px] font-semibold text-[#FBE9CC] underline underline-offset-2">Remove</button>
-            : <span className="text-[11px] font-semibold text-[#FBE9CC]">Add photo</span>}
+            : null}
         </div>
         <div className="min-w-0 flex-grow">
           <label htmlFor="nick" className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-[#FBE9CC] [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">Your name in the rankings</label>
@@ -190,6 +191,49 @@ function NameCard({ nickname, avatar, photo, userId, onSaved }: { nickname: stri
           />
         </div>
       </div>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          disabled={picBusy}
+          onClick={() => fileRef.current?.click()}
+          className="pb-key flex h-10 flex-grow basis-0 items-center justify-center gap-1.5 rounded-xl text-[13.5px] font-bold disabled:opacity-60"
+          style={{ background: 'linear-gradient(160deg, #FFF8EA, #F1E2C4)', color: '#4E2E04', ['--key-side' as string]: '#A88B5E' }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+          Photo
+        </button>
+        <button
+          type="button"
+          aria-expanded={showArt}
+          onClick={() => setShowArt((v) => !v)}
+          className="pb-key flex h-10 flex-grow basis-0 items-center justify-center gap-1.5 rounded-xl text-[13.5px] font-bold"
+          style={showArt
+            ? { background: 'linear-gradient(160deg, #FFF3CF 0%, #F6D98A 45%, #E8B44A 100%)', color: '#4E2E04', ['--key-side' as string]: '#9A6410' }
+            : { background: 'linear-gradient(160deg, #FFF8EA, #F1E2C4)', color: '#4E2E04', ['--key-side' as string]: '#A88B5E' }}
+        >
+          <span aria-hidden="true" className="text-[16px] leading-none">🦊</span>
+          Avatar
+        </button>
+      </div>
+      {showArt && (
+        <div className="pb-in mt-2.5 grid grid-cols-6 gap-2 rounded-[12px] p-2" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }} role="listbox" aria-label="Pick an avatar">
+          {AVATAR_ART.map((a, i) => (
+            <button
+              key={a.name}
+              type="button"
+              role="option"
+              aria-selected={false}
+              aria-label={a.name}
+              disabled={picBusy}
+              onClick={() => { setShowArt(false); void savePhoto(renderAvatarArt(i)); }}
+              className="flex aspect-square items-center justify-center rounded-[10px] text-[24px] leading-none transition-transform active:scale-90"
+              style={{ background: `radial-gradient(circle at 35% 28%, ${a.bg[0]}, ${a.bg[1]})`, boxShadow: '0 2px 0 rgb(0 0 0 / 0.35), inset 1px 1px 0 rgb(255 255 255 / 0.5)' }}
+            >
+              {a.glyph}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="mt-3 grid grid-cols-6 gap-2 rounded-[12px] p-2" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }} role="radiogroup" aria-label="Tile colour">
         {AVATAR_COLOURS.map(([r, g, b], i) => (
           <button
