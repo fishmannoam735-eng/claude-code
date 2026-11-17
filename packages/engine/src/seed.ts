@@ -1,7 +1,7 @@
 import type { Difficulty, GameId, ParsedSeed } from './types.js';
 import { DIFFICULTIES } from './types.js';
 
-const GAMES: readonly GameId[] = ['nine', 'crowns', 'eclipse', 'thread', 'quilt', 'bridges'];
+const GAMES: readonly GameId[] = ['nine', 'crowns', 'eclipse', 'thread', 'quilt', 'bridges', 'mosaic'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TOKEN = /^[A-Za-z0-9_-]{4,32}$/;
 

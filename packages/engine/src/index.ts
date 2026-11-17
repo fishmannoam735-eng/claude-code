@@ -30,3 +30,7 @@ export * from './score.js';
 export * as bridgesGame from './games/bridges/index.js';
 export { bridges } from './games/bridges/index.js';
 export type { BridgesPuzzle, BridgesHint, BridgesHintStep } from './games/bridges/index.js';
+
+export * as mosaicGame from './games/mosaic/index.js';
+export { mosaic } from './games/mosaic/index.js';
+export type { MosaicPuzzle, MosaicHint, MosaicHintStep } from './games/mosaic/index.js';

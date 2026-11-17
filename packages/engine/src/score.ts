@@ -17,10 +17,12 @@ export const SCORE_PAR: Record<GameId, Record<Difficulty, number>> = {
   quilt:   { easy: 60,  normal: 150, hard: 300 },
   // Same as Quilt: the database's score_play gives every game it doesn't name these pars.
   bridges: { easy: 60,  normal: 150, hard: 300 },
+  // Same again: score_play's default pars.
+  mosaic:  { easy: 60,  normal: 150, hard: 300 },
 };
 
 /** Below this a solve is too fast to be a person and does not enter the contest. */
-export const SCORE_MIN_MS: Record<GameId, number> = { nine: 45_000, crowns: 5_000, eclipse: 5_000, thread: 5_000, quilt: 5_000, bridges: 5_000 };
+export const SCORE_MIN_MS: Record<GameId, number> = { nine: 45_000, crowns: 5_000, eclipse: 5_000, thread: 5_000, quilt: 5_000, bridges: 5_000, mosaic: 5_000 };
 
 export const HINT_COST = 0.15;   // of base, per hint opened
 export const MISTAKE_COST = 0.05; // of base, per mistake
