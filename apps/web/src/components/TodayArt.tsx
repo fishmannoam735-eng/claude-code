@@ -248,8 +248,39 @@ function BridgesMini() {
   );
 }
 
+// ------------------------------------------------------------------ Mosaic
+// A little heart painted square by square, the empty squares crossed out.
+const HEART = ['##..##', '######', '######', '.####.', '..##..', 'x....x'];
+const RED = { face: 'linear-gradient(150deg, #F7838B 0%, #E8505B 50%, #C63A46 100%)', side: '#9A2833' };
+
+function MosaicMini() {
+  let k = 0;
+  return (
+    <WoodTray grid={{ className: 'grid grid-cols-6 grid-rows-6' }}>
+      {HEART.join('').split('').map((ch, i) => (
+        ch === '#'
+          ? (
+            <div key={i} className="relative">
+              <span className="pb-in absolute" style={{ ...tileStyle(RED.face, RED.side), ...delay(0.12 + (k++) * 0.035) }} />
+            </div>
+          )
+          : (
+            <Tile key={i} {...IVORY}>
+              {ch === 'x' && (
+                <svg viewBox="0 0 24 24" className="h-[42%] w-[42%]" fill="none" stroke="#8C6A48" strokeWidth={3.2} strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              )}
+            </Tile>
+          )
+      ))}
+      <Sheen />
+    </WoodTray>
+  );
+}
+
 const MINIS: Record<GameId, () => React.JSX.Element> = {
-  nine: NineMini, eclipse: EclipseMini, crowns: CrownsMini, thread: ThreadMini, quilt: QuiltMini, bridges: BridgesMini,
+  nine: NineMini, eclipse: EclipseMini, crowns: CrownsMini, thread: ThreadMini, quilt: QuiltMini, bridges: BridgesMini, mosaic: MosaicMini,
 };
 
 /** The game's little board in its tray. */

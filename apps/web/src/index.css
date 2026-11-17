@@ -53,6 +53,8 @@
   --color-game-quilt-text: #7E3F5C;
   --color-game-bridges: #C0503A;
   --color-game-bridges-text: #A03E2A;
+  --color-game-mosaic: #4A5F86;
+  --color-game-mosaic-text: #3B4D6E;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -96,6 +98,8 @@
     --color-game-quilt-text: #DF9DBC;
     --color-game-bridges: #E8846C;
     --color-game-bridges-text: #F0937C;
+    --color-game-mosaic: #8EA6D2;
+    --color-game-mosaic-text: #A3B8DE;
   }
 }
 
@@ -462,4 +466,134 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .pb-waves, .pb-caustic, .pb-koi, .pb-koi-swim, .pb-isle-ripple, .pb-bridge-build, .pb-bridge-gone, .pb-splash, .pb-bridge-flash, .pb-preview, .pb-hint-ghost, .pb-pond-solved .pb-deck::after { animation: none; }
   .pb-petal, .pb-splash { display: none; }
+}
+
+/* ---------------------------------------------------------- mosaic: the picture comes to life */
+/* Transform and opacity only. Each part turns, slides or scales about its own pivot. */
+@keyframes pb-mo-press { from { transform: scale(0.82); } 60% { transform: scale(1.04); } to { transform: none; } }
+.pb-mo-press { animation: pb-mo-press 160ms ease-out; }
+@keyframes pb-mo-ghost { from { opacity: 0.5; } to { opacity: 0.95; } }
+.pb-mo-ghost { border: 0.5cqw dashed #C88A2E; background: rgb(255 214 140 / 0.28); animation: pb-mo-ghost 700ms ease-in-out infinite alternate; }
+@keyframes pb-mo-fold { to { opacity: 0; transform: scale(0.96); } }
+.pb-mo-fold { animation: pb-mo-fold 600ms ease-in calc(900ms + var(--mo-wait, 0ms)) both; }
+
+@keyframes pb-mo-in { from { opacity: 0; transform: scale(0.55); } 70% { opacity: 1; transform: scale(1.08); } to { opacity: 1; transform: none; } }
+.pb-mo-in { opacity: 0; animation: pb-mo-in 420ms cubic-bezier(.3,.7,.3,1) both; }
+@keyframes pb-mo-grow { from { transform: var(--mo-from); } to { transform: none; } }
+.pb-mo-grow { transform-origin: 0 0; transform: var(--mo-from); animation: pb-mo-grow 950ms cubic-bezier(.45,0,.2,1) both; cursor: pointer; }
+@keyframes pb-mo-scene { from { opacity: 0; } to { opacity: 1; } }
+.pb-mo-scene { opacity: 0; animation: pb-mo-scene 800ms ease-out both; }
+
+.pb-mo-pulse, .pb-mo-twinkle, .pb-mo-blink, .pb-mo-twitch, .pb-mo-swim, .pb-mo-wag, .pb-mo-rise, .pb-mo-squash,
+.pb-mo-rock, .pb-mo-flutter, .pb-mo-bob, .pb-mo-flap, .pb-mo-flyaway, .pb-mo-sway, .pb-mo-launch, .pb-mo-flicker,
+.pb-mo-crawl, .pb-mo-wave, .pb-mo-hop, .pb-mo-spout, .pb-mo-tilt, .pb-mo-snap, .pb-mo-sidestep, .pb-mo-pant,
+.pb-mo-puff, .pb-mo-jump, .pb-mo-spin, .pb-mo-waddle, .pb-mo-float, .pb-mo-steam, .pb-mo-rattle, .pb-mo-bounce,
+.pb-mo-flapL, .pb-mo-flapR, .pb-mo-flop, .pb-mo-tentacles {
+  will-change: transform; animation-iteration-count: infinite; animation-fill-mode: both; animation-timing-function: ease-in-out;
+}
+@keyframes pb-mo-pulse { 0%, 40%, 100% { transform: scale(1); } 10% { transform: scale(1.09); } 22% { transform: scale(0.98); } 30% { transform: scale(1.06); } }
+.pb-mo-pulse { animation-name: pb-mo-pulse; animation-duration: 1.3s; }
+@keyframes pb-mo-twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.25; transform: scale(0.6); } }
+.pb-mo-twinkle { will-change: transform, opacity; animation-name: pb-mo-twinkle; animation-duration: 1.9s; }
+@keyframes pb-mo-blink { 0%, 88%, 100% { transform: scaleY(1); } 92% { transform: scaleY(0.08); } 96% { transform: scaleY(1); } }
+.pb-mo-blink { animation-name: pb-mo-blink; animation-duration: 3.8s; animation-timing-function: linear; }
+@keyframes pb-mo-twitch { 0%, 30%, 100% { transform: rotate(0); } 6% { transform: rotate(calc(var(--dir) * -12deg)); } 12% { transform: rotate(calc(var(--dir) * 6deg)); } 18% { transform: rotate(calc(var(--dir) * -8deg)); } }
+.pb-mo-twitch { animation-name: pb-mo-twitch; animation-duration: 3.2s; }
+@keyframes pb-mo-swim { 0%, 100% { transform: translate(-7%, 0) rotate(-2deg); } 25% { transform: translate(0, -3%) rotate(0deg); } 50% { transform: translate(7%, 0) rotate(2deg); } 75% { transform: translate(0, 3%) rotate(0deg); } }
+.pb-mo-swim { animation-name: pb-mo-swim; animation-duration: 4.6s; animation-timing-function: linear; }
+@keyframes pb-mo-wag { from { transform: rotate(-10deg); } to { transform: rotate(10deg); } }
+.pb-mo-wag { animation-name: pb-mo-wag; animation-duration: 0.55s; animation-direction: alternate; }
+@keyframes pb-mo-rise { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-260%) scale(1.15); opacity: 0; } }
+.pb-mo-rise { will-change: transform, opacity; animation-name: pb-mo-rise; animation-duration: 2.8s; animation-timing-function: ease-out; }
+@keyframes pb-mo-squash { 0%, 60%, 100% { transform: none; } 10% { transform: scale(1.1, 0.82); } 28% { transform: translateY(-14%) scale(0.94, 1.08); } 44% { transform: scale(1.12, 0.84); } 52% { transform: scale(0.97, 1.03); } }
+.pb-mo-squash { animation-name: pb-mo-squash; animation-duration: 1.8s; }
+@keyframes pb-mo-rock { from { transform: rotate(-6deg) translateY(1%); } to { transform: rotate(6deg) translateY(-1%); } }
+.pb-mo-rock { animation-name: pb-mo-rock; animation-duration: 2.2s; animation-direction: alternate; }
+@keyframes pb-mo-flutter { 0%, 100% { transform: scaleX(1); } 25% { transform: scaleX(0.7) skewY(-6deg); } 50% { transform: scaleX(1.05); } 75% { transform: scaleX(0.8) skewY(5deg); } }
+.pb-mo-flutter { animation-name: pb-mo-flutter; animation-duration: 0.9s; animation-timing-function: linear; }
+@keyframes pb-mo-bob { from { transform: translateY(-2.5%) rotate(-1.5deg); } to { transform: translateY(2.5%) rotate(1.5deg); } }
+.pb-mo-bob { animation-name: pb-mo-bob; animation-duration: 1.7s; animation-direction: alternate; }
+@keyframes pb-mo-flap { from { transform: rotate(0deg); } to { transform: rotate(-20deg); } }
+.pb-mo-flap { animation-name: pb-mo-flap; animation-duration: 0.32s; animation-direction: alternate; }
+@keyframes pb-mo-flapL { from { transform: rotate(0deg) scaleX(1); } to { transform: rotate(-16deg) scaleX(0.55); } }
+.pb-mo-flapL { animation-name: pb-mo-flapL; animation-duration: 0.42s; animation-direction: alternate; }
+@keyframes pb-mo-flapR { from { transform: rotate(0deg) scaleX(1); } to { transform: rotate(16deg) scaleX(0.55); } }
+.pb-mo-flapR { animation-name: pb-mo-flapR; animation-duration: 0.42s; animation-direction: alternate; }
+/* The robin: hops, crouches, flies off up and out, swoops back in from the far side and lands. */
+@keyframes pb-mo-flyaway {
+  0%, 8%, 16%, 100% { transform: none; }
+  4%, 12% { transform: translateY(-5%); }
+  22% { transform: translateY(3%) scaleY(0.92); }
+  44% { transform: translate(70%, -110%) rotate(-12deg); }
+  44.01%, 55% { transform: translate(-110%, -60%) rotate(8deg); }
+  76% { transform: translate(-6%, -6%) rotate(2deg); }
+  82% { transform: translateY(2%) scaleY(0.94); }
+  88% { transform: none; }
+}
+.pb-mo-flyaway { animation-name: pb-mo-flyaway; animation-duration: 7.5s; animation-timing-function: linear; }
+@keyframes pb-mo-sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+.pb-mo-sway { animation-name: pb-mo-sway; animation-duration: 2.6s; animation-direction: alternate; }
+/* The rocket: rumbles, blasts off out of the top, then lands back from below. */
+@keyframes pb-mo-launch {
+  0%, 12%, 100% { transform: none; }
+  14%, 18%, 22%, 26% { transform: translateX(-1.2%); }
+  16%, 20%, 24%, 28% { transform: translateX(1.2%); }
+  30% { transform: translateY(2%); }
+  52% { transform: translateY(-150%); }
+  52.01% { transform: translateY(140%); }
+  74% { transform: translateY(-4%); }
+  80% { transform: translateY(1%); }
+  86% { transform: none; }
+}
+.pb-mo-launch { animation-name: pb-mo-launch; animation-duration: 7s; animation-timing-function: linear; }
+@keyframes pb-mo-flicker { 0% { transform: scaleY(1); } 50% { transform: scaleY(1.35) scaleX(0.92); } 100% { transform: scaleY(0.9) scaleX(1.05); } }
+.pb-mo-flicker { animation-name: pb-mo-flicker; animation-duration: 0.18s; animation-direction: alternate; animation-timing-function: linear; }
+@keyframes pb-mo-crawl { 0%, 100% { transform: translateX(5%); } 50% { transform: translateX(-8%); } 25%, 75% { transform: translateX(-1.5%) scaleX(1.03); } }
+.pb-mo-crawl { animation-name: pb-mo-crawl; animation-duration: 9s; }
+@keyframes pb-mo-wave { from { transform: rotate(-12deg); } to { transform: rotate(10deg); } }
+.pb-mo-wave { animation-name: pb-mo-wave; animation-duration: 1.4s; animation-direction: alternate; }
+@keyframes pb-mo-hop { 0%, 55%, 100% { transform: none; } 8% { transform: scale(1.06, 0.92); } 22% { transform: translateY(-16%) scale(0.96, 1.05); } 38% { transform: scale(1.06, 0.92); } 46% { transform: none; } }
+.pb-mo-hop { animation-name: pb-mo-hop; animation-duration: 1.8s; }
+@keyframes pb-mo-spout { 0%, 100% { transform: scaleY(0.35); opacity: 0.4; } 30% { transform: scaleY(1.2); opacity: 1; } 55% { transform: scaleY(1); opacity: 0.9; } }
+.pb-mo-spout { will-change: transform, opacity; animation-name: pb-mo-spout; animation-duration: 2.4s; }
+@keyframes pb-mo-tilt { 0%, 30%, 100% { transform: rotate(0); } 40%, 55% { transform: rotate(-7deg); } 65%, 80% { transform: rotate(6deg); } }
+.pb-mo-tilt { animation-name: pb-mo-tilt; animation-duration: 5s; }
+@keyframes pb-mo-snap { 0%, 50%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(calc(var(--dir) * -20deg)); } 20%, 40% { transform: rotate(0); } }
+.pb-mo-snap { animation-name: pb-mo-snap; animation-duration: 2.1s; }
+@keyframes pb-mo-sidestep { 0%, 100% { transform: translateX(-7%); } 20% { transform: translate(-3%, -2%); } 30% { transform: translateX(0); } 50% { transform: translateX(7%); } 70% { transform: translate(3%, -2%); } 80% { transform: translateX(0); } }
+.pb-mo-sidestep { animation-name: pb-mo-sidestep; animation-duration: 3.4s; }
+@keyframes pb-mo-pant { from { transform: scaleY(0.85); } to { transform: scaleY(1.18); } }
+.pb-mo-pant { animation-name: pb-mo-pant; animation-duration: 0.36s; animation-direction: alternate; }
+@keyframes pb-mo-puff { 0%, 60%, 100% { transform: scale(1); } 75% { transform: scale(1.16); } 85% { transform: scale(1.08); } }
+.pb-mo-puff { animation-name: pb-mo-puff; animation-duration: 2.2s; }
+@keyframes pb-mo-jump { 0%, 50%, 100% { transform: none; } 8% { transform: scale(1.08, 0.88); } 22% { transform: translateY(-22%) scale(0.95, 1.06); } 36% { transform: scale(1.08, 0.9); } 44% { transform: none; } }
+.pb-mo-jump { animation-name: pb-mo-jump; animation-duration: 2.6s; }
+@keyframes pb-mo-spin { to { transform: rotate(360deg); } }
+.pb-mo-spin { animation-name: pb-mo-spin; animation-duration: 0.7s; animation-timing-function: linear; }
+@keyframes pb-mo-waddle { from { transform: rotate(-6deg) translateX(-2%); } to { transform: rotate(6deg) translateX(2%); } }
+.pb-mo-waddle { animation-name: pb-mo-waddle; animation-duration: 0.6s; animation-direction: alternate; }
+@keyframes pb-mo-float { from { transform: translateY(-3.5%); } to { transform: translateY(3.5%); } }
+.pb-mo-float { animation-name: pb-mo-float; animation-duration: 2.4s; animation-direction: alternate; }
+@keyframes pb-mo-steam { 0% { transform: translate(0, 40%) scale(0.5); opacity: 0; } 25% { opacity: 0.9; } 100% { transform: translate(25%, -180%) scale(1.4); opacity: 0; } }
+.pb-mo-steam { will-change: transform, opacity; animation-name: pb-mo-steam; animation-duration: 2.6s; animation-timing-function: ease-out; }
+@keyframes pb-mo-rattle { 0%, 40%, 100% { transform: none; } 44%, 52%, 60% { transform: translateY(-9%) rotate(-3deg); } 48%, 56% { transform: translateY(0) rotate(2deg); } }
+.pb-mo-rattle { animation-name: pb-mo-rattle; animation-duration: 2.3s; animation-timing-function: linear; }
+@keyframes pb-mo-bounce { from { transform: translateY(0); } to { transform: translateY(-2.2%); } }
+.pb-mo-bounce { animation-name: pb-mo-bounce; animation-duration: 0.3s; animation-direction: alternate; }
+@keyframes pb-mo-flop { from { transform: rotate(calc(var(--dir) * 4deg)); } to { transform: rotate(calc(var(--dir) * -10deg)); } }
+.pb-mo-flop { animation-name: pb-mo-flop; animation-duration: 1.5s; animation-direction: alternate; }
+@keyframes pb-mo-tentacles { from { transform: skewX(-9deg) scaleY(1.03); } to { transform: skewX(9deg) scaleY(0.97); } }
+.pb-mo-tentacles { animation-name: pb-mo-tentacles; animation-duration: 1.6s; animation-direction: alternate; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-mo-press, .pb-mo-ghost, .pb-mo-in, .pb-mo-grow, .pb-mo-scene, .pb-mo-fold,
+  .pb-mo-pulse, .pb-mo-twinkle, .pb-mo-blink, .pb-mo-twitch, .pb-mo-swim, .pb-mo-wag, .pb-mo-rise, .pb-mo-squash,
+  .pb-mo-rock, .pb-mo-flutter, .pb-mo-bob, .pb-mo-flap, .pb-mo-flyaway, .pb-mo-sway, .pb-mo-launch, .pb-mo-flicker,
+  .pb-mo-crawl, .pb-mo-wave, .pb-mo-hop, .pb-mo-spout, .pb-mo-tilt, .pb-mo-snap, .pb-mo-sidestep, .pb-mo-pant,
+  .pb-mo-puff, .pb-mo-jump, .pb-mo-spin, .pb-mo-waddle, .pb-mo-float, .pb-mo-steam, .pb-mo-rattle, .pb-mo-bounce,
+  .pb-mo-flapL, .pb-mo-flapR, .pb-mo-flop, .pb-mo-tentacles { animation: none; }
+  .pb-mo-in, .pb-mo-scene { opacity: 1; }
+  .pb-mo-grow { transform: none; }
+  .pb-mo-fold { opacity: 0; }
+  .pb-mo-rise, .pb-mo-steam { opacity: 0.8; }
 }

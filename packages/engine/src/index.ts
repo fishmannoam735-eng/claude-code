@@ -33,4 +33,4 @@ export type { BridgesPuzzle, BridgesHint, BridgesHintStep } from './games/bridge
 
 export * as mosaicGame from './games/mosaic/index.js';
 export { mosaic } from './games/mosaic/index.js';
-export type { MosaicPuzzle, MosaicHint, MosaicHintStep } from './games/mosaic/index.js';
+export type { MosaicPuzzle, MosaicHint, MosaicHintStep, Picture as MosaicPicture, Motion as MosaicMotion } from './games/mosaic/index.js';

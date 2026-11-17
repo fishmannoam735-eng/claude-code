@@ -50,6 +50,8 @@ const LIGHT: Theme = {
     crowns:  { base: '#4A7C59', text: '#3A6247' },
     thread:  { base: '#2C7A8C', text: '#22606E' },
     quilt:   { base: '#9B4F72', text: '#7E3F5C' },
+    bridges: { base: '#C0503A', text: '#A03E2A' },
+    mosaic:  { base: '#4A5F86', text: '#3B4D6E' },
   },
 };
 
@@ -62,6 +64,8 @@ const DARK: Theme = {
     crowns:  { base: '#6FA67E', text: '#7FB88E' },
     thread:  { base: '#5FB3C7', text: '#6FC0D3' },
     quilt:   { base: '#D48CAF', text: '#DF9DBC' },
+    bridges: { base: '#E8846C', text: '#F0937C' },
+    mosaic:  { base: '#8EA6D2', text: '#A3B8DE' },
   },
 };
 

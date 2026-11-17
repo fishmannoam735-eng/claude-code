@@ -158,7 +158,42 @@ const STEPS: Record<GameId, Step[]> = {
     { text: <>In the end <b>every island is joined</b> into one group.</> },
     { text: <><b>Drag</b> from an island towards another to build a bridge; do it again for a double, and once more to take it away. Tapping the water between two islands does the same.</> },
   ],
+  mosaic: [
+    { text: <>The numbers beside each row and above each column are its <b>blocks of filled squares</b>, in order: 3 1 means a block of 3, then a single one.</>,
+      pic: <Strip clue="3 1" cells="###.#." /> },
+    { text: <>Between two blocks there is <b>at least one empty square</b>.</>,
+      pic: <Strip clue="2 2" cells=".##.##" marks /> },
+    { text: <>Think it through: however a block of 4 slides along 6 squares, it always covers the <b>middle two</b>.</>,
+      pic: <Strip clue="4" cells="..##.." gold /> },
+    { text: <><b>Tap</b> a square to fill it, or <b>drag along a line</b> to fill several. Switch to <b>Cross out</b> to mark squares you know are empty.</> },
+    { text: <>Fill every square of the hidden picture and it <b>comes to life</b>.</> },
+  ],
 };
+
+/** One row of a Mosaic board with its clue: `#` filled, `x` crossed out, `.` open. */
+function Strip({ clue, cells, marks, gold }: { clue: string; cells: string; marks?: boolean; gold?: boolean }) {
+  const s = 18, cw = 30;
+  const w = cw + cells.length * s + 6, h = s + 6;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width={Math.min(150, w * 1.15)} className="flex-shrink-0" aria-hidden="true">
+      <rect x="0" y="0" width={cw} height={h} rx="4" fill="#F1E7D0" />
+      <text x={cw - 5} y={h / 2 + 4} textAnchor="end" fontSize="11" fontWeight="800" fill="#3A2E24" fontFamily="Inter, system-ui, sans-serif">{clue}</text>
+      <rect x={cw} y="0" width={w - cw} height={h} rx="4" fill="#B98A55" />
+      <rect x={cw + 2} y="2" width={w - cw - 4} height={h - 4} rx="2.5" fill={SEAM} />
+      <g transform={`translate(${cw + 3} 3)`}>
+        {[...cells].map((ch, k) => {
+          const on = ch === '#';
+          return (
+            <g key={k}>
+              <rect x={k * s + 0.6} y={0.6} width={s - 1.2} height={s - 1.2} rx="2.2" fill={on ? (gold ? '#C88A2E' : '#34415A') : IVORY} />
+              {marks && ch === '.' && <path d={`M${k * s + 5.5} 5.5l7 7M${k * s + 12.5} 5.5l-7 7`} stroke="#8C6A48" strokeWidth="1.8" strokeLinecap="round" />}
+            </g>
+          );
+        })}
+      </g>
+    </svg>
+  );
+}
 
 /** A little pond for the steps: islands as [row, col, number], spans as [row, col, length, down?, side]. */
 function Pond({ w, h, isles, spans, bad }: { w: number; h: number; isles: [number, number, number][]; spans: [number, number, number, number, number][]; bad?: boolean }) {
@@ -188,7 +223,7 @@ function Pond({ w, h, isles, spans, bad }: { w: number; h: number; isles: [numbe
   );
 }
 
-const NAMES: Record<GameId, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt', bridges: 'Bridges' };
+const NAMES: Record<GameId, string> = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt', bridges: 'Bridges', mosaic: 'Mosaic' };
 
 export function HowToPlay({ game }: { game: GameId }) {
   const key = `pb:howto:${game}`;

@@ -88,7 +88,7 @@ export function Profile() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges'] as const).map((g) => {
+                  {(['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges', 'mosaic'] as const).map((g) => {
                     const s = stats.games.find((x) => x.game === g);
                     return (
                       <tr key={g} className="border-t border-line-minor">

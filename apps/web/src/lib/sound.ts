@@ -165,7 +165,7 @@ const SOUNDS: Record<Sound, () => void> = {
  * rings its own note of one pentatonic chord, so running a finger down the
  * list plays a little tune. Kept well under the move sounds and rate-limited.
  */
-const INVITE_NOTES = [659.25, 783.99, 880, 1046.5, 1174.66, 1318.51];
+const INVITE_NOTES = [659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98];
 let lastInvite = 0;
 export function playInvite(index: number): void {
   if (!useSoundSetting.getState().on) return;

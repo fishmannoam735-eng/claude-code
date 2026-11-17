@@ -15,6 +15,7 @@ import { audio, useSoundSetting } from './sound';
  *   Thread   "Flow"      a running stream of soft plucks with a light brush
  *   Quilt    "Cottage"   a cosy marimba tune with a shaker
  *   Bridges  "Garden"    a slow felt-piano lullaby in the pentatonic, warm and low
+ *   Mosaic   "Sketchbook" a slow felt-piano waltz lullaby in F, soft chords on two and three
  *
  * A loop is a chord progression played round and round, with a melody that
  * is chosen afresh (from a fixed seed) on alternate passes so it doesn't feel
@@ -175,6 +176,41 @@ const SONGS: Record<GameId, Song> = {
         [80, 69], [84, 66], [88, 64],         // F#m:  A  F#  E
         [96, 62], [100, 66], [104, 69],       // G:    D  F#  A
         [112, 66], [116, 64], [120, 62],      // A:    F# E   D
+      ],
+    },
+  },
+  // "Sketchbook": a slow lullaby waltz in F major on the felt piano. A low
+  // bass note on one and a hushed electric-piano chord on two and three rock
+  // like a cradle, under a written sixteen-bar melody that stays in the key
+  // (no sharp or bright notes) and drops an octave the second time round.
+  mosaic: {
+    bpm: 66, beats: 3, sub: 2, barsPerChord: 2,
+    chords: [
+      { tones: [53, 57, 60, 64], bass: 41 },  // Fmaj7
+      { tones: [50, 53, 57, 60], bass: 38 },  // Dm7
+      { tones: [50, 53, 57, 58], bass: 46 },  // Bbmaj7
+      { tones: [52, 55, 57, 60], bass: 48 },  // C6
+      { tones: [52, 55, 57, 60], bass: 45 },  // Am7
+      { tones: [50, 53, 57, 60], bass: 38 },  // Dm7
+      { tones: [50, 53, 55, 58], bass: 43 },  // Gm7
+      { tones: [53, 55, 60, 62], bass: 48 },  // Csus4
+    ],
+    pad: { gain: 0.022, cutoff: 650, type: 'sine' },
+    arp: { voice: 'felt', gain: 0.05, up: 12, pattern: [off, off, off, 2, off, off], chance: 0.4 },
+    lead: { voice: 'felt', gain: 0, scale: [], chance: 0, on: () => false },
+    bass: { gain: 0.1, steps: [0] },
+    comp: { voice: 'epiano', gain: 0.022, steps: [2, 4] },
+    tune: {
+      voice: 'felt', gain: 0.15,
+      notes: [
+        [0, 69], [4, 67], [6, 65], [10, 67],  // F:     A  G  F  G
+        [12, 69], [16, 72], [18, 74],         // Dm7:   A  C  D
+        [24, 72], [28, 70], [30, 69], [34, 67], // Bb:  C  Bb A  G
+        [36, 67], [40, 69], [42, 64],         // C6:    G  A  E
+        [48, 64], [52, 67], [54, 72], [58, 69], // Am7: E  G  C  A
+        [60, 69], [64, 65], [66, 62],         // Dm7:   A  F  D
+        [72, 70], [76, 69], [78, 67], [82, 65], // Gm7: Bb A  G  F
+        [84, 67], [88, 64], [90, 65],         // Csus:  G  E  F
       ],
     },
   },

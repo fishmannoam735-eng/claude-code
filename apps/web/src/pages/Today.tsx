@@ -18,6 +18,7 @@ import type { Snapshot as CrownsSnapshot } from '../games/crowns/store';
 import type { Snapshot as ThreadSnapshot } from '../games/thread/store';
 import type { Snapshot as QuiltSnapshot } from '../games/quilt/store';
 import type { Snapshot as BridgesSnapshot } from '../games/bridges/store';
+import type { Snapshot as MosaicSnapshot } from '../games/mosaic/store';
 import { localKey } from '../lib/persistence';
 import { Avatar } from '../components/Avatar';
 import { LeadersStage } from '../components/LeadersStage';
@@ -35,6 +36,7 @@ const GAMES: GameDef[] = [
   { id: 'thread', name: 'Thread', blurb: 'One line, every cell' },
   { id: 'quilt', name: 'Quilt', blurb: 'Cut it into patches' },
   { id: 'bridges', name: 'Bridges', blurb: 'Join every island' },
+  { id: 'mosaic', name: 'Mosaic', blurb: 'Paint the hidden picture' },
 ];
 
 /** How much there is to fill, so a progress bar means the same thing everywhere. */
@@ -46,17 +48,19 @@ const TOTAL: Record<GameId, (d: Difficulty) => number> = {
   quilt: (d) => quiltGame.SIDES[d] ** 2,
   // A stand-in until a board is opened; its snapshot carries the real number.
   bridges: (d) => ({ easy: 16, normal: 26, hard: 36 })[d],
+  mosaic: (d) => ({ easy: 40, normal: 52, hard: 94 })[d],
 };
 
 interface TileState { status: 'none' | 'in_progress' | 'solved'; elapsedMs: number; placed: number; total?: number }
 const BLANK: TileState = { status: 'none', elapsedMs: 0, placed: 0 };
 
 type AnySnapshot =
-  | NineSnapshot | EclipseSnapshot | CrownsSnapshot | ThreadSnapshot | QuiltSnapshot | BridgesSnapshot;
+  | NineSnapshot | EclipseSnapshot | CrownsSnapshot | ThreadSnapshot | QuiltSnapshot | BridgesSnapshot | MosaicSnapshot;
 
 /** How far along a snapshot is, whichever shape it happens to be. */
 function progressOf(s: AnySnapshot): number {
   if ('bridges' in s) return s.bridges.reduce((a, b) => a + b, 0);
+  if ('paint' in s) return s.paint.filter((v) => v === 1).length;
   if ('path' in s) return s.path.length;
   if ('owner' in s) return s.owner.filter((k) => k >= 0).length;
   return s.grid.filter((v) => v !== 0).length;
@@ -177,10 +181,10 @@ export function Today() {
   );
 }
 
-const CHEERS = ['Six fresh boards are waiting.', 'Nice start. Keep it rolling.', 'Two down, four to go.', 'Halfway there. Lovely.', 'Past halfway. Keep going.', 'One more and the set is yours.', 'All six solved. See you tomorrow!'];
+const CHEERS = ['Seven fresh boards are waiting.', 'Nice start. Keep it rolling.', 'Two down, five to go.', 'Three down. Lovely.', 'Past halfway. Keep going.', 'Five down, two to go.', 'One more and the set is yours.', 'All seven solved. See you tomorrow!'];
 
 /**
- * The day at a glance: six tiles set into a wooden plank, one per game. A
+ * The day at a glance: seven tiles set into a wooden plank, one per game. A
  * solved game's tile turns its own glossy colour with a check on it.
  */
 function TodayPlank({ board, solved }: { board: Board; solved: number }) {
@@ -197,7 +201,7 @@ function TodayPlank({ board, solved }: { board: Board; solved: number }) {
           {solved} of {GAMES.length} done
         </span>
       </div>
-      <div className="grid grid-cols-6 gap-[5px] rounded-[12px] p-[5px]" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }}>
+      <div className="grid grid-cols-7 gap-[5px] rounded-[12px] p-[5px]" style={{ background: '#5C4028', boxShadow: 'inset 0 2px 6px rgb(30 18 8 / 0.65)' }}>
         {GAMES.map((g, k) => {
           const done = isDone(board[g.id]);
           const c = GAME_COLOR[g.id];

@@ -34,11 +34,18 @@ const LINE: Record<GameId, string> = {
   thread: 'One pipe through every square',
   quilt: 'Every patch stitched in',
   bridges: 'Every island joined',
+  mosaic: 'The picture comes to life',
 };
 
 const reduced = (): boolean => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-export function WinCelebration({ game, elapsed }: { game: GameId; elapsed: () => number }) {
+export function WinCelebration({ game, elapsed, line, scrollTo = '[data-solved-card]' }: {
+  game: GameId; elapsed: () => number;
+  /** The plaque's line under "Solved!", when the game has something better to say than its usual one. */
+  line?: string | undefined;
+  /** What to bring into view once the plaque goes: the solved card, or the board when the board is the show. */
+  scrollTo?: string;
+}) {
   const [run, setRun] = useState<{ k: number; ms: number } | null>(null);
   const [leaving, setLeaving] = useState(false);
 
@@ -60,10 +67,10 @@ export function WinCelebration({ game, elapsed }: { game: GameId; elapsed: () =>
     const a = window.setTimeout(() => setLeaving(true), 3900);
     const b = window.setTimeout(() => {
       setRun(null);
-      document.querySelector('[data-solved-card]')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'center' });
+      document.querySelector(scrollTo)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: scrollTo === '[data-solved-card]' ? 'center' : 'start' });
     }, 4400);
     return () => { window.clearTimeout(a); window.clearTimeout(b); };
-  }, [run]);
+  }, [run, scrollTo]);
 
   if (!run) return null;
   const close = () => setLeaving(true);
@@ -82,7 +89,7 @@ export function WinCelebration({ game, elapsed }: { game: GameId; elapsed: () =>
               <img src={crownUrl} alt="" className="h-full w-full" style={{ filter: 'drop-shadow(0 6px 6px rgb(90 55 5 / 0.45))' }} />
             </div>
             <div className="pb-word text-[44px] font-extrabold leading-none tracking-[-0.02em]">Solved!</div>
-            <div className="mt-2 text-[13px] font-semibold text-[#6B4512]">{LINE[game]}</div>
+            <div className="mt-2 text-[13px] font-semibold text-[#6B4512]">{line ?? LINE[game]}</div>
             <div className="mt-3 rounded-full bg-[rgb(90_55_10/0.14)] px-4 py-1 text-[22px] font-bold tabular-nums text-[#4A2E08]">
               {fmtTime(run.ms)}
             </div>
@@ -207,6 +214,7 @@ const EXTRA: Record<GameId, Kind[]> = {
   thread: ['pipe', 'pipe', 'pipe'],
   quilt: ['patch', 'patch', 'patch'],
   bridges: ['blossom', 'blossom', 'blossom', 'plank'],
+  mosaic: ['tile', 'tile', 'tile', 'patch'],
 };
 
 // Loaded as soon as the module is, so it is ready by the time anyone wins.

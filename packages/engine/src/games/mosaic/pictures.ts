@@ -45,6 +45,8 @@ export interface Picture {
   bg: string;
   parts?: Record<string, string>;
   motion: Motion[];
+  /** Decorations drawn as round dots (bubbles, steam) or little stars instead of squares. */
+  shape?: Record<string, 'round' | 'star'>;
 }
 
 const EASY: Picture[] = [
@@ -63,6 +65,7 @@ const EASY: Picture[] = [
     ink: { R: '#E8505B', W: '#FFD6DA', s: '#FFFFFF' },
     bg: '#FBE3E6',
     parts: { shine: 'W', sparkle: 's' },
+    shape: { s: 'star' },
     motion: [{ part: '*', kind: 'pulse', at: [4, 3.5] }, { part: 'shine', kind: 'twinkle' }, { part: 'sparkle', kind: 'twinkle', delay: 600 }],
   },
   {
@@ -102,6 +105,7 @@ const EASY: Picture[] = [
     ink: { T: '#E8743B', F: '#F4A23C', e: '#2A2A2A', o: '#FFFFFF' },
     bg: '#BFE3EE',
     parts: { tail: 'T', bubbles: 'o' },
+    shape: { o: 'round' },
     motion: [{ part: '*', kind: 'swim', at: [4, 4] }, { part: 'tail', kind: 'wag', at: [2, 4.5] }, { part: 'bubbles', kind: 'rise' }],
   },
   {
@@ -153,6 +157,7 @@ const EASY: Picture[] = [
     ink: { Y: '#F6CF3E', B: '#F08A2C', W: '#FBE38A', e: '#2A2A2A', w: '#FFFFFF' },
     bg: '#CBE7F0',
     parts: { wing: 'W', eye: 'e', ripples: 'w' },
+    shape: { w: 'round' },
     motion: [
       { part: '*', kind: 'bob', at: [4, 7] },
       { part: 'wing', kind: 'flap', at: [3, 4.5] },
@@ -252,6 +257,7 @@ const NORMAL: Picture[] = [
     ink: { R: '#E8505B', W: '#F2F2F2', F: '#F6A33C', b: '#6FC3E8', s: '#FFF3B0' },
     bg: '#20304F',
     parts: { flame: 'F', stars: 's' },
+    shape: { s: 'star' },
     motion: [{ part: '*', kind: 'launch', at: [5, 5] }, { part: 'flame', kind: 'flicker', at: [5, 8] }, { part: 'stars', kind: 'twinkle' }],
   },
   {
@@ -307,8 +313,9 @@ const NORMAL: Picture[] = [
       '.BBBBBBBB.',
     ],
     ink: { L: '#5C8FB8', P: '#7FB3D9', H: '#5C8FB8', S: '#5C8FB8', B: '#5C8FB8', s: '#FFFFFF' },
-    bg: '#F3E6D3',
+    bg: '#E6CFAF',
     parts: { lid: 'L', steam: 's' },
+    shape: { s: 'round' },
     motion: [{ part: 'steam', kind: 'steam' }, { part: 'lid', kind: 'rattle', at: [5, 4] }],
   },
   {
@@ -352,6 +359,7 @@ const NORMAL: Picture[] = [
     ink: { S: '#E9F7FC', W: '#3F7FB5', T: '#3F7FB5', B: '#A9D3EE', e: '#0E2236', w: '#FFFFFF' },
     bg: '#BFE3EE',
     parts: { spout: 'S', tail: 'T', eye: 'e', whale: 'SWTBe', waves: 'w' },
+    shape: { w: 'round' },
     motion: [
       { part: 'whale', kind: 'bob', at: [5, 6] },
       { part: 'spout', kind: 'spout', at: [4.5, 3] },
@@ -509,6 +517,7 @@ const HARD: Picture[] = [
     ink: { R: '#E2453A', W: '#BFE6F5', Y: '#F6D44C', K: '#2A2A2A', H: '#B0B0B0', J: '#2A2A2A', I: '#B0B0B0', g: '#8A8A8A', p: '#FFFFFF' },
     bg: '#DDEFF7',
     parts: { body: 'RWY', wheelL: 'KH', wheelR: 'JI', puff: 'p', road: 'g' },
+    shape: { p: 'round' },
     motion: [
       { part: 'body', kind: 'bounce', at: [6, 8] },
       { part: 'wheelL', kind: 'spin', at: [3.5, 9.5] },
@@ -561,6 +570,7 @@ const HARD: Picture[] = [
     ink: { P: '#E37BB0', T: '#E37BB0', W: '#FFFFFF', e: '#2A1E2E', o: '#FFFFFF' },
     bg: '#BFE3EE',
     parts: { arms: 'T', eyes: 'e', bubbles: 'o' },
+    shape: { o: 'round' },
     motion: [
       { part: '*', kind: 'float', at: [6, 6] },
       { part: 'arms', kind: 'tentacles', at: [6, 7] },
