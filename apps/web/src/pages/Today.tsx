@@ -150,7 +150,7 @@ export function Today() {
         </header>
 
         <TodayPlank board={board} solved={solvedToday} />
-        {sessionStatus === 'online' && <LeadersStage />}
+        <LeadersStage />
 
         {sessionStatus === 'offline' && (
           <div className="pb-rise mt-3 flex items-center gap-2 rounded-xl bg-raised-2/70 px-3 py-2 text-[12px] text-ink-2" style={{ ['--d' as string]: '120ms' }}>
