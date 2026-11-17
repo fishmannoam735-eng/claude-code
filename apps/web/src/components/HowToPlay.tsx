@@ -165,7 +165,7 @@ const STEPS: Record<GameId, Step[]> = {
       pic: <Strip clue="2 2" cells=".##.##" marks /> },
     { text: <>Think it through: however a block of 4 slides along 6 squares, it always covers the <b>middle two</b>.</>,
       pic: <Strip clue="4" cells="..##.." gold /> },
-    { text: <><b>Tap</b> a square to fill it, or <b>drag along a line</b> to fill several. Switch to <b>Cross out</b> to mark squares you know are empty.</> },
+    { text: <><b>Tap</b> a square to fill it, tap again for <b>✕</b> (known empty), once more to clear. <b>Drag</b> to paint a whole line. With a mouse: left click fills, right click crosses out.</> },
     { text: <>Fill every square of the hidden picture and it <b>comes to life</b>.</> },
   ],
 };

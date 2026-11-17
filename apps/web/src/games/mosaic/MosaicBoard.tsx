@@ -30,8 +30,8 @@ const INK = { face: 'linear-gradient(160deg, #4C5C78 0%, #34415A 55%, #283349 10
 const IVORY = { face: 'linear-gradient(160deg, #FBF7EE 0%, #F1E9D8 100%)', side: '#CDBE9F' };
 const PAPER = 'linear-gradient(180deg, #F6EEDC 0%, #EDE2C8 100%)';
 
-/** Thin guide lines every few squares make counting easier: 4s for 8 and 12, 5s for 10. */
-const guideEvery = (n: number): number => (n % 5 === 0 ? 5 : 4);
+/** A thick line every 5 squares makes counting easy. */
+const GUIDE = 5;
 
 export function MosaicBoard({ hidden }: { hidden: boolean }) {
   const puzzle = useMosaic((s) => s.puzzle);
@@ -41,13 +41,15 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
   const stroke = useMosaic((s) => s.stroke);
   const hint = useMosaic((s) => s.hint);
   const hintStep = useMosaic((s) => s.hintStep);
-  const { begin, extend, end } = useMosaic.getState();
+  const { begin, cycle, paintFrom, extend, end } = useMosaic.getState();
   const row = hint?.steps[hintStep];
 
-  // Press, then drag along a row or column: the first move picks the
-  // direction, and the stroke stays on that line, filling any square a fast
-  // finger skipped over.
-  const press = useRef<{ start: number; last: number; axis: 'row' | 'col' | null } | null>(null);
+  // A mouse fills with the left button and crosses out with the right. A
+  // finger tap cycles a square empty → filled → ✕ → empty, and a finger drag
+  // paints what the first square holds (a fill if it was empty) over the empty
+  // squares it passes. Either way the first move picks a row or a column, and
+  // the stroke stays on that line, filling any square a fast finger skipped.
+  const press = useRef<{ start: number; last: number; axis: 'row' | 'col' | null; touch: boolean; moved: boolean } | null>(null);
   const cursor = useRef<HTMLDivElement>(null);
   const n = puzzle?.w ?? 1;
   const cellAt = (e: PointerEvent): number | null => {
@@ -63,14 +65,15 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
     el.style.setProperty('--c', String(i % n));
   };
   const onPointerDown = (e: PointerEvent): void => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const mouse = e.pointerType === 'mouse';
+    if (mouse && e.button !== 0 && e.button !== 2) return;
     const i = cellAt(e);
     if (i === null) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    press.current = { start: i, last: i, axis: null };
+    press.current = { start: i, last: i, axis: null, touch: !mouse, moved: false };
     showCursor(i);
-    begin(i);
+    if (mouse) begin(i, e.button === 2 ? 'cross' : 'fill');
   };
   const onPointerMove = (e: PointerEvent): void => {
     const p = press.current;
@@ -82,7 +85,9 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
     if (!p.axis) {
       if (r === r0 && c === c0) return;
       p.axis = Math.abs(c - c0) >= Math.abs(r - r0) ? 'row' : 'col';
+      if (p.touch) paintFrom(p.start);
     }
+    p.moved = true;
     // Keep to the line: the square on it nearest the finger.
     const target = p.axis === 'row' ? r0 * n + c : r * n + c0;
     if (target === p.last) return;
@@ -93,7 +98,14 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
     p.last = target;
     showCursor(target);
   };
-  const onPointerUp = (): void => { press.current = null; showCursor(null); end(); };
+  const onPointerUp = (): void => {
+    const p = press.current;
+    press.current = null;
+    showCursor(null);
+    if (p?.touch && !p.moved) cycle(p.start);
+    end();
+  };
+  const onPointerCancel = (): void => { press.current = null; showCursor(null); end(); };
 
   // Phones: a swipe on the board in play draws and never scrolls the page.
   const boardRef = useRef<HTMLDivElement>(null);
@@ -132,7 +144,7 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
   const u = 100 / N;                 // one square, in % of the opening
   const q = 92.4 / N;                // one square, in cqw of the tray
   const solved = status === 'solved';
-  const every = guideEvery(n);
+  const every = GUIDE;
   const hintOn = !!row && !hidden;
   // A fresh solve lets the win plaque have its moment first, then the picture wakes up.
   const wait = justSolved ? WIN_PLAQUE_MS : 0;
@@ -209,8 +221,9 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onLostPointerCapture={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onLostPointerCapture={onPointerCancel}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {paint.map((v, i) => (
           <Cell
@@ -225,10 +238,10 @@ export function MosaicBoard({ hidden }: { hidden: boolean }) {
         {/* Guide lines, and the row and column under the finger. */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           {Array.from({ length: Math.floor((n - 1) / every) }, (_, k) => (k + 1) * every).map((t) => (
-            <span key={`v${t}`} className="absolute top-0 bottom-0" style={{ left: `calc(${(t / n) * 100}% - 0.18cqw)`, width: '0.36cqw', background: 'rgb(40 26 14 / 0.75)' }} />
+            <span key={`v${t}`} className="absolute top-0 bottom-0" style={{ left: `calc(${(t / n) * 100}% - 0.45cqw)`, width: '0.9cqw', background: '#2A1A0E', borderRadius: '0.3cqw' }} />
           ))}
           {Array.from({ length: Math.floor((n - 1) / every) }, (_, k) => (k + 1) * every).map((t) => (
-            <span key={`h${t}`} className="absolute left-0 right-0" style={{ top: `calc(${(t / n) * 100}% - 0.18cqw)`, height: '0.36cqw', background: 'rgb(40 26 14 / 0.75)' }} />
+            <span key={`h${t}`} className="absolute left-0 right-0" style={{ top: `calc(${(t / n) * 100}% - 0.45cqw)`, height: '0.9cqw', background: '#2A1A0E', borderRadius: '0.3cqw' }} />
           ))}
         </div>
         <div ref={cursor} className="pointer-events-none absolute inset-0 opacity-0 transition-opacity" aria-hidden="true">

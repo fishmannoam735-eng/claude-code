@@ -41,8 +41,12 @@ interface GameState {
   snapshot: () => Snapshot;
   elapsed: () => number;
   setTool: (t: Tool) => void;
-  /** Press on a square: decides what the stroke writes, and writes it there. */
-  begin: (i: number) => void;
+  /** Mouse press on a square (left fills, right crosses out): decides what the stroke writes, and writes it there. */
+  begin: (i: number, tool?: Tool) => void;
+  /** A tap with a finger: empty → filled → crossed out → empty. */
+  cycle: (i: number) => void;
+  /** A finger drag starting on this square. */
+  paintFrom: (i: number) => void;
   /** The stroke passes over another square. */
   extend: (i: number) => void;
   end: () => void;
@@ -140,19 +144,45 @@ export const useMosaic = create<GameState>((set, get) => {
 
     setTool: (tool) => { writeJSON(TOOL_KEY, tool); set({ tool }); },
 
-    begin: (i) => {
+    begin: (i, tool) => {
       if (!playable()) return;
       const s = get();
       const cur = s.paint[i]!;
-      const want = s.tool === 'fill' ? FILL : CROSS;
-      // Pressing on a square that already holds the tool's mark rubs it out,
-      // and so does the rest of the stroke; otherwise the stroke writes the
-      // mark over untouched squares (it never paints over the other mark).
-      const stroke = cur === want ? { value: OPEN, over: want } : { value: want, over: cur === OPEN ? OPEN : cur };
+      const want = (tool ?? s.tool) === 'fill' ? FILL : CROSS;
+      // Pressing on a square that already holds this mark rubs it out, and so
+      // does the rest of the stroke; otherwise the stroke writes the mark over
+      // squares like the first one.
+      const stroke = cur === want ? { value: OPEN, over: want } : { value: want, over: cur };
       const next = s.paint.slice();
       next[i] = stroke.value;
       set({ stroke });
       write(next, true);
+    },
+
+    cycle: (i) => {
+      if (!playable()) return;
+      const s = get();
+      const next = s.paint.slice();
+      const cur = s.paint[i]!;
+      next[i] = cur === OPEN ? FILL : cur === FILL ? CROSS : OPEN;
+      write(next, true);
+    },
+
+    paintFrom: (i) => {
+      if (!playable()) return;
+      const s = get();
+      const cur = s.paint[i]!;
+      // A finger drag paints what the first square holds (a fill if it's
+      // empty) over every empty square it passes.
+      const stroke = { value: cur === OPEN ? FILL : cur, over: OPEN };
+      set({ stroke });
+      if (cur === OPEN) {
+        const next = s.paint.slice();
+        next[i] = FILL;
+        write(next, true);
+      } else {
+        set({ history: [...s.history.slice(-199), s.paint] });
+      }
     },
 
     extend: (i) => {

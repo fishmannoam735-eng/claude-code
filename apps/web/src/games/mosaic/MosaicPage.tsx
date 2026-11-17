@@ -38,14 +38,13 @@ export function MosaicPage() {
   const status = useMosaic((s) => s.status);
   const running = useMosaic((s) => s.runningSince !== null);
   const paint = useMosaic((s) => s.paint);
-  const tool = useMosaic((s) => s.tool);
   const justSolved = useMosaic((s) => s.justSolved);
   const history = useMosaic((s) => s.history);
   const dirty = useMosaic((s) => s.dirty);
   const snapshot = useMosaic((s) => s.snapshot);
   const elapsed = useMosaic((s) => s.elapsed);
   const hint = useMosaic((s) => s.hint);
-  const { undo, clear, pause, resume, showHint, setTool } = useMosaic.getState();
+  const { undo, clear, pause, resume, showHint } = useMosaic.getState();
 
   const [streak, setStreak] = useState<number | null>(null);
   const [shared, setShared] = useState<string | null>(null);
@@ -138,7 +137,7 @@ export function MosaicPage() {
           ✨ {aliveLine(puzzle)}! <span className="font-normal">Tap the picture to see it again.</span>
         </p>
       ) : (
-        <ToolSwitch tool={tool} onChange={setTool} disabled={paused} />
+        <ControlsTip />
       )}
 
       {hint && !paused && <HintCard />}
@@ -166,27 +165,17 @@ export function MosaicPage() {
   );
 }
 
-/** Fill or cross out: what a tap or a drag puts on the squares. */
-function ToolSwitch({ tool, onChange, disabled }: { tool: 'fill' | 'cross'; onChange: (t: 'fill' | 'cross') => void; disabled: boolean }) {
-  const opt = (t: 'fill' | 'cross', label: string, icon: React.JSX.Element) => (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={tool === t}
-      disabled={disabled}
-      onClick={() => onChange(t)}
-      className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2 text-[14px] font-semibold transition-colors ${tool === t ? 'bg-raised text-ink shadow-sm' : 'text-ink-2'}`}
-    >
-      {icon}{label}
-    </button>
-  );
+/** How the squares take marks, in one line: no mode to switch. */
+function ControlsTip() {
+  const mouse = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+  const X = <svg viewBox="0 0 24 24" className="inline h-3.5 w-3.5 align-[-2px]" fill="none" stroke="#8C6A48" strokeWidth={3.4} strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>;
+  const Sq = <span className="inline-block h-3 w-3 rounded-[3px] align-[-1px]" style={{ background: 'linear-gradient(160deg, #4C5C78, #283349)' }} aria-hidden="true" />;
   return (
-    <div role="radiogroup" aria-label="What a tap does" className="mt-3 flex gap-1 rounded-2xl border border-line-minor bg-raised-2 p-1">
-      {opt('fill', 'Fill', <span className="h-4 w-4 rounded-[4px]" style={{ background: 'linear-gradient(160deg, #4C5C78, #283349)' }} />)}
-      {opt('cross', 'Cross out', (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#8C6A48" strokeWidth={3.2} strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-      ))}
-    </div>
+    <p className="mt-3 rounded-2xl border border-line-minor bg-raised-2 px-3 py-2 text-center text-[12.5px] leading-snug text-ink-2">
+      {mouse
+        ? <><b className="text-ink">Left click</b> fills {Sq}, <b className="text-ink">right click</b> crosses out {X}. Drag to do a whole line.</>
+        : <><b className="text-ink">Tap</b> to go empty → {Sq} → {X} → empty. <b className="text-ink">Drag</b> from a square to paint what it holds along a line.</>}
+    </p>
   );
 }
 
