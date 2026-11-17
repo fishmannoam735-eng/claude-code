@@ -26,3 +26,7 @@ export type { QuiltPuzzle, QuiltHint, QuiltHintStep } from './games/quilt/index.
 export type Grid = number[];
 
 export * from './score.js';
+
+export * as bridgesGame from './games/bridges/index.js';
+export { bridges } from './games/bridges/index.js';
+export type { BridgesPuzzle, BridgesHint, BridgesHintStep } from './games/bridges/index.js';

@@ -1,7 +1,7 @@
 export type Difficulty = 'easy' | 'normal' | 'hard';
 export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'normal', 'hard'];
 
-export type GameId = 'nine' | 'crowns' | 'eclipse' | 'thread' | 'quilt';
+export type GameId = 'nine' | 'crowns' | 'eclipse' | 'thread' | 'quilt' | 'bridges';
 
 /**
  * A seed fully describes a board: `<game>:<key>:<difficulty>`.
