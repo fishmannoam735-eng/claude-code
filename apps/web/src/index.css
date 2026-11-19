@@ -520,3 +520,94 @@ button { font-family: inherit; }
   .pb-mo-fold { opacity: 0; }
   .pb-mo-rise, .pb-mo-steam { opacity: 0.8; }
 }
+
+/* ------------------------------------------------- podium, the little play */
+/* Step faces: a lit top in the medal's metal. */
+.pb-pod-cap { clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%); }
+.pb-pod-cap-gold { background: linear-gradient(180deg, #FFF3CF, #E8B44A); }
+.pb-pod-cap-silver { background: linear-gradient(180deg, #FFFFFF, #BFC5CF); }
+.pb-pod-cap-bronze { background: linear-gradient(180deg, #FBE1C8, #CD8A55); }
+.pb-pod-plate { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 0 rgb(40 20 5 / 0.45); }
+.pb-pod-plate-gold { background: linear-gradient(160deg, #FFF3CF, #E8B44A 60%, #C98A22); color: #4E2E04; }
+.pb-pod-plate-silver { background: linear-gradient(160deg, #FFFFFF, #C3C8D1 60%, #9AA1AD); color: #2E333B; }
+.pb-pod-plate-bronze { background: linear-gradient(160deg, #FBE1C8, #E9B48A 55%, #A9683A); color: #3E220E; }
+.pb-pod-step { animation: pb-pod-step 560ms cubic-bezier(.2,.9,.3,1.1) var(--d, 0ms) both; transform-origin: 50% 100%; }
+@keyframes pb-pod-step { from { opacity: 0; transform: scaleY(0.2); } to { opacity: 1; transform: none; } }
+
+/* Everyone hops onto their step: third, then second, then the champion. */
+.pb-pod-hop { animation: pb-pod-hop 620ms cubic-bezier(.3,.7,.3,1) both; }
+.pb-pod-hop-3 { animation-delay: 380ms; }
+.pb-pod-hop-2 { animation-delay: 560ms; }
+.pb-pod-hop-1 { animation-delay: 820ms; }
+@keyframes pb-pod-hop {
+  0% { opacity: 0; transform: translateY(-46px) scale(0.7); }
+  45% { opacity: 1; transform: translateY(-58px) scale(1.04); }
+  72% { transform: translateY(3px) scale(1.08, 0.9); }
+  86% { transform: translateY(-5px) scale(0.97, 1.03); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* The play: one eight-second clock for everybody. */
+.pb-pod-act { animation-duration: 8s; animation-iteration-count: infinite; animation-delay: 1.6s; animation-timing-function: ease-in-out; transform-origin: 50% 100%; }
+/* Champion: breathes, leans over and shoves, then a smug shimmy. */
+.pb-pod-act-1 { animation-name: pb-pod-first; }
+@keyframes pb-pod-first {
+  0%, 22%, 100% { transform: none; }
+  11% { transform: scale(1.02, 0.98); }
+  28% { transform: translateX(-4px) rotate(-4deg); }
+  31% { transform: translateX(-16px) rotate(-12deg); }
+  35% { transform: translateX(-2px) rotate(2deg); }
+  39%, 54% { transform: none; }
+  57% { transform: rotate(6deg) translateY(-2px); }
+  60% { transform: rotate(-6deg) translateY(-2px); }
+  63% { transform: rotate(5deg); }
+  66%, 92% { transform: none; }
+}
+/* Runner-up: gets bumped, wobbles, recovers with dignity (almost). */
+.pb-pod-act-2 { animation-name: pb-pod-second; }
+@keyframes pb-pod-second {
+  0%, 30%, 100% { transform: none; }
+  32% { transform: translateX(-10px) rotate(-16deg); }
+  35% { transform: translateX(-6px) rotate(9deg); }
+  38% { transform: translateX(-3px) rotate(-5deg); }
+  41% { transform: rotate(2deg); }
+  44%, 90% { transform: none; }
+}
+/* Third: tiptoes to see what the fuss is about. */
+.pb-pod-act-3 { animation-name: pb-pod-third; }
+@keyframes pb-pod-third {
+  0%, 66%, 100% { transform: none; }
+  70%, 82% { transform: translate(-5px, -7px) rotate(-7deg); }
+  74% { transform: translate(-5px, -9px) rotate(-5deg); }
+  78% { transform: translate(-5px, -7px) rotate(-8deg); }
+  86% { transform: none; }
+}
+/* The crown slips during the shove and is straightened during the shimmy. */
+.pb-pod-crown { animation: pb-pod-crown 8s ease-in-out 1.6s infinite; transform: rotate(-8deg); }
+@keyframes pb-pod-crown {
+  0%, 28%, 100% { transform: rotate(-8deg); }
+  32% { transform: translate(-6px, 2px) rotate(-28deg); }
+  40%, 54% { transform: translate(-3px, 1px) rotate(-20deg); }
+  58% { transform: translate(0, -6px) rotate(-4deg); }
+  64%, 92% { transform: rotate(-8deg); }
+}
+/* Speech bubbles pop in on cue. */
+.pb-pod-say { opacity: 0; transform: scale(0.6) translateY(6px); transform-origin: 50% 100%; animation-duration: 8s; animation-iteration-count: infinite; animation-delay: 1.6s; animation-timing-function: cubic-bezier(.2,1.4,.4,1); }
+.pb-pod-say-2 { animation-name: pb-pod-say-2; transform-origin: 30% 100%; }
+.pb-pod-say-1 { animation-name: pb-pod-say-1; }
+.pb-pod-say-3 { animation-name: pb-pod-say-3; transform-origin: 70% 100%; }
+@keyframes pb-pod-say-2 { 0%, 33% { opacity: 0; transform: scale(0.6) translateY(6px); } 36%, 52% { opacity: 1; transform: none; } 56%, 100% { opacity: 0; transform: scale(0.9); } }
+@keyframes pb-pod-say-1 { 0%, 55% { opacity: 0; transform: scale(0.6) translateY(6px); } 58%, 68% { opacity: 1; transform: none; } 72%, 100% { opacity: 0; transform: scale(0.9); } }
+@keyframes pb-pod-say-3 { 0%, 72% { opacity: 0; transform: scale(0.6) translateY(6px); } 75%, 88% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; transform: scale(0.9); } }
+/* Medals sway; third place's gets a proud spin. */
+.pb-pod-medal { transform-origin: 50% 0; animation: pb-medal-sway 2.8s ease-in-out infinite; }
+.pb-pod-medal-2 { animation-delay: -0.9s; }
+.pb-pod-medal-3 { animation: pb-medal-sway 2.8s ease-in-out -1.7s infinite; }
+@keyframes pb-medal-sway { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+/* An empty step's sign wobbles as if someone just walked past. */
+.pb-pod-sign { animation: pb-pod-sign 3.4s ease-in-out infinite; }
+@keyframes pb-pod-sign { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .pb-pod-step, .pb-pod-hop, .pb-pod-act, .pb-pod-crown, .pb-pod-medal, .pb-pod-sign { animation: none; }
+  .pb-pod-say { animation: none; opacity: 0; }
+}

@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { fetchContestStats, fetchLeaderboard, type ContestStats, type RankRow } from '@pb/data';
 import { localDateKey } from '@pb/engine';
 import { Avatar } from './Avatar';
+import { Podium } from './Podium';
 import { supabase, useSession } from '../lib/session';
 import { readJSON, writeJSON } from '../lib/storage';
 import { fmtPoints, ordinal } from '../lib/contest';
@@ -30,9 +31,6 @@ const TAGLINES = [
   'It’s just a puzzle game. (It is not just a puzzle game.)',
   'Updated live, judged silently.',
 ];
-
-// What each place is, emotionally.
-const PLACE_NOTE = ['Currently insufferable', 'So close it hurts', 'Technically on the podium'];
 
 const dayIndex = (key: string): number => [...key].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 9973, 7);
 
@@ -98,39 +96,7 @@ export function LeadersStage() {
         </Link>
       </header>
 
-      {/* The top three, side by side. */}
-      <ol className="mt-3.5 grid grid-cols-3 border-y border-line-minor" aria-label="Top three">
-        {[0, 1, 2].map((i) => {
-          const row = top[i];
-          return (
-            <li
-              key={i}
-              className={`pb-fade-up flex min-w-0 flex-col items-center px-1 py-3 text-center ${i > 0 ? 'border-l border-line-minor' : ''}`}
-              style={{ ['--d' as string]: `${260 + i * 110}ms` }}
-            >
-              <span className={`text-[11px] font-bold uppercase tracking-[0.14em] ${i === 0 ? 'text-accent-text' : 'text-ink-2'}`}>
-                {i === 0 ? '♛ ' : ''}{ordinal(i + 1)}
-              </span>
-              {row ? (
-                <>
-                  <div className="relative mt-2 flex h-[54px] items-end">
-                    <Avatar name={row.nickname} colour={row.avatar} photo={row.photo} size={i === 0 ? 50 : 42} ring={row.is_me ? 'var(--color-accent)' : undefined} />
-                  </div>
-                  <span className="mt-1 w-full truncate text-[13px] font-bold text-ink">{row.is_me ? 'You' : row.nickname}</span>
-                  <span className="text-[13px] font-extrabold tabular-nums text-ink">{fmtPoints(row.score)}</span>
-                  <span className="mt-0.5 text-[10.5px] italic leading-tight text-ink-2">{PLACE_NOTE[i]}</span>
-                </>
-              ) : (
-                <>
-                  <span className="mb-[3px] mt-[14px] flex h-[42px] w-[42px] items-center justify-center rounded-[30%] border border-dashed border-line-major text-[16px] text-ink-2">?</span>
-                  <span className="mt-1 text-[12.5px] font-semibold text-ink-2">Vacant</span>
-                  <span className="mt-0.5 text-[10.5px] italic leading-tight text-ink-2">Suspiciously available</span>
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+      <Podium top={top} />
 
       {/* Where you stand. */}
       <div className="pb-fade-up mt-3 text-[13px] leading-snug text-ink" style={{ ['--d' as string]: '620ms' }}>
