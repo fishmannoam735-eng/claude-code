@@ -34,7 +34,7 @@ export function Podium({ top }: { top: RankRow[] }) {
   return (
     <div className="relative mt-3" aria-label="Top three">
       {/* A soft pool of light on the floor, under the winner. */}
-      <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 h-24 w-[86%] -translate-x-1/2 rounded-[50%]" style={{ background: 'radial-gradient(closest-side, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent)' }} />
+      <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 h-24 w-[86%] -translate-x-1/2 rounded-[50%]" style={{ background: 'radial-gradient(closest-side, rgb(255 214 140 / 0.38), transparent)' }} />
 
       <ol className="relative grid grid-cols-3 items-end gap-1.5 px-1 pt-12">
         {SEATS.map(({ i, place, step, medal }) => {
@@ -86,7 +86,7 @@ function Bubble({ children, className, side }: { children: React.ReactNode; clas
   const pos = side === 'left' ? 'left-[-14px]' : side === 'right' ? 'right-[-14px]' : 'left-1/2 -translate-x-1/2';
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute -top-[46px] z-[3] ${pos}`}>
-      <div className={`pb-pod-say ${className} whitespace-nowrap rounded-[10px] border border-line-major bg-raised px-2 py-1 text-[11px] font-semibold italic text-ink shadow-[0_4px_10px_-4px_rgb(60_40_20/0.4)]`}>
+      <div className={`pb-pod-say ${className} whitespace-nowrap rounded-[10px] border border-[#E9DCC4] bg-[#FFFBF2] px-2 py-1 text-[11px] font-semibold italic text-[#2A1A08] shadow-[0_4px_12px_-4px_rgb(0_0_0/0.5)]`}>
         {children}
       </div>
     </div>

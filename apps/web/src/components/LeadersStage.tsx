@@ -71,12 +71,14 @@ export function LeadersStage() {
 
   return (
     <section
-      className="pb-rise relative mt-3 overflow-hidden rounded-[20px] border border-line-minor bg-raised px-4 pb-3.5 pt-3.5 shadow-[0_1px_0_rgb(120_90_50/0.12),0_12px_28px_-16px_rgb(60_40_20/0.45)]"
+      className="pb-rise pb-contest relative mt-3 overflow-hidden rounded-[20px] px-4 pb-3.5 pt-3.5"
       style={{ ['--d' as string]: '120ms' }}
       aria-label="Today's leaders"
     >
-      {/* A single thin line of gold along the top edge: the only ornament. */}
-      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'linear-gradient(90deg, transparent, var(--color-accent) 30%, var(--color-accent) 70%, transparent)' }} />
+      {/* A thin line of gold along the top edge, and the lights. */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 z-[1] h-[3px]" style={{ background: 'linear-gradient(90deg, transparent, #F6D98A 30%, #F6D98A 70%, transparent)' }} />
+      <Spotlights />
+      <div className="relative z-[1]">
 
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -112,7 +114,28 @@ export function LeadersStage() {
           </span>
         </p>
       )}
+      </div>
     </section>
+  );
+}
+
+/**
+ * The lights over the stage: three beams sweeping slowly from above, one
+ * steady beam breathing on the champion, and a little dust glinting in it.
+ * Transform and opacity only; still under reduced motion.
+ */
+function Spotlights() {
+  const motes = [[18, 38], [27, 22], [36, 46], [44, 30], [52, 52], [58, 26], [66, 40], [74, 20], [82, 48], [48, 14]];
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="pb-beam pb-beam-a absolute -top-6 left-[2%] h-[440px] w-[150px]" />
+      <div className="pb-beam pb-beam-b absolute -top-6 right-[2%] h-[440px] w-[150px]" />
+      <div className="pb-beam pb-beam-c absolute -top-6 left-[30%] h-[420px] w-[120px]" />
+      <div className="pb-beam-hero absolute left-1/2 top-0 h-[300px] w-[170px] -translate-x-1/2" />
+      {motes.map(([x, y], k) => (
+        <span key={k} className="pb-mote absolute block h-[3px] w-[3px] rounded-full bg-[#FFF1C9]" style={{ left: `${x}%`, top: `${y}%`, ['--d' as string]: `${(k * 530) % 3200}ms` }} />
+      ))}
+    </div>
   );
 }
 

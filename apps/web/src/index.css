@@ -611,3 +611,47 @@ button { font-family: inherit; }
   .pb-pod-step, .pb-pod-hop, .pb-pod-act, .pb-pod-crown, .pb-pod-medal, .pb-pod-sign { animation: none; }
   .pb-pod-say { animation: none; opacity: 0; }
 }
+
+/* ------------------------------------------------ contest box: the stage */
+/* Royal velvet with gold: it should be the first thing you see. The box
+   sets its own ink colours so text and lines read well on it in both themes. */
+.pb-contest {
+  --color-ink: #FFF6E8;
+  --color-ink-2: #D6C6E6;
+  --color-accent-text: #F6D98A;
+  --color-accent: #F2C14E;
+  --color-danger: #FF7B72;
+  --color-line-minor: rgb(255 255 255 / 0.13);
+  --color-line-major: rgb(255 255 255 / 0.32);
+  --color-raised-2: rgb(255 255 255 / 0.14);
+  color: var(--color-ink);
+  background:
+    radial-gradient(120% 70% at 50% 0%, #5B2A7A 0%, transparent 60%),
+    radial-gradient(90% 60% at 50% 100%, #3A1A55 0%, transparent 70%),
+    linear-gradient(170deg, #3D1A57 0%, #2A1240 50%, #1A0B2E 100%);
+  box-shadow: 0 0 0 1px rgb(246 217 138 / 0.35), 0 16px 34px -14px rgb(40 10 60 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+.pb-beam {
+  transform-origin: 50% 0;
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  will-change: transform;
+}
+.pb-beam-a { background: linear-gradient(180deg, rgb(255 236 190 / 0.34), rgb(255 236 190 / 0)); animation: pb-beam-a 9s ease-in-out infinite alternate; }
+.pb-beam-b { background: linear-gradient(180deg, rgb(255 190 220 / 0.26), rgb(255 190 220 / 0)); animation: pb-beam-b 11s ease-in-out infinite alternate; }
+.pb-beam-c { background: linear-gradient(180deg, rgb(180 220 255 / 0.2), rgb(180 220 255 / 0)); animation: pb-beam-c 13s ease-in-out infinite alternate; }
+@keyframes pb-beam-a { from { transform: rotate(-34deg); } to { transform: rotate(-4deg); } }
+@keyframes pb-beam-b { from { transform: rotate(32deg); } to { transform: rotate(2deg); } }
+@keyframes pb-beam-c { from { transform: rotate(-12deg); } to { transform: rotate(26deg); } }
+.pb-beam-hero {
+  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, rgb(255 240 200 / 0.42), rgb(255 240 200 / 0.05) 85%, rgb(255 240 200 / 0));
+  animation: pb-beam-hero 4.5s ease-in-out infinite;
+}
+@keyframes pb-beam-hero { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+.pb-mote { opacity: 0; animation: pb-mote 3.2s ease-in-out var(--d, 0ms) infinite; }
+@keyframes pb-mote { 0%, 100% { opacity: 0; transform: translateY(6px) scale(0.6); } 50% { opacity: 0.9; transform: translateY(-6px) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) {
+  .pb-beam-a, .pb-beam-b, .pb-beam-c, .pb-beam-hero, .pb-mote { animation: none; }
+  .pb-beam-a { transform: rotate(-20deg); } .pb-beam-b { transform: rotate(18deg); } .pb-beam-c { transform: rotate(6deg); }
+  .pb-mote { opacity: 0.5; }
+}
