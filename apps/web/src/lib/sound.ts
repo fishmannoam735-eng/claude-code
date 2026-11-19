@@ -183,6 +183,32 @@ export function playInvite(index: number): void {
   } catch { /* audio is a nicety */ }
 }
 
+/**
+ * A record fanfare: a bright brassy run up to a held chord, with a shimmer on
+ * top. Taking first place adds a second, higher answer and a ripple of
+ * applause (little bursts of filtered noise).
+ */
+export function playRecord(kind: 'best' | 'first'): void {
+  if (!useSoundSetting.getState().on) return;
+  try {
+    const run = [392, 523.25, 659.25, 783.99, 1046.5];
+    run.forEach((f, k) => {
+      tone('sawtooth', f, f, 0.08, 0.01, 0.22, k * 0.09);
+      tone('triangle', f, f, 0.3, 0.006, 0.3, k * 0.09);
+    });
+    [523.25, 659.25, 783.99, 1046.5].forEach((f) => {
+      tone('triangle', f, f, 0.22, 0.03, 1.6, 0.5);
+      tone('sawtooth', f * 1.002, f * 1.002, 0.035, 0.05, 1.3, 0.5);
+    });
+    [2093, 2637, 3136, 3520, 4186].forEach((f, k) => tone('sine', f, f, 0.06, 0.002, 0.3, 0.55 + k * 0.07));
+    if (kind === 'first') {
+      [783.99, 1046.5, 1318.5, 1567.98].forEach((f, k) => tone('triangle', f, f, 0.26, 0.006, 0.35, 1.1 + k * 0.08));
+      [1046.5, 1318.5, 1567.98, 2093].forEach((f) => tone('sine', f, f, 0.16, 0.04, 2, 1.45));
+      for (let i = 0; i < 46; i++) hiss(vary(2600, 0.4), 1.2, 0.18 + Math.random() * 0.16, 0.003, 0.05, 1.2 + Math.random() * 1.8);
+    }
+  } catch { /* audio is a nicety */ }
+}
+
 export function play(sound: Sound): void {
   if (!useSoundSetting.getState().on) return;
   try { SOUNDS[sound](); } catch { /* audio is a nicety; never break a move over it */ }

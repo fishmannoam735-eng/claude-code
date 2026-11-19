@@ -13,7 +13,8 @@ import { supabase, useSession } from '../lib/session';
 import { GAME_NAME, fmtPoints, ordinal, useMe } from '../lib/contest';
 import { restartBoard } from '../lib/restart';
 import { localKey } from '../lib/persistence';
-import { readJSON } from '../lib/storage';
+import { readJSON, writeJSON } from '../lib/storage';
+import { HighScoreMoment, RecordBadge, type HighRecord } from './HighScore';
 
 /** Re-renders once a second while the clock runs, and not at all when it doesn't. */
 export function Timer({ elapsed, running }: { elapsed: () => number; running: boolean }) {
@@ -280,6 +281,31 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
   const completedAt = readJSON<{ completedAt: string | null }>(localKey(parsed.game, seed))?.completedAt ?? null;
   const [rank, setRank] = useState<{ rank: number; players: number } | null>(null);
   const [offline, setOffline] = useState(false);
+  const [rankDone, setRankDone] = useState(false);
+  const [record, setRecord] = useState<{ rec: HighRecord; delay: number } | null>(null);
+
+  // Did this solve set a record? Decided once per solve, when the server has
+  // answered (or we know we're offline), and only right after the solve.
+  useEffect(() => {
+    if (!completedAt || record) return;
+    if (!(rankDone || offline)) return;
+    const seenKey = `pb:hs-seen:${seed}`;
+    if (readJSON<string>(seenKey) === completedAt) return;
+    const age = Date.now() - new Date(completedAt).getTime();
+    if (age > 3 * 60_000) return;
+    writeJSON(seenKey, completedAt);
+    if (server && server.attempts > 1) return; // Try again is practice
+    const score = server ? server.best : local.total;
+    const bestKey = `pb:best:${parsed.game}`;
+    const prev = readJSON<number>(bestKey);
+    if (prev === null || score > prev) writeJSON(bestKey, score);
+    const cache = readJSON<{ date: string; rows: { is_me: boolean; rank: number }[] }>('pb:leaders');
+    const wasFirst = cache?.rows.find((r) => r.is_me)?.rank === 1;
+    const delay = Math.max(0, 4700 - age);
+    if (server?.contest && rank?.rank === 1 && !wasFirst) setRecord({ rec: { kind: 'first', score, prev }, delay });
+    else if (prev !== null && score > prev) setRecord({ rec: { kind: 'best', score, prev }, delay });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rankDone, offline, server, completedAt]);
 
   useEffect(() => {
     if (!supabase || !userId) { setOffline(true); return; }
@@ -300,6 +326,7 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
             const me = rows.find((r) => r.is_me);
             if (alive && me) setRank({ rank: me.rank, players: rows.length });
           }
+          if (alive) setRankDone(true);
           return;
         }
       } catch { /* try again */ }
@@ -332,8 +359,9 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
 
   return (
     <div className="mt-4 overflow-hidden rounded-xl border border-line-minor">
+      {record && <HighScoreMoment record={record.rec} delayMs={record.delay} />}
       <div className="pb-wood relative flex items-center justify-between px-3.5 py-2.5 text-[#FFF4E2]">
-        <span className="text-[13px] font-bold tracking-tight [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">This try</span>
+        <span className="flex items-center gap-2 text-[13px] font-bold tracking-tight [text-shadow:0_1px_1px_rgb(60_30_5/0.5)]">This try{record && <RecordBadge kind={record.rec.kind} />}</span>
         <span className="pb-plaque-sm pb-stamp rounded-lg px-3 py-0.5 text-[22px] font-extrabold tabular-nums text-[#4E2E04]" style={{ ['--d' as string]: '300ms' }}>
           +{fmtPoints(total)}
         </span>
