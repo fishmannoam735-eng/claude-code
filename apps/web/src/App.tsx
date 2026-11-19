@@ -13,6 +13,7 @@ import { ThreadPage } from './games/thread/ThreadPage';
 import { QuiltPage } from './games/quilt/QuiltPage';
 import { BridgesPage } from './games/bridges/BridgesPage';
 import { MosaicPage } from './games/mosaic/MosaicPage';
+import { PinballPage } from './games/pinball/PinballPage';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 const PLAYABLE: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges', 'mosaic'];
@@ -60,6 +61,8 @@ export function App() {
       <Route path="/" element={<Today />} />
       <Route path="/rankings" element={<Rankings />} />
       <Route path="/me" element={<Profile />} />
+      <Route path="/arcade/pinball" element={<PinballPage />} />
+      <Route path="/arcade/pinball/:level" element={<PinballPage />} />
       <Route path="/:game" element={<DailyRedirect />} />
       <Route path="/:game/:difficulty" element={<DailyRedirect />} />
       <Route path="/practice/:game" element={<PracticeRedirect />} />

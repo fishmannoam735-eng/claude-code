@@ -699,3 +699,9 @@ button { font-family: inherit; }
   .pb-hs-in, .pb-hs-out, .pb-hs-ribbon, .pb-hs-crown, .pb-hs-sub, .pb-hs-line { animation: none; }
   .pb-hs-ribbon { transform: rotate(-2deg); }
 }
+
+/* The game picker sheet on the start page. */
+@keyframes pb-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+.pb-sheet { animation: pb-sheet-up 380ms cubic-bezier(.2,.9,.25,1) both; }
+.pb-sheet-veil { animation: pb-veil-in 260ms ease both; }
+@media (prefers-reduced-motion: reduce) { .pb-sheet, .pb-sheet-veil { animation: none; } }
