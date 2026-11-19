@@ -135,3 +135,21 @@ export async function claimTransferCode(client: DataClient, code: string): Promi
   if (error) throw error;
   return data as string;
 }
+
+/** Pinball (Crown Quest): one row per finished game; the board is each player's best per level. */
+export interface PinballRow { rank: number; nickname: string; avatar: number; score: number; games: number; is_me: boolean; photo?: string | null }
+type LooseClient = {
+  from: (t: string) => { insert: (r: object) => PromiseLike<{ error: unknown }> };
+  rpc: (fn: string, a: object) => PromiseLike<{ data: unknown; error: unknown }>;
+};
+
+export async function submitPinballScore(client: DataClient, userId: string, level: 'easy' | 'normal' | 'hard', score: number, playedOn: string): Promise<void> {
+  const { error } = await (client as unknown as LooseClient).from('pinball_scores').insert({ user_id: userId, level, score: Math.round(score), played_on: playedOn });
+  if (error) throw error;
+}
+
+export async function fetchPinballBoard(client: DataClient, level: 'easy' | 'normal' | 'hard', period: Period, today: string, limit = 50): Promise<PinballRow[]> {
+  const { data, error } = await (client as unknown as LooseClient).rpc('pinball_board', { p_level: level, p_period: period, p_today: today, p_limit: limit });
+  if (error) throw error;
+  return ((data ?? []) as PinballRow[]).map((r) => ({ ...r, score: Number(r.score) }));
+}

@@ -519,6 +519,10 @@ function PinballSheet({ onClose }: { onClose: () => void }) {
         </ul>
       </div>
 
+      <Link to="/rankings?game=pinball" className="pb-key mt-3 flex h-[46px] items-center justify-center gap-2 rounded-[14px] bg-raised text-[14px] font-bold" style={{ ['--key-side' as string]: 'var(--color-line-major)' }}>
+        <Icon.Trophy width={17} height={17} /> High scores
+      </Link>
+
       <div className="mt-3 rounded-[20px] border border-line-minor bg-raised p-3.5 text-[12.5px] leading-relaxed text-ink-2">
         <b className="text-ink">How to play.</b> Tap the left or right half of the screen to flip. Hold the right side to pull the plunger and let go to launch. On a keyboard: Z and M (or the arrows) flip, Space launches.
       </div>

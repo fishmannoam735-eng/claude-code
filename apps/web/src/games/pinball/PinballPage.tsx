@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
-import type { Difficulty } from '@pb/engine';
+import { localDateKey, type Difficulty } from '@pb/engine';
+import { submitPinballScore } from '@pb/data';
+import { supabase, useSession } from '../../lib/session';
 import { PINBALL_LEVELS, pinballUrl } from './pinball';
 
 /**
@@ -17,9 +19,15 @@ export function PinballPage() {
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.source !== frame.current?.contentWindow) return;
-      const d = e.data as { source?: string; type?: string } | null;
+      const d = e.data as { source?: string; type?: string; score?: number; level?: string } | null;
       if (d?.source !== 'crown-quest') return;
       if (d.type === 'exit') navigate('/', { replace: false });
+      // Every finished game goes to the high-score board (each player's best counts).
+      if (d.type === 'over' && typeof d.score === 'number' && d.score > 0) {
+        const uid = useSession.getState().userId;
+        const lv = PINBALL_LEVELS.find((l) => l === d.level);
+        if (supabase && uid && lv) void submitPinballScore(supabase, uid, lv, d.score, localDateKey()).catch(() => { /* offline: the table still keeps its own best */ });
+      }
     };
     window.addEventListener('message', onMessage);
     // The page underneath must not scroll or bounce while the table is up.

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
-import { fetchContestStats, fetchLeaderboard, type ContestStats, type Period, type RankRow } from '@pb/data';
-import { localDateKey, type GameId } from '@pb/engine';
+import { Link, useSearchParams } from 'react-router';
+import { fetchContestStats, fetchLeaderboard, fetchPinballBoard, type ContestStats, type Period, type RankRow } from '@pb/data';
+import { localDateKey, type Difficulty, type GameId } from '@pb/engine';
+import pinballThumb from '../games/pinball/assets/thumb.webp';
+import { PINBALL_LEVELS } from '../games/pinball/pinball';
 import { Icon } from '../components/Icon';
 import { Avatar } from '../components/Avatar';
 import { GAME_COLOR, GameTile } from '../components/GameMark';
@@ -29,6 +31,10 @@ export function Rankings() {
   const sessionStatus = useSession((s) => s.status);
   const [period, setPeriod] = useState<Period>('day');
   const [game, setGame] = useState<GameId | null>(null);
+  const [params] = useSearchParams();
+  // Pinball has its own board: high scores per level, not contest points.
+  const [pin, setPin] = useState(() => params.get('game') === 'pinball');
+  const [pinLevel, setPinLevel] = useState<Difficulty>(() => (PINBALL_LEVELS.find((l) => l === params.get('level')) ?? 'normal'));
   const [rows, setRows] = useState<RankRow[] | null>(null);
   const [stats, setStats] = useState<ContestStats | null>(null);
   const [failed, setFailed] = useState(false);
@@ -37,11 +43,14 @@ export function Rankings() {
     if (!supabase || sessionStatus === 'loading') return;
     let alive = true;
     setRows(null);
-    fetchLeaderboard(supabase, period, today, game, 50)
+    const load: Promise<RankRow[]> = pin
+      ? fetchPinballBoard(supabase, pinLevel, period, today, 50).then((r) => r.map((x) => ({ ...x, solves: x.games, total_ms: 0, hintless: 0 })))
+      : fetchLeaderboard(supabase, period, today, game, 50);
+    load
       .then((r) => { if (alive) { setRows(r); setFailed(false); } })
       .catch(() => { if (alive) { setRows([]); setFailed(true); } });
     return () => { alive = false; };
-  }, [period, game, today, userId, sessionStatus]);
+  }, [period, game, pin, pinLevel, today, userId, sessionStatus]);
 
   useEffect(() => {
     if (!supabase || sessionStatus === 'loading') return;
@@ -95,36 +104,49 @@ export function Rankings() {
                 ))}
               </div>
               <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Game">
-                <FilterChip on={game === null} onClick={() => setGame(null)}>All games</FilterChip>
+                <FilterChip on={!pin && game === null} onClick={() => { setPin(false); setGame(null); }}>All games</FilterChip>
                 {GAMES.map((g) => (
-                  <FilterChip key={g} on={game === g} onClick={() => setGame(g)}>
+                  <FilterChip key={g} on={!pin && game === g} onClick={() => { setPin(false); setGame(g); }}>
                     <GameTile game={g} className="h-5 w-5 rounded-[6px]" /> {GAME_NAME[g]}
                   </FilterChip>
                 ))}
+                <FilterChip on={pin} onClick={() => setPin(true)}>
+                  <img src={pinballThumb} alt="" className="h-5 w-5 rounded-[6px] object-cover" /> Pinball
+                </FilterChip>
               </div>
+              {pin && (
+                <div className="mt-1.5 grid grid-cols-3 gap-1.5" role="tablist" aria-label="Pinball level">
+                  {PINBALL_LEVELS.map((l) => (
+                    <FilterChip key={l} on={pinLevel === l} onClick={() => setPinLevel(l)}>
+                      <span className="w-full text-center">{DIFF_LABEL[l]}</span>
+                    </FilterChip>
+                  ))}
+                </div>
+              )}
             </section>
 
             <p className="pb-rise mt-2.5 px-1 text-[12px] leading-snug text-ink-2" style={{ ['--d' as string]: '80ms' }}>
+              {pin ? `Crown Quest pinball, ${DIFF_LABEL[pinLevel].toLowerCase()} level: each player's best game ${period === 'day' ? 'today' : period === 'week' ? 'this week' : 'ever'}. A separate board, it does not change the puzzle contest.` : <>
               {period === 'day' ? 'Everyone plays the same daily boards. After each daily, new boards can beat it; your best board of each game counts.'
                 : period === 'week' ? 'Contest points from the last seven days.' : 'Every contest point since the start.'}
-              {' '}Hints, mistakes and Fill cost points.
+              {' '}Hints, mistakes and Fill cost points.</>}
             </p>
 
             {rows === null ? (
               <div className="mt-6 flex justify-center text-ink-2"><span className="pb-spin-slow text-[13px]">Loading…</span></div>
             ) : rows.length === 0 ? (
-              <EmptyBoard failed={failed} period={period} />
+              <EmptyBoard failed={failed} period={period} pinball={pin} />
             ) : (
               <>
-                <Podium rows={top} />
-                {me && me.rank > 3 && <YouCard row={me} period={period} />}
+                <Podium rows={top} noun={pin ? 'game' : 'solve'} />
+                {me && me.rank > 3 && <YouCard row={me} period={period} noun={pin ? 'game' : 'solve'} />}
                 <ol className="mt-3 flex flex-col gap-1.5" aria-label="Ranking">
-                  {rest.map((r, i) => <RankLine key={`${r.rank}-${r.nickname}`} row={r} index={i} />)}
+                  {rest.map((r, i) => <RankLine key={`${r.rank}-${r.nickname}`} row={r} index={i} pinball={pin} />)}
                 </ol>
               </>
             )}
 
-            {stats && <Infographics stats={stats} />}
+            {stats && !pin && <Infographics stats={stats} />}
           </>
         )}
       </div>
@@ -161,22 +183,24 @@ function Notice({ text }: { text: string }) {
   return <div className="mt-3 rounded-xl bg-raised-2/70 px-3 py-2.5 text-[13px] text-ink-2">{text}</div>;
 }
 
-function EmptyBoard({ failed, period }: { failed: boolean; period: Period }) {
+function EmptyBoard({ failed, period, pinball }: { failed: boolean; period: Period; pinball?: boolean }) {
   return (
     <div className="pb-rise mt-4 flex flex-col items-center rounded-[20px] border border-line-minor bg-raised px-5 py-7 text-center">
       <img src={crownUrl} alt="" className="pb-float h-12 w-12" />
       <div className="mt-2 text-[16px] font-bold">{failed ? 'Could not load the rankings' : 'The top spot is free'}</div>
       <p className="mt-1 text-[13px] text-ink-2">
         {failed ? 'Check your connection and try again.'
+          : pinball ? 'No pinball games on this level yet. Play one and the top spot is yours.'
           : period === 'day' ? "Nobody has finished today's boards yet. Solve one and you lead." : 'No contest solves here yet. Be the first.'}
       </p>
-      {!failed && <Link to="/" className="pb-key mt-4 rounded-xl bg-accent px-5 py-2.5 text-[14px] font-bold text-ink" style={{ ['--key-side' as string]: '#94621C' }}>Play today&apos;s boards</Link>}
+      {!failed && pinball && <Link to={`/arcade/pinball/normal`} className="pb-key mt-4 rounded-xl bg-accent px-5 py-2.5 text-[14px] font-bold text-ink" style={{ ['--key-side' as string]: '#94621C' }}>Play pinball</Link>}
+      {!failed && !pinball && <Link to="/" className="pb-key mt-4 rounded-xl bg-accent px-5 py-2.5 text-[14px] font-bold text-ink" style={{ ['--key-side' as string]: '#94621C' }}>Play today&apos;s boards</Link>}
     </div>
   );
 }
 
 /** First, second and third standing on wooden blocks; the winner wears the crown. */
-function Podium({ rows }: { rows: RankRow[] }) {
+function Podium({ rows, noun = 'solve' }: { rows: RankRow[]; noun?: string }) {
   const order: { row: RankRow | undefined; place: 1 | 2 | 3; h: number; d: number }[] = [
     { row: rows[1], place: 2, h: 86, d: 220 },
     { row: rows[0], place: 1, h: 116, d: 80 },
@@ -199,7 +223,7 @@ function Podium({ rows }: { rows: RankRow[] }) {
           <div className="mt-1.5 w-full overflow-hidden rounded-t-[12px]" style={{ height: h }}>
             <div className="pb-podium pb-wood flex h-full flex-col items-center justify-start rounded-t-[12px] pt-2" style={{ ['--d' as string]: `${d}ms` }}>
               <span className={`pb-medal-${place} flex h-8 w-8 items-center justify-center rounded-full text-[15px] font-extrabold`}>{row?.rank ?? place}</span>
-              {row && <span className="mt-1.5 text-[10.5px] font-semibold text-[#FBE9CC]">{row.solves} solve{row.solves === 1 ? '' : 's'}</span>}
+              {row && <span className="mt-1.5 text-[10.5px] font-semibold text-[#FBE9CC]">{row.solves} {noun}{row.solves === 1 ? '' : 's'}</span>}
             </div>
           </div>
         </div>
@@ -208,20 +232,20 @@ function Podium({ rows }: { rows: RankRow[] }) {
   );
 }
 
-function YouCard({ row, period }: { row: RankRow; period: Period }) {
+function YouCard({ row, period, noun = 'solve' }: { row: RankRow; period: Period; noun?: string }) {
   return (
     <div className="pb-rise mt-3 flex items-center gap-3 rounded-[16px] border border-[color-mix(in_srgb,var(--color-accent)_45%,transparent)] bg-accent-soft px-3.5 py-2.5" style={{ ['--d' as string]: '500ms' }}>
       <Avatar name={row.nickname} colour={row.avatar} photo={row.photo} size={36} />
       <div className="flex-grow">
         <div className="text-[14px] font-bold">You are {ordinal(row.rank)}</div>
-        <div className="text-[12px] text-ink-2">{period === 'day' ? 'today' : period === 'week' ? 'this week' : 'of all time'} · {row.solves} solve{row.solves === 1 ? '' : 's'}</div>
+        <div className="text-[12px] text-ink-2">{period === 'day' ? 'today' : period === 'week' ? 'this week' : 'of all time'} · {row.solves} {noun}{row.solves === 1 ? '' : 's'}</div>
       </div>
       <span className="text-[17px] font-extrabold tabular-nums text-accent-text">{fmtPoints(row.score)}</span>
     </div>
   );
 }
 
-function RankLine({ row, index }: { row: RankRow; index: number }) {
+function RankLine({ row, index, pinball }: { row: RankRow; index: number; pinball?: boolean }) {
   return (
     <li
       className={`pb-rise flex items-center gap-3 rounded-[14px] border px-3 py-2 ${row.is_me ? 'border-accent bg-accent-soft' : 'border-line-minor bg-raised'}`}
@@ -232,7 +256,7 @@ function RankLine({ row, index }: { row: RankRow; index: number }) {
       <div className="min-w-0 flex-grow">
         <div className="truncate text-[14px] font-bold">{row.is_me ? `${row.nickname} (you)` : row.nickname}</div>
         <div className="text-[11.5px] text-ink-2">
-          {row.solves} solve{row.solves === 1 ? '' : 's'} · {row.hintless} without hints · {fmtTime(row.total_ms)}
+          {pinball ? `${row.solves} game${row.solves === 1 ? '' : 's'}` : `${row.solves} solve${row.solves === 1 ? '' : 's'} · ${row.hintless} without hints · ${fmtTime(row.total_ms)}`}
         </div>
       </div>
       <span className="text-[15px] font-extrabold tabular-nums">{fmtPoints(row.score)}</span>
