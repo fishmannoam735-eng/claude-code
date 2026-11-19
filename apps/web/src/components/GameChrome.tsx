@@ -245,7 +245,7 @@ export function SolvedCard(props: {
         </div>
       )}
       <p className="mt-2 text-center text-[11.5px] leading-snug text-ink-2">
-        <b className="text-ink">New board</b> gives a fresh {DIFF_LABEL[props.difficulty].toLowerCase()} {parsed ? GAME_NAME[parsed.game] : ''} board; your best board of the day counts for the contest.
+        <b className="text-ink">New board</b> gives a fresh {DIFF_LABEL[props.difficulty].toLowerCase()} {parsed ? GAME_NAME[parsed.game] : ''} board; after the daily, your best board of the day counts for the contest.
         {' '}<b className="text-ink">Try again</b> replays this one for practice and doesn't change your points.
       </p>
       <div className="mt-2.5 flex gap-2">
@@ -327,6 +327,7 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
   else if (server.contest) note = parsed.isDaily
     ? `Counts for today's contest. Want more? Play a new board; your best board today counts.${standing}`
     : `New board: counts for today's contest if it beats your best today.${standing}`;
+  else if (!parsed.isDaily) note = `New boards count for the contest once today's ${GAME_NAME[parsed.game]} daily board is solved. This one goes to your personal score.`;
   else note = "This board can't enter today's contest (an older day, or solved too fast), so it goes to your personal score.";
 
   return (

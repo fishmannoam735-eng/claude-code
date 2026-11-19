@@ -117,7 +117,7 @@ export function Today() {
       setBests((prev) => {
         const next: Bests = { ...prev };
         for (const row of rows) {
-          if (row.status !== 'solved' || row.score === null) continue;
+          if (row.status !== 'solved' || row.score === null || (row.mode !== 'daily' && !row.contest)) continue;
           const g = row.game_id as GameId;
           const cur = next[g];
           if (cur && cur.score >= row.score) continue;

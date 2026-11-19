@@ -162,8 +162,8 @@ export function LeadersStage() {
           <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[rgb(246_217_138/0.2)] text-[#F6D98A]"><Icon.User width={16} height={16} /></span>
           <span className="flex-grow text-[12.5px] font-semibold leading-snug">
             {rows === null ? (status === 'offline' ? 'Reaching the contest… the leaders appear as soon as you are online.' : 'Loading the board…')
-              : me ? <>You are <b className="text-[#F6D98A]">{ordinal(me.rank)}</b>{players ? ` of ${players}` : ''} with {fmtPoints(me.score)} points. Replay any board to climb.</>
-                : top.length ? 'Solve a board to join. Replay it as often as you like; your best try counts.'
+              : me ? <>You are <b className="text-[#F6D98A]">{ordinal(me.rank)}</b>{players ? ` of ${players}` : ''} with {fmtPoints(me.score)} points. Play a new board to climb.</>
+                : top.length ? 'Solve a daily board to join. Then play new boards; your best board of each game counts.'
                   : 'Nobody has scored yet today. Solve a board and take first place.'}
           </span>
         </div>

@@ -105,7 +105,7 @@ export function Rankings() {
             </section>
 
             <p className="pb-rise mt-2.5 px-1 text-[12px] leading-snug text-ink-2" style={{ ['--d' as string]: '80ms' }}>
-              {period === 'day' ? 'Everyone plays the same boards today. Replay them as often as you like; your best try at each game counts.'
+              {period === 'day' ? 'Everyone plays the same daily boards. After a game's daily, new boards can beat it; your best board of each game counts.'
                 : period === 'week' ? 'Contest points from the last seven days.' : 'Every contest point since the start.'}
               {' '}Hints, mistakes and Fill cost points.
             </p>
