@@ -25,6 +25,9 @@ export const useMe = create<MeState>((set) => ({
   },
 }));
 
+/** The order games are listed in everywhere: our own games lead, the rest mixed in. */
+export const GAME_ORDER = ['bridges', 'mosaic', 'eclipse', 'nine', 'quilt', 'crowns', 'thread'] as const;
+
 export const GAME_NAME = { nine: 'Nine', eclipse: 'Eclipse', crowns: 'Crowns', thread: 'Thread', quilt: 'Quilt', bridges: 'Bridges', mosaic: 'Mosaic' } as const;
 
 export const fmtPoints = (n: number): string => n.toLocaleString('en-US');

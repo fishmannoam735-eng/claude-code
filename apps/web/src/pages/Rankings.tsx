@@ -9,14 +9,14 @@ import { BarChart, MeterRow, SplitBar, StatTile } from '../components/Charts';
 import crownUrl from '../games/crowns/assets/crown.webp';
 import { fmtTime, DIFF_LABEL } from '../lib/format';
 import { supabase, useSession } from '../lib/session';
-import { GAME_NAME, fmtPoints, ordinal, useMe } from '../lib/contest';
+import { GAME_NAME, GAME_ORDER, fmtPoints, ordinal, useMe } from '../lib/contest';
 
 const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Today' },
   { id: 'week', label: 'This week' },
   { id: 'all', label: 'All time' },
 ];
-const GAMES: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges', 'mosaic'];
+const GAMES: readonly GameId[] = GAME_ORDER;
 
 const shortDay = (key: string): string => {
   const [y, m, d] = key.split('-').map(Number);

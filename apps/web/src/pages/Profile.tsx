@@ -7,7 +7,7 @@ import { GameTile } from '../components/GameMark';
 import { BarChart, StatTile } from '../components/Charts';
 import { fmtTime } from '../lib/format';
 import { supabase, useSession } from '../lib/session';
-import { GAME_NAME, fmtPoints, useMe } from '../lib/contest';
+import { GAME_NAME, GAME_ORDER, fmtPoints, useMe } from '../lib/contest';
 import { AVATAR_ART, renderAvatarArt, squarePhoto } from '../lib/photo';
 
 const shortDay = (key: string): string => {
@@ -88,7 +88,7 @@ export function Profile() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges', 'mosaic'] as const).map((g) => {
+                  {GAME_ORDER.map((g) => {
                     const s = stats.games.find((x) => x.game === g);
                     return (
                       <tr key={g} className="border-t border-line-minor">

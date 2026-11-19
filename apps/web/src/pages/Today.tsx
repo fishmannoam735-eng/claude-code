@@ -30,13 +30,13 @@ const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 interface GameDef { id: GameId; name: string; blurb: string }
 
 const GAMES: GameDef[] = [
-  { id: 'nine', name: 'Nine', blurb: '9×9 sudoku · the long one' },
-  { id: 'eclipse', name: 'Eclipse', blurb: 'Suns and moons' },
-  { id: 'crowns', name: 'Crowns', blurb: 'One crown per colour' },
-  { id: 'thread', name: 'Thread', blurb: 'One line, every cell' },
-  { id: 'quilt', name: 'Quilt', blurb: 'Cut it into patches' },
   { id: 'bridges', name: 'Bridges', blurb: 'Join every island' },
   { id: 'mosaic', name: 'Mosaic', blurb: 'Paint the hidden picture' },
+  { id: 'eclipse', name: 'Eclipse', blurb: 'Suns and moons' },
+  { id: 'nine', name: 'Nine', blurb: '9×9 sudoku · the long one' },
+  { id: 'quilt', name: 'Quilt', blurb: 'Cut it into patches' },
+  { id: 'crowns', name: 'Crowns', blurb: 'One crown per colour' },
+  { id: 'thread', name: 'Thread', blurb: 'One line, every cell' },
 ];
 
 /** How much there is to fill, so a progress bar means the same thing everywhere. */
