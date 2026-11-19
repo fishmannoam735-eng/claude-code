@@ -19,7 +19,7 @@ import type { Snapshot as ThreadSnapshot } from '../games/thread/store';
 import type { Snapshot as QuiltSnapshot } from '../games/quilt/store';
 import type { Snapshot as BridgesSnapshot } from '../games/bridges/store';
 import type { Snapshot as MosaicSnapshot } from '../games/mosaic/store';
-import { localKey } from '../lib/persistence';
+import { dayBestKey, localKey, type DayBest } from '../lib/persistence';
 import { Avatar } from '../components/Avatar';
 import { LeadersStage } from '../components/LeadersStage';
 import { useMe } from '../lib/contest';
@@ -86,6 +86,17 @@ function localBoard(today: string): Board {
   return out;
 }
 
+type Bests = Partial<Record<GameId, DayBest>>;
+
+function localBests(today: string): Bests {
+  const out: Bests = {};
+  for (const g of GAMES) {
+    const b = readJSON<DayBest>(dayBestKey(today, g.id));
+    if (b) out[g.id] = b;
+  }
+  return out;
+}
+
 export function Today() {
   const today = localDateKey();
   const sessionStatus = useSession((s) => s.status);
@@ -93,6 +104,8 @@ export function Today() {
   const [streak, setStreak] = useState<number | null>(null);
   const me = useMe((s) => s.stats);
   const [board, setBoard] = useState<Board>(() => localBoard(today));
+  // The best board of each game today, daily or new: the one the contest counts.
+  const [bests, setBests] = useState<Bests>(() => localBests(today));
 
   useEffect(() => {
     if (!supabase || !userId) return;
@@ -101,6 +114,17 @@ export function Today() {
       .catch(() => { /* offline is fine */ });
 
     void fetchPlaysForDate(supabase, userId, today).then((rows) => {
+      setBests((prev) => {
+        const next: Bests = { ...prev };
+        for (const row of rows) {
+          if (row.status !== 'solved' || row.score === null) continue;
+          const g = row.game_id as GameId;
+          const cur = next[g];
+          if (cur && cur.score >= row.score) continue;
+          next[g] = { score: row.score, elapsedMs: row.best_ms ?? row.duration_ms ?? 0, difficulty: row.difficulty, seed: row.seed };
+        }
+        return next;
+      });
       setBoard((prev) => {
         const next: Board = { ...prev };
         for (const row of rows) {
@@ -172,7 +196,7 @@ export function Today() {
 
         <div className="mt-5 flex flex-col gap-3.5">
           {GAMES.map((g, k) => (
-            <GameCard key={g.id} def={g} today={today} states={board[g.id]} index={k} />
+            <GameCard key={g.id} def={g} today={today} states={board[g.id]} best={bests[g.id]} index={k} />
           ))}
         </div>
 
@@ -300,7 +324,7 @@ function Practice() {
  * One card per game: its board in a little wooden tray, what's happening with
  * it today, and the three difficulties as tiles you press.
  */
-function GameCard({ def, today, states, index }: { def: GameDef; today: string; states: Record<Difficulty, TileState>; index: number }) {
+function GameCard({ def, today, states, best, index }: { def: GameDef; today: string; states: Record<Difficulty, TileState>; best: DayBest | undefined; index: number }) {
   // Solving any one difficulty completes the game for the day, so a solved
   // board is summarised first (normal if several are). Otherwise show whichever
   // board is under way, preferring normal.
@@ -373,7 +397,7 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
                 className={`text-[13.5px] font-semibold tabular-nums ${solved ? 'text-success' : ''}`}
                 style={solved ? undefined : { color: GAME_INK[def.id] }}
               >
-                {fmtTime(cur.elapsedMs)}
+                {fmtTime(solved && best ? best.elapsedMs : cur.elapsedMs)}
               </span>
             )}
           </div>
@@ -394,7 +418,8 @@ function GameCard({ def, today, states, index }: { def: GameDef; today: string; 
               )}
             </div>
             <div className="mt-1 text-[11.5px] font-medium text-ink-2">
-              {solved ? `Solved on ${DIFF_LABEL[shown].toLowerCase()}`
+              {solved && best ? `Best today: ${best.score} points on ${DIFF_LABEL[best.difficulty].toLowerCase()}`
+                : solved ? `Solved on ${DIFF_LABEL[shown].toLowerCase()}`
                 : started ? `${cur.placed} of ${total} on ${DIFF_LABEL[shown].toLowerCase()}`
                   : 'Not started yet'}
             </div>

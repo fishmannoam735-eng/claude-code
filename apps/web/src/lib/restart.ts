@@ -1,8 +1,8 @@
 import { upsertPlay } from '@pb/data';
 import { localDateKey, parseSeed } from '@pb/engine';
 import { supabase, useSession } from './session';
-import { localKey } from './persistence';
-import { removeKey } from './storage';
+import { localKey, replayKey } from './persistence';
+import { removeKey, writeJSON } from './storage';
 
 /**
  * Start the same board again, for practice. The server keeps the first try's
@@ -24,6 +24,7 @@ export async function restartBoard(seed: string): Promise<void> {
       });
     } catch { /* offline: the fresh board still starts here */ }
   }
+  writeJSON(replayKey(seed), true);
   removeKey(localKey(parsed.game, seed));
   removeKey(`pb:assist:${seed}`);
   window.location.reload();
