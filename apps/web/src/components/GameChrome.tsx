@@ -245,8 +245,8 @@ export function SolvedCard(props: {
         </div>
       )}
       <p className="mt-2 text-center text-[11.5px] leading-snug text-ink-2">
-        <b className="text-ink">Try again</b> replays this board as often as you like; your best try counts.
-        {' '}<b className="text-ink">New board</b> gives a fresh {DIFF_LABEL[props.difficulty].toLowerCase()} {parsed ? GAME_NAME[parsed.game] : ''} board for your personal score.
+        <b className="text-ink">New board</b> gives a fresh {DIFF_LABEL[props.difficulty].toLowerCase()} {parsed ? GAME_NAME[parsed.game] : ''} board; your best board of the day counts for the contest.
+        {' '}<b className="text-ink">Try again</b> replays this one for practice and doesn't change your points.
       </p>
       <div className="mt-2.5 flex gap-2">
         <button type="button" onClick={props.onShare} className="pb-key flex h-11 flex-grow basis-0 items-center justify-center gap-1.5 rounded-xl bg-raised-2 text-[13px] font-semibold text-ink">
@@ -311,7 +311,6 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
   }, [seed, userId, completedAt]);
 
   const total = local.total;
-  const isBest = server ? local.total >= server.best : false;
   const rows: [string, number][] = [
     [`${DIFF_LABEL[parsed.difficulty]} board`, local.base],
     [local.speed >= 0 ? 'Speed bonus' : 'Slow finish', local.speed],
@@ -320,12 +319,15 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
   if (local.mistakes) rows.push([`${mistakes} mistake${mistakes === 1 ? '' : 's'}`, -local.mistakes]);
   if (local.fill) rows.push(['Fill used', -local.fill]);
 
+  const replay = !!server && server.attempts > 1;
+  const standing = rank ? ` You are ${ordinal(rank.rank)} of ${rank.players} today.` : '';
   let note: string;
-  if (!parsed.isDaily) note = 'Practice board. The points go to your personal score.';
-  else if (!server) note = offline ? 'Offline: points will be saved when you are back online.' : 'Sending your score…';
-  else if (server.contest) note = rank ? `Your best try counts for today's contest. You are ${ordinal(rank.rank)} of ${rank.players} today.` : "Your best try counts for today's contest.";
+  if (!server) note = offline ? 'Offline: points will be saved when you are back online.' : 'Sending your score…';
+  else if (replay) note = "Try again is practice: this board's first try is what counts.";
+  else if (server.contest) note = parsed.isDaily
+    ? `Counts for today's contest. Want more? Play a new board; your best board today counts.${standing}`
+    : `New board: counts for today's contest if it beats your best today.${standing}`;
   else note = "This board can't enter today's contest (an older day, or solved too fast), so it goes to your personal score.";
-  if (!parsed.isDaily) note = 'Practice board. Your best try here goes to your personal score.';
 
   return (
     <div className="mt-4 overflow-hidden rounded-xl border border-line-minor">
@@ -345,15 +347,14 @@ function ScorePanel({ seed, elapsedMs, mistakes }: { seed: string; elapsedMs: nu
       </dl>
       {server && (
         <div className="flex items-center justify-between border-t border-line-minor bg-raised px-3.5 py-2 text-[12.5px]">
-          <span className="text-ink-2">Your best on this board{server.attempts > 1 ? ` · ${server.attempts} tries` : ''}</span>
+          <span className="text-ink-2">{replay ? `Counted from the first try · ${server.attempts} tries` : 'Counted for this board'}</span>
           <span className="flex items-center gap-1.5 font-bold tabular-nums">
-            {isBest && server.attempts > 1 && <span className="pb-stamp rounded-full bg-success px-2 py-0.5 text-[10.5px] font-bold text-white">New best!</span>}
             {fmtPoints(server.best)}
           </span>
         </div>
       )}
-      <div className={`flex items-center gap-2 px-3.5 py-2 text-[12px] font-medium ${server?.contest ? 'bg-accent-soft text-accent-text' : 'bg-raised-2 text-ink-2'}`}>
-        {server?.contest ? <Icon.Trophy width={14} height={14} /> : <Icon.Check width={13} height={13} />}
+      <div className={`flex items-center gap-2 px-3.5 py-2 text-[12px] font-medium ${server?.contest && !replay ? 'bg-accent-soft text-accent-text' : 'bg-raised-2 text-ink-2'}`}>
+        {server?.contest && !replay ? <Icon.Trophy width={14} height={14} /> : <Icon.Check width={13} height={13} />}
         {note}
       </div>
     </div>

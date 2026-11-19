@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { upsertPlay, type Json } from '@pb/data';
-import { parseSeed, type GameId } from '@pb/engine';
+import { localDateKey, parseSeed, type GameId } from '@pb/engine';
 import { supabase, useSession } from './session';
 import { writeJSON } from './storage';
 import { readAssists } from './assists';
@@ -46,7 +46,9 @@ export function usePersistence<S extends BaseSnapshot>(opts: {
         game_id: gameId,
         difficulty: parsed.difficulty,
         mode: parsed.isDaily ? 'daily' : 'practice',
-        puzzle_date: parsed.isDaily ? (snap.puzzleDate ?? parsed.key) : null,
+        puzzle_date: parsed.isDaily
+          ? (snap.puzzleDate ?? parsed.key)
+          : localDateKey(snap.completedAt ? new Date(snap.completedAt) : new Date()),
         status: snap.status,
         state: snap as unknown as Json,
         duration_ms: snap.elapsedMs,

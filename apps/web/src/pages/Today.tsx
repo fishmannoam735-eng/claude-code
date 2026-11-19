@@ -104,6 +104,7 @@ export function Today() {
       setBoard((prev) => {
         const next: Board = { ...prev };
         for (const row of rows) {
+          if (row.mode !== 'daily') continue;
           const g = row.game_id as GameId;
           if (!next[g]) continue;
           const snap = row.state as AnySnapshot | null;
