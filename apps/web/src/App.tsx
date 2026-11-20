@@ -63,6 +63,8 @@ export function App() {
       <Route path="/me" element={<Profile />} />
       <Route path="/arcade/pinball" element={<PinballPage />} />
       <Route path="/arcade/pinball/:level" element={<PinballPage />} />
+      <Route path="/arcade/manor" element={<PinballPage table="manor" />} />
+      <Route path="/arcade/manor/:level" element={<PinballPage table="manor" />} />
       <Route path="/:game" element={<DailyRedirect />} />
       <Route path="/:game/:difficulty" element={<DailyRedirect />} />
       <Route path="/practice/:game" element={<PracticeRedirect />} />

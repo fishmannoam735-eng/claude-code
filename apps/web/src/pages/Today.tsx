@@ -26,7 +26,9 @@ import { fmtPoints, useMe } from '../lib/contest';
 import { playInvite } from '../lib/sound';
 import pinballThumb from '../games/pinball/assets/thumb.webp';
 import pinballHero from '../games/pinball/assets/hero.webp';
-import { PINBALL_LEVELS, PINBALL_LEVEL_NOTE, pinballBest, pinballHigh } from '../games/pinball/pinball';
+import manorThumb from '../games/pinball/assets/manor_thumb.webp';
+import manorHero from '../games/pinball/assets/manor_hero.webp';
+import { PINBALL_LEVELS, PINBALL_LEVEL_NOTE, PINBALL_TABLES, pinballBest, pinballHigh, type PinballTable } from '../games/pinball/pinball';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
 
@@ -153,7 +155,7 @@ export function Today() {
   }, [userId, today]);
 
   const solvedToday = GAMES.filter((g) => isDone(board[g.id])).length;
-  const [open, setOpen] = useState<GameId | 'pinball' | null>(null);
+  const [open, setOpen] = useState<GameId | PinballTable | null>(null);
   const openDef = GAMES.find((g) => g.id === open);
 
   return (
@@ -203,12 +205,13 @@ export function Today() {
         </Shelf>
 
         <Shelf title="Speed &amp; skill" note="Quick hands, high scores" delay={320}>
-          <PinballBox index={GAMES.length} onOpen={() => setOpen('pinball')} />
+          <PinballBox table="crown" index={GAMES.length} onOpen={() => setOpen('crown')} />
+          <PinballBox table="manor" index={GAMES.length + 1} onOpen={() => setOpen('manor')} />
           <div
-            className="col-span-2 flex items-center justify-center rounded-[20px] border-2 border-dashed border-line-major/70 px-3 text-center text-[12px] font-medium leading-snug text-ink-2"
+            className="flex items-center justify-center rounded-[20px] border-2 border-dashed border-line-major/70 px-3 text-center text-[12px] font-medium leading-snug text-ink-2"
             aria-hidden="true"
           >
-            More speed games are on the way
+            More on the way
           </div>
         </Shelf>
         <div className="mt-6"><LeadersStage /></div>
@@ -216,7 +219,7 @@ export function Today() {
 
       </div>
       {openDef && <GameSheet def={openDef} today={today} states={board[openDef.id]} best={bests[openDef.id]} onClose={() => setOpen(null)} />}
-      {open === 'pinball' && <PinballSheet onClose={() => setOpen(null)} />}
+      {(open === 'crown' || open === 'manor') && <PinballSheet table={open} onClose={() => setOpen(null)} />}
     </div>
   );
 }
@@ -384,20 +387,24 @@ function GameBox({ def, states, index, onOpen }: { def: GameDef; states: Record<
   );
 }
 
-const PINBALL_COLOUR = '#5B4BC4';
+const TABLE_ART: Record<PinballTable, { thumb: string; hero: string; title: string; sub: string; ink: string; shade: string; key: [string, string, string] }> = {
+  crown: { thumb: pinballThumb, hero: pinballHero, title: '#FFE6A8', sub: '#E9D6B2', ink: 'rgb(40 20 5)', shade: 'rgb(12 8 30 / 0.92)', key: ['#7B6BE0', '#4C3DAE', '#2F2477'] },
+  manor: { thumb: manorThumb, hero: manorHero, title: '#C9FFDF', sub: '#D9CCF5', ink: 'rgb(10 30 20)', shade: 'rgb(6 4 14 / 0.94)', key: ['#4FC28E', '#21734F', '#124A32'] },
+};
 
-/** The pinball table as a small box, shown as a glimpse of the real 3D table. */
-function PinballBox({ index, onOpen }: { index: number; onOpen: () => void }) {
-  const best = pinballBest();
+/** A pinball table as a small box, shown as a glimpse of the real 3D table. */
+function PinballBox({ table, index, onOpen }: { table: PinballTable; index: number; onOpen: () => void }) {
+  const def = PINBALL_TABLES[table];
+  const best = pinballBest(table);
   return (
-    <BoxShell colour={PINBALL_COLOUR} index={index} label="Pinball: Crown Quest" onOpen={onOpen}>
+    <BoxShell colour={def.colour} index={index} label={`Pinball: ${def.name}`} onOpen={onOpen}>
       <div className="pb-card-art relative">
         <div className="pb-wood rounded-[14px] p-[5px]">
-          <img src={pinballThumb} alt="" className="block aspect-square w-full rounded-[10px] object-cover" style={{ boxShadow: 'inset 0 2px 6px rgb(0 0 0 / 0.6)' }} />
+          <img src={TABLE_ART[table].thumb} alt="" className="block aspect-square w-full rounded-[10px] object-cover" style={{ boxShadow: 'inset 0 2px 6px rgb(0 0 0 / 0.6)' }} />
         </div>
       </div>
       <div className="relative mt-2 flex items-baseline justify-between gap-1 px-0.5">
-        <span className="truncate text-[14.5px] font-bold tracking-[-0.01em]">Pinball</span>
+        <span className="truncate text-[14.5px] font-bold tracking-[-0.01em]">{table === 'crown' ? 'Pinball' : 'Haunted'}</span>
         <span className="flex-shrink-0 text-[11px] font-semibold tabular-nums text-ink-2">{best ? shortPoints(best) : 'Play'}</span>
       </div>
     </BoxShell>
@@ -478,15 +485,16 @@ function GameSheet({ def, today, states, best, onClose }: { def: GameDef; today:
 }
 
 /** What opens when the pinball box is tapped: the table, a level, and your best at each. */
-function PinballSheet({ onClose }: { onClose: () => void }) {
+function PinballSheet({ table, onClose }: { table: PinballTable; onClose: () => void }) {
+  const def = PINBALL_TABLES[table], art = TABLE_ART[table], PINBALL_COLOUR = def.colour;
   return (
-    <Sheet label="Pinball" onClose={onClose}>
+    <Sheet label={def.name} onClose={onClose}>
       <div className="relative mt-10 overflow-hidden rounded-[20px] pb-wood p-[6px]">
         <div className="relative overflow-hidden rounded-[15px]">
-          <img src={pinballHero} alt="The Crown Quest pinball table" className="block h-[210px] w-full object-cover object-[50%_22%]" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgb(12_8_30/0.92)] to-transparent px-3.5 pb-3 pt-10">
-            <div className="text-[24px] font-bold leading-tight text-[#FFE6A8] [font-family:Georgia,serif] [text-shadow:0_2px_0_rgb(40_20_5)]">Crown Quest</div>
-            <div className="text-[12.5px] text-[#E9D6B2]">Pinball · ramps, locks and multiball</div>
+          <img src={art.hero} alt={`The ${def.name} pinball table`} className="block h-[210px] w-full object-cover object-[50%_22%]" />
+          <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3 pt-10" style={{ background: `linear-gradient(to top, ${art.shade}, transparent)` }}>
+            <div className="text-[24px] font-bold leading-tight [font-family:Georgia,serif]" style={{ color: art.title, textShadow: `0 2px 0 ${art.ink}` }}>{def.name}</div>
+            <div className="text-[12.5px]" style={{ color: art.sub }}>{def.blurb}</div>
           </div>
         </div>
       </div>
@@ -494,18 +502,18 @@ function PinballSheet({ onClose }: { onClose: () => void }) {
       <div className="mt-4 rounded-[20px] p-3.5" style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${PINBALL_COLOUR} 14%, var(--color-raised)), var(--color-raised) 70%)`, border: `1.5px solid color-mix(in srgb, ${PINBALL_COLOUR} 35%, transparent)` }}>
         <div className="flex items-baseline justify-between px-0.5">
           <span className="text-[15px] font-bold">Pick a level</span>
-          <span className="text-[11.5px] text-ink-2">Counts for the contest</span>
+          <span className="text-[11.5px] text-ink-2">{def.online ? 'Counts for the contest' : 'Best kept on this device'}</span>
         </div>
         <div className="mt-2.5 flex gap-2">
           {PINBALL_LEVELS.map((lv) => {
-            const hi = pinballHigh(lv);
+            const hi = pinballHigh(lv, table);
             return (
               <Link
                 key={lv}
-                to={`/arcade/pinball/${lv}`}
+                to={`${def.route}/${lv}`}
                 className="pb-key mb-[3px] flex h-[62px] flex-grow basis-0 flex-col items-center justify-center gap-[3px] rounded-[13px]"
                 style={lv === 'normal'
-                  ? { background: 'linear-gradient(160deg, #7B6BE0, #4C3DAE)', color: '#fff', ['--key-side' as string]: '#2F2477' }
+                  ? { background: `linear-gradient(160deg, ${art.key[0]}, ${art.key[1]})`, color: '#fff', ['--key-side' as string]: art.key[2] }
                   : { background: 'linear-gradient(160deg, var(--color-raised), var(--color-raised-2))' }}
               >
                 <span className="text-[14px] font-bold leading-none">{DIFF_LABEL[lv]}</span>
@@ -517,17 +525,19 @@ function PinballSheet({ onClose }: { onClose: () => void }) {
         <ul className="mt-2.5 grid grid-cols-3 gap-2 text-center text-[10.5px] leading-snug text-ink-2">
           {PINBALL_LEVELS.map((lv) => <li key={lv}>{PINBALL_LEVEL_NOTE[lv]}</li>)}
         </ul>
-        <p className="mt-2.5 px-0.5 text-[11.5px] leading-snug text-ink-2">
-          Your best game of the day earns contest points. A good game (Easy 1M, Normal 700K, Hard 400K) is worth 100, 200 or 300 points; bigger scores earn up to half as much again.
-        </p>
+        {def.online && (
+          <p className="mt-2.5 px-0.5 text-[11.5px] leading-snug text-ink-2">
+            Your best game of the day earns contest points. A good game (Easy 1M, Normal 700K, Hard 400K) is worth 100, 200 or 300 points; bigger scores earn up to half as much again.
+          </p>
+        )}
       </div>
 
-      <Link to="/rankings?game=pinball" className="pb-key mt-3 flex h-[46px] items-center justify-center gap-2 rounded-[14px] bg-raised text-[14px] font-bold" style={{ ['--key-side' as string]: 'var(--color-line-major)' }}>
+      {def.online && <Link to="/rankings?game=pinball" className="pb-key mt-3 flex h-[46px] items-center justify-center gap-2 rounded-[14px] bg-raised text-[14px] font-bold" style={{ ['--key-side' as string]: 'var(--color-line-major)' }}>
         <Icon.Trophy width={17} height={17} /> High scores
-      </Link>
+      </Link>}
 
       <div className="mt-3 rounded-[20px] border border-line-minor bg-raised p-3.5 text-[12.5px] leading-relaxed text-ink-2">
-        <b className="text-ink">How to play.</b> Tap the left or right half of the screen to flip. Hold the right side to pull the plunger and let go to launch. On a keyboard: Z and M (or the arrows) flip, Space launches.
+        <b className="text-ink">How to play.</b> {def.howTo}
       </div>
     </Sheet>
   );
