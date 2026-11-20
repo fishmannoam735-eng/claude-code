@@ -34,14 +34,14 @@ export interface PinballTableDef {
 
 export const PINBALL_TABLES: Record<PinballTable, PinballTableDef> = {
   crown: {
-    id: 'crown', name: 'Crown Quest', blurb: 'Pinball · ramps, locks and multiball', file: 'pinball.html', source: 'crown-quest', route: '/arcade/pinball',
+    id: 'crown', name: 'Crown Quest', blurb: 'Pinball · win back the crown jewels', file: 'pinball.html', source: 'crown-quest', route: '/arcade/pinball',
     hiKey: 'cq_hi', colour: '#5B4BC4', online: true,
-    howTo: 'Tap the left or right half of the screen to flip. Hold the right side to pull the plunger and let go to launch. On a keyboard: Z and M (or the arrows) flip, Space launches.',
+    howTo: 'Your mission is always written big at the top, with a glowing arrow on the shot. Tap the left or right half to flip; the left side also fires the green side flipper, which shoots through the gate up to the tower, where its own flippers play. To launch, drag down on the right half and let go. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
   },
   manor: {
     id: 'manor', name: 'Hollow Manor', blurb: 'Haunted pinball · free three spirits by midnight', file: 'manor.html', source: 'hollow-manor', route: '/arcade/manor',
     hiKey: 'hm_hi', colour: '#2F8A63', online: false,
-    howTo: 'Tap the left or right half to flip; both pairs of flippers move together. To launch, put a finger on the right half and drag it down: the plunger follows your finger, and the further you pull the harder it fires. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
+    howTo: 'Your mission is always written big at the top, with a glowing arrow on the shot. Tap the left or right half to flip; the left side also fires the green side flipper, which shoots through the door up to the deck, where its own flippers play. To launch, drag down on the right half and let go. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
   },
 };
 
