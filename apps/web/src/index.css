@@ -591,14 +591,204 @@ button { font-family: inherit; }
   58% { transform: translate(0, -6px) rotate(-4deg); }
   64%, 92% { transform: rotate(-8deg); }
 }
-/* Speech bubbles pop in on cue. */
+/* Speech bubbles pop in on cue: four slots through the eight seconds. */
 .pb-pod-say { opacity: 0; transform: scale(0.6) translateY(6px); transform-origin: 50% 100%; animation-duration: 8s; animation-iteration-count: infinite; animation-delay: 1.6s; animation-timing-function: cubic-bezier(.2,1.4,.4,1); }
-.pb-pod-say-2 { animation-name: pb-pod-say-2; transform-origin: 30% 100%; }
-.pb-pod-say-1 { animation-name: pb-pod-say-1; }
-.pb-pod-say-3 { animation-name: pb-pod-say-3; transform-origin: 70% 100%; }
-@keyframes pb-pod-say-2 { 0%, 33% { opacity: 0; transform: scale(0.6) translateY(6px); } 36%, 52% { opacity: 1; transform: none; } 56%, 100% { opacity: 0; transform: scale(0.9); } }
-@keyframes pb-pod-say-1 { 0%, 55% { opacity: 0; transform: scale(0.6) translateY(6px); } 58%, 68% { opacity: 1; transform: none; } 72%, 100% { opacity: 0; transform: scale(0.9); } }
-@keyframes pb-pod-say-3 { 0%, 72% { opacity: 0; transform: scale(0.6) translateY(6px); } 75%, 88% { opacity: 1; transform: none; } 91%, 100% { opacity: 0; transform: scale(0.9); } }
+.pb-pod-side-2 { transform-origin: 30% 100%; }
+.pb-pod-side-3 { transform-origin: 70% 100%; }
+.pb-pod-say-a { animation-name: pb-say-a; }
+.pb-pod-say-b { animation-name: pb-say-b; }
+.pb-pod-say-c { animation-name: pb-say-c; }
+.pb-pod-say-d { animation-name: pb-say-d; }
+@keyframes pb-say-a { 0%, 7% { opacity: 0; transform: scale(0.6) translateY(6px); } 10%, 26% { opacity: 1; transform: none; } 30%, 100% { opacity: 0; transform: scale(0.9); } }
+@keyframes pb-say-b { 0%, 33% { opacity: 0; transform: scale(0.6) translateY(6px); } 36%, 52% { opacity: 1; transform: none; } 56%, 100% { opacity: 0; transform: scale(0.9); } }
+@keyframes pb-say-c { 0%, 55% { opacity: 0; transform: scale(0.6) translateY(6px); } 58%, 70% { opacity: 1; transform: none; } 74%, 100% { opacity: 0; transform: scale(0.9); } }
+@keyframes pb-say-d { 0%, 74% { opacity: 0; transform: scale(0.6) translateY(6px); } 77%, 90% { opacity: 1; transform: none; } 93%, 100% { opacity: 0; transform: scale(0.9); } }
+/* After the first sketch the next one starts straight away. */
+.pb-pod-again .pb-pod-act, .pb-pod-again .pb-pod-say, .pb-pod-again .pb-pod-crown, .pb-pod-again.pb-pod-flash { animation-delay: 0s; }
+
+/* Crown heist: 2nd sneaks over and lifts the crown, 1st snatches it back, 3rd saw nothing. */
+.pb-scene-heist .pb-pod-act-2 { animation-name: pb-heist-2; }
+@keyframes pb-heist-2 {
+  0%, 6%, 62%, 100% { transform: none; }
+  16% { transform: translateX(12px) rotate(8deg); }
+  24% { transform: translateX(18px) translateY(-6px) rotate(13deg); }
+  30% { transform: translateX(18px) translateY(-4px) rotate(11deg); }
+  36% { transform: translateX(3px) rotate(-7deg); }
+  42% { transform: none; }
+  48% { transform: rotate(-3deg); } 52% { transform: rotate(3deg); } 56% { transform: rotate(-2deg); }
+}
+.pb-scene-heist .pb-pod-act-1 { animation-name: pb-heist-1; }
+@keyframes pb-heist-1 {
+  0%, 26%, 100% { transform: none; }
+  31% { transform: translateX(-5px) rotate(-11deg); }
+  36%, 44% { transform: translateX(-3px) rotate(-8deg) scale(1.06); }
+  50% { transform: none; }
+  60% { transform: scale(1.03, 0.97); } 66% { transform: none; }
+}
+.pb-scene-heist .pb-pod-crown { animation-name: pb-heist-crown; }
+@keyframes pb-heist-crown {
+  0%, 22%, 100% { transform: rotate(-8deg); }
+  27% { transform: translate(-12px, -10px) rotate(-34deg); }
+  30% { transform: translate(-14px, -8px) rotate(-38deg); }
+  34% { transform: translate(0, -4px) rotate(-2deg); }
+  40% { transform: rotate(-8deg); }
+}
+.pb-scene-heist .pb-pod-act-3 { animation-name: pb-heist-3; }
+@keyframes pb-heist-3 {
+  0%, 70%, 94%, 100% { transform: none; }
+  74%, 88% { transform: translateY(3px) rotate(5deg) scale(0.94); }
+}
+
+/* Podium selfie: 1st poses, 2nd and 3rd lean in, flash. */
+.pb-scene-selfie .pb-pod-act-1 { animation-name: pb-selfie-1; }
+@keyframes pb-selfie-1 {
+  0%, 4%, 100% { transform: none; }
+  10% { transform: translateY(-6px) scale(1.07); }
+  16%, 46% { transform: translateY(-4px) rotate(-5deg) scale(1.05); }
+  48% { transform: translateY(-4px) rotate(-5deg) scale(1.08); }
+  56% { transform: none; }
+}
+.pb-scene-selfie .pb-pod-act-2 { animation-name: pb-selfie-2; }
+@keyframes pb-selfie-2 {
+  0%, 26%, 58%, 100% { transform: none; }
+  34%, 50% { transform: translate(16px, -6px) rotate(11deg); }
+}
+.pb-scene-selfie .pb-pod-act-3 { animation-name: pb-selfie-3; }
+@keyframes pb-selfie-3 {
+  0%, 30%, 60%, 100% { transform: none; }
+  38%, 44% { transform: translate(-16px, -9px) rotate(-12deg); }
+  41% { transform: translate(-16px, -12px) rotate(-10deg); }
+  50% { transform: translate(-16px, -9px) rotate(-12deg); }
+}
+.pb-pod-flash { opacity: 0; animation: pb-pod-flash 8s linear 1.6s infinite; }
+@keyframes pb-pod-flash { 0%, 46.5%, 100% { opacity: 0; } 47.5% { opacity: 0.9; } 54% { opacity: 0; } }
+
+/* Dance-off: everyone bounces, with varying enthusiasm. */
+.pb-scene-dance .pb-pod-act-1 { animation-name: pb-dance-1; }
+@keyframes pb-dance-1 {
+  0%, 4%, 56%, 100% { transform: none; }
+  8%, 20%, 32%, 44% { transform: translateY(-7px) rotate(-7deg); }
+  14%, 26%, 38%, 50% { transform: translateY(-7px) rotate(7deg); }
+  11%, 17%, 23%, 29%, 35%, 41%, 47%, 53% { transform: scale(1.04, 0.95); }
+}
+.pb-scene-dance .pb-pod-act-2 { animation-name: pb-dance-2; }
+@keyframes pb-dance-2 {
+  0%, 22%, 62%, 100% { transform: none; }
+  26%, 38%, 50% { transform: translateY(-3px) rotate(-3deg); }
+  32%, 44%, 56% { transform: translateY(-3px) rotate(3deg); }
+  29%, 35%, 41%, 47%, 53%, 59% { transform: none; }
+}
+.pb-scene-dance .pb-pod-act-3 { animation-name: pb-dance-3; }
+@keyframes pb-dance-3 {
+  0%, 6%, 94%, 100% { transform: none; }
+  10%, 22%, 34%, 46%, 58%, 70%, 82% { transform: translateY(-13px) rotate(-10deg); }
+  16%, 28%, 40%, 52%, 64%, 76%, 88% { transform: translateY(0) scale(1.08, 0.9); }
+}
+
+/* High five: 3rd offers one to 1st, 1st turns away, 2nd jumps in for it. */
+.pb-scene-fives .pb-pod-act-3 { animation-name: pb-fives-3; }
+@keyframes pb-fives-3 {
+  0%, 4%, 70%, 100% { transform: none; }
+  10%, 34% { transform: translate(-15px, -7px) rotate(-14deg); }
+  22% { transform: translate(-17px, -9px) rotate(-12deg); }
+  42%, 60% { transform: translateY(3px) rotate(5deg) scale(1.02, 0.95); }
+}
+.pb-scene-fives .pb-pod-act-1 { animation-name: pb-fives-1; }
+@keyframes pb-fives-1 {
+  0%, 24%, 100% { transform: none; }
+  30%, 50% { transform: translateX(4px) rotate(9deg); }
+  56% { transform: none; }
+}
+.pb-scene-fives .pb-pod-act-2 { animation-name: pb-fives-2; }
+@keyframes pb-fives-2 {
+  0%, 50%, 74%, 100% { transform: none; }
+  55% { transform: translateY(-14px) rotate(-8deg); }
+  60% { transform: scale(1.07, 0.93); }
+  65% { transform: translateY(-10px) rotate(6deg); }
+  70% { transform: scale(1.05, 0.95); }
+}
+
+/* Nap: the champion dozes off, 2nd eyes the crown, 3rd shushes. */
+.pb-scene-nap .pb-pod-act-1 { animation-name: pb-nap-1; }
+@keyframes pb-nap-1 {
+  0%, 4%, 60%, 100% { transform: none; }
+  12% { transform: translateY(3px) rotate(13deg) scale(0.98); }
+  22% { transform: translateY(4px) rotate(16deg) scale(0.99, 0.97); }
+  32% { transform: translateY(3px) rotate(13deg) scale(0.98); }
+  42% { transform: translateY(4px) rotate(16deg) scale(0.99, 0.97); }
+  48% { transform: translateY(3px) rotate(14deg); }
+  53% { transform: translateY(-9px) rotate(-5deg); }
+}
+.pb-scene-nap .pb-pod-crown { animation-name: pb-nap-crown; }
+@keyframes pb-nap-crown {
+  0%, 4%, 62%, 100% { transform: rotate(-8deg); }
+  14%, 48% { transform: translate(7px, 5px) rotate(22deg); }
+  53% { transform: translate(0, -12px) rotate(-16deg); }
+}
+.pb-scene-nap .pb-pod-act-2 { animation-name: pb-nap-2; }
+@keyframes pb-nap-2 {
+  0%, 6%, 32%, 100% { transform: none; }
+  12%, 26% { transform: translate(10px, -9px) rotate(9deg); }
+}
+.pb-scene-nap .pb-pod-act-3 { animation-name: pb-nap-3; }
+@keyframes pb-nap-3 {
+  0%, 30%, 54%, 100% { transform: none; }
+  35%, 50% { transform: translateX(-6px) rotate(-7deg); }
+}
+
+/* Acceptance speech: 1st bows and bows, 2nd slow-claps, 3rd cheers. */
+.pb-scene-speech .pb-pod-act-1 { animation-name: pb-speech-1; }
+@keyframes pb-speech-1 {
+  0%, 6%, 16%, 26%, 36%, 100% { transform: none; }
+  11%, 21%, 31% { transform: translateY(2px) scale(1.05, 0.86); }
+}
+.pb-scene-speech .pb-pod-act-2 { animation-name: pb-speech-2; }
+@keyframes pb-speech-2 {
+  0%, 50%, 74%, 100% { transform: none; }
+  54%, 62%, 70% { transform: rotate(-3deg) scale(0.98); }
+  58%, 66% { transform: rotate(2deg); }
+}
+.pb-scene-speech .pb-pod-act-3 { animation-name: pb-speech-3; }
+@keyframes pb-speech-3 {
+  0%, 70%, 94%, 100% { transform: none; }
+  74%, 84% { transform: translateY(-13px) rotate(-6deg); }
+  79%, 89% { transform: scale(1.07, 0.92); }
+}
+
+/* Step swap: 2nd jumps for the top step, gets bumped back down. */
+.pb-scene-swap .pb-pod-act-2 { animation-name: pb-swap-2; }
+@keyframes pb-swap-2 {
+  0%, 4%, 48%, 100% { transform: none; }
+  10% { transform: translateY(3px) scale(1.07, 0.88); }
+  18% { transform: translate(24px, -36px) rotate(12deg); }
+  24%, 28% { transform: translate(30px, -24px) rotate(6deg); }
+  33% { transform: translate(10px, -14px) rotate(-26deg); }
+  40% { transform: translateY(2px) scale(1.07, 0.9); }
+}
+.pb-scene-swap .pb-pod-act-1 { animation-name: pb-swap-1; }
+@keyframes pb-swap-1 {
+  0%, 24%, 100% { transform: none; }
+  29% { transform: translateX(-10px) rotate(-11deg); }
+  34% { transform: translateX(-2px) rotate(2deg); }
+  40%, 54% { transform: none; }
+  60% { transform: scale(1.04, 0.96); } 66% { transform: none; }
+}
+.pb-scene-swap .pb-pod-crown { animation-name: pb-swap-crown; }
+@keyframes pb-swap-crown {
+  0%, 26%, 100% { transform: rotate(-8deg); }
+  30% { transform: translate(-4px, -3px) rotate(-18deg); }
+  38% { transform: rotate(-8deg); }
+}
+.pb-scene-swap .pb-pod-act-3 { animation-name: pb-swap-3; }
+@keyframes pb-swap-3 {
+  0%, 72%, 92%, 100% { transform: none; }
+  76%, 84% { transform: rotate(8deg) translateY(-3px); }
+  80%, 88% { transform: rotate(-8deg) translateY(-3px); }
+}
+
+/* Scenes that don't move the crown leave it still. */
+.pb-scene-selfie .pb-pod-crown, .pb-scene-dance .pb-pod-crown, .pb-scene-fives .pb-pod-crown, .pb-scene-speech .pb-pod-crown { animation-name: none; }
+
 /* Medals sway; third place's gets a proud spin. */
 .pb-pod-medal { transform-origin: 50% 0; animation: pb-medal-sway 2.8s ease-in-out infinite; }
 .pb-pod-medal-2 { animation-delay: -0.9s; }
@@ -608,7 +798,7 @@ button { font-family: inherit; }
 .pb-pod-sign { animation: pb-pod-sign 3.4s ease-in-out infinite; }
 @keyframes pb-pod-sign { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .pb-pod-step, .pb-pod-hop, .pb-pod-act, .pb-pod-crown, .pb-pod-medal, .pb-pod-sign { animation: none; }
+  .pb-pod-step, .pb-pod-hop, .pb-pod-act, .pb-pod-crown, .pb-pod-medal, .pb-pod-sign, .pb-pod-flash { animation: none !important; }
   .pb-pod-say { animation: none; opacity: 0; }
 }
 

@@ -5,21 +5,72 @@ import crownUrl from '../games/crowns/assets/crown.webp';
 import { fmtPoints } from '../lib/contest';
 
 /**
- * Today's top three on a wooden podium, with a little play that loops every
- * eight seconds: the champion shoves the runner-up off balance, the runner-up
- * objects, the champion does a smug shimmy, and third place stands on tiptoe
- * to see what's going on. An empty step keeps a cheeky sign up. The speech
- * bubbles say something different each time round.
+ * Today's top three on a wooden podium, putting on a new eight-second sketch
+ * each time round: the shove, the crown heist, the podium selfie, the
+ * dance-off, the snubbed high five, the champion's nap, the acceptance speech
+ * and the step swap, each with a few scripts. An empty step keeps a cheeky
+ * sign up.
  *
  * Transform and opacity only, one shared clock (CSS), and everything rests
  * on a calm still picture under reduced motion.
  */
 
-const LINES = {
-  first: ['mine.', 'gg.', 'no autographs.', 'I’d like to thank my brain.', 'easy.'],
-  second: ['hey!', 'rude.', 'I was standing there.', 'ref?!', 'unbelievable.'],
-  third: ['nice view up there?', 'bronze is a vibe.', 'happy to be here.', 'I can see my house.'],
-};
+type Slot = 'a' | 'b' | 'c' | 'd';
+type Triple = [first: string, second: string, third: string];
+interface Scene { id: string; slots: [Slot, Slot, Slot]; lines: Triple[] }
+
+/**
+ * Little sketches, one per loop. Each says who speaks when (slots a to d run
+ * through the eight seconds) and has a few scripts, so the jokes keep coming.
+ * Every scene moves the champion, whose loop drives the next one.
+ */
+const SCENES: Scene[] = [
+  { id: 'shove', slots: ['c', 'b', 'd'], lines: [
+    ['mine.', 'hey!', 'nice view up there?'],
+    ['gg.', 'rude.', 'bronze is a vibe.'],
+    ['no autographs.', 'I was standing there.', 'happy to be here.'],
+    ['I’d like to thank my brain.', 'ref?!', 'I can see my house.'],
+    ['easy.', 'unbelievable.', 'not getting involved.'],
+    ['personal space is for 2nd place.', 'I’m telling the moderators.', 'popcorn, anyone?'],
+  ] },
+  { id: 'heist', slots: ['b', 'a', 'd'], lines: [
+    ['hands off.', 'just admiring it.', 'I saw nothing.'],
+    ['I can hear you breathing.', 'it was like that when I got here.', 'allegedly.'],
+    ['nice try.', 'dusting it. you’re welcome.', 'witness for hire.'],
+    ['it’s glued on.', 'worth a shot.', 'so close.'],
+  ] },
+  { id: 'selfie', slots: ['a', 'c', 'd'], lines: [
+    ['say cheese.', 'get my good side.', 'am I in it?'],
+    ['for the fans.', 'tag me.', 'I blinked.'],
+    ['one more, bad light.', 'crop me in.', 'posting it anyway.'],
+    ['podium selfie.', 'main character energy.', 'thumb in frame, sorry.'],
+  ] },
+  { id: 'dance', slots: ['a', 'c', 'd'], lines: [
+    ['drop the beat.', 'this is humiliating.', 'I live for this.'],
+    ['victory dance.', 'only doing this ironically.', 'is there a bronze dance?'],
+    ['feel the winning.', 'my knees disagree.', 'again! again!'],
+  ] },
+  { id: 'fives', slots: ['b', 'c', 'a'], lines: [
+    ['I don’t do fives.', 'up here!', 'high five?'],
+    ['winners don’t touch hands.', 'I’ll take it!', 'fist bump, then?'],
+    ['too sweaty.', 'left hanging, classic.', 'anyone? a three?'],
+  ] },
+  { id: 'nap', slots: ['c', 'a', 'b'], lines: [
+    ['I’m awake. still first.', 'is it my turn now?', 'shhh, greatness is napping.'],
+    ['wake me when it’s close.', 'unattended crown…', 'let the champ rest.'],
+    ['five more minutes.', 'can I borrow the crown?', 'don’t poke the bear.'],
+  ] },
+  { id: 'speech', slots: ['a', 'c', 'd'], lines: [
+    ['thank you, thank you.', 'slow clap.', 'speech! speech!'],
+    ['couldn’t have done it without me.', 'we get it.', 'encore!'],
+    ['no questions, please.', 'can we go home?', 'best speech ever.'],
+  ] },
+  { id: 'swap', slots: ['c', 'a', 'd'], lines: [
+    ['nope.', 'my turn!', '10/10 for effort.'],
+    ['read the plate.', 'just visiting!', 'the judges say no.'],
+    ['this step is taken.', 'room for two?', 'rules are rules.'],
+  ] },
+];
 
 const SEATS = [
   { i: 1, place: 2, step: 54, medal: 'silver' },
@@ -28,15 +79,21 @@ const SEATS = [
 ] as const;
 
 export function Podium({ top }: { top: RankRow[] }) {
-  const [round, setRound] = useState(0);
-  const pick = (xs: string[], k: number): string => xs[(round + k) % xs.length]!;
+  // Start somewhere different each visit, then go through the scenes in turn.
+  const [start] = useState(() => Math.floor(Math.random() * SCENES.length * 4));
+  const [round, setRound] = useState(start);
+  const scene = SCENES[round % SCENES.length]!;
+  const script = scene.lines[Math.floor(round / SCENES.length) % scene.lines.length]!;
 
   return (
     <div className="relative mt-3" aria-label="Top three">
       {/* A soft pool of light on the floor, under the winner. */}
       <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 h-24 w-[86%] -translate-x-1/2 rounded-[50%]" style={{ background: 'radial-gradient(closest-side, rgb(255 214 140 / 0.38), transparent)' }} />
 
-      <ol className="relative grid grid-cols-3 items-end gap-1.5 px-1 pt-12">
+      {/* The selfie's camera flash. */}
+      <div key={`f${round}`} aria-hidden="true" className={`pb-pod-flash pointer-events-none absolute inset-0 rounded-[16px] ${round !== start ? 'pb-pod-again' : ''}`} style={{ background: 'radial-gradient(closest-side, rgb(255 255 255 / 0.9), transparent)', animationName: scene.id === 'selfie' ? undefined : 'none' }} />
+
+      <ol className={`relative grid grid-cols-3 items-end gap-1.5 px-1 pt-12 pb-scene-${scene.id} ${round !== start ? 'pb-pod-again' : ''}`}>
         {SEATS.map(({ i, place, step, medal }) => {
           const row = top[i];
           return (
@@ -44,11 +101,12 @@ export function Podium({ top }: { top: RankRow[] }) {
               {row ? (
                 <div className={`pb-pod-hop pb-pod-hop-${place} relative flex flex-col items-center`}>
                   <div
+                    key={round}
                     className={`pb-pod-act pb-pod-act-${place} relative flex flex-col items-center`}
                     onAnimationIteration={place === 1 ? (e) => { if (e.target === e.currentTarget) setRound((r) => r + 1); } : undefined}
                   >
-                    <Bubble className={`pb-pod-say-${place}`} side={place === 2 ? 'left' : place === 3 ? 'right' : 'center'}>
-                      {place === 1 ? pick(LINES.first, 0) : place === 2 ? pick(LINES.second, 1) : pick(LINES.third, 2)}
+                    <Bubble className={`pb-pod-say-${scene.slots[place - 1]} pb-pod-side-${place}`} side={place === 2 ? 'left' : place === 3 ? 'right' : 'center'}>
+                      {script[place - 1]}
                     </Bubble>
                     {place === 1 && (
                       <img src={crownUrl} alt="" className="pb-pod-crown absolute -top-[22px] z-[2] h-7 w-7" style={{ filter: 'drop-shadow(0 2px 2px rgb(0 0 0 / 0.35))' }} />
