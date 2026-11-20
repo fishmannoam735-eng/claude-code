@@ -41,4 +41,5 @@ export {
   type Path, type Walls,
 } from './grid.js';
 export { countPaths, pathIsValid } from './solver.js';
+export { nextThreadHint, type ThreadHint, type ThreadHintStep, type ThreadHintAction } from './hint.js';
 export { randomPath, wallsOffPath, reduceWaypoints, rateThread, generateThread } from './generate.js';

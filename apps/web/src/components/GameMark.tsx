@@ -21,6 +21,8 @@ export const GAME_COLOR: Record<GameId, string> = {
   crowns: 'var(--color-game-crowns)',
   thread: 'var(--color-game-thread)',
   quilt: 'var(--color-game-quilt)',
+  bridges: 'var(--color-game-bridges)',
+  mosaic: 'var(--color-game-mosaic)',
 };
 
 export const GAME_INK: Record<GameId, string> = {
@@ -29,6 +31,8 @@ export const GAME_INK: Record<GameId, string> = {
   crowns: 'var(--color-game-crowns-text)',
   thread: 'var(--color-game-thread-text)',
   quilt: 'var(--color-game-quilt-text)',
+  bridges: 'var(--color-game-bridges-text)',
+  mosaic: 'var(--color-game-mosaic-text)',
 };
 
 const frame = {
@@ -124,12 +128,38 @@ function QuiltMark() {
   );
 }
 
+/** Two round islands joined by a double bridge, and a third by a single one. */
+function BridgesMark() {
+  return (
+    <svg {...frame} className="h-full w-full">
+      <path d="M8 6.2h8M8 9.8h8" strokeWidth="1.4" />
+      <path d="M6 10.5v6" strokeWidth="1.4" />
+      <circle cx="6" cy="8" r="3.2" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="18" cy="8" r="3.2" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="6" cy="18.5" r="3.2" fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  );
+}
+
+/** A little heart drawn in squares, with clue ticks along the top and side. */
+function MosaicMark() {
+  const sq = [[1, 0], [3, 0], [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [1, 2], [2, 2], [3, 2], [2, 3]];
+  return (
+    <svg {...frame} className="h-full w-full">
+      <path d="M8 3.2h2.5M12.6 3.2h2.5M3.2 8v2.5M3.2 12.6v2.5" strokeWidth="1.4" />
+      {sq.map(([x, y]) => <rect key={`${x}-${y}`} x={6.4 + x! * 3.1} y={6.4 + y! * 3.1} width="2.6" height="2.6" rx="0.5" fill="currentColor" stroke="none" />)}
+    </svg>
+  );
+}
+
 const MARKS: Record<GameId, () => React.JSX.Element> = {
   nine: NineMark,
   eclipse: EclipseMark,
   crowns: CrownsMark,
   thread: ThreadMark,
   quilt: QuiltMark,
+  bridges: BridgesMark,
+  mosaic: MosaicMark,
 };
 
 /** The bare mark, inheriting colour from its parent. */

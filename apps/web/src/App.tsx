@@ -3,14 +3,20 @@ import { Navigate, Route, Routes, useParams } from 'react-router';
 import { localDateKey, makeSeed, parseSeed, randomToken, type Difficulty, type GameId } from '@pb/engine';
 import { useSession } from './lib/session';
 import { Today } from './pages/Today';
+import { Rankings } from './pages/Rankings';
+import { Profile } from './pages/Profile';
+import { useMe } from './lib/contest';
 import { NinePage } from './games/nine/NinePage';
 import { EclipsePage } from './games/eclipse/EclipsePage';
 import { CrownsPage } from './games/crowns/CrownsPage';
 import { ThreadPage } from './games/thread/ThreadPage';
 import { QuiltPage } from './games/quilt/QuiltPage';
+import { BridgesPage } from './games/bridges/BridgesPage';
+import { MosaicPage } from './games/mosaic/MosaicPage';
+import { PinballPage } from './games/pinball/PinballPage';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
-const PLAYABLE: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt'];
+const PLAYABLE: GameId[] = ['nine', 'eclipse', 'crowns', 'thread', 'quilt', 'bridges', 'mosaic'];
 const asDifficulty = (s: string | undefined): Difficulty => (DIFFS.includes(s as Difficulty) ? (s as Difficulty) : 'normal');
 const asGame = (s: string | undefined): GameId => (PLAYABLE.includes(s as GameId) ? (s as GameId) : 'nine');
 
@@ -37,6 +43,8 @@ function Board() {
     case 'crowns': return <CrownsPage />;
     case 'thread': return <ThreadPage />;
     case 'quilt': return <QuiltPage />;
+    case 'bridges': return <BridgesPage />;
+    case 'mosaic': return <MosaicPage />;
     case 'nine': return <NinePage />;
     default: return <Navigate to="/" replace />;
   }
@@ -44,11 +52,19 @@ function Board() {
 
 export function App() {
   const init = useSession((s) => s.init);
+  const userId = useSession((s) => s.userId);
   useEffect(() => { void init(); }, [init]);
+  useEffect(() => { if (userId) void useMe.getState().refresh(); }, [userId]);
 
   return (
     <Routes>
       <Route path="/" element={<Today />} />
+      <Route path="/rankings" element={<Rankings />} />
+      <Route path="/me" element={<Profile />} />
+      <Route path="/arcade/pinball" element={<PinballPage />} />
+      <Route path="/arcade/pinball/:level" element={<PinballPage />} />
+      <Route path="/arcade/manor" element={<PinballPage table="manor" />} />
+      <Route path="/arcade/manor/:level" element={<PinballPage table="manor" />} />
       <Route path="/:game" element={<DailyRedirect />} />
       <Route path="/:game/:difficulty" element={<DailyRedirect />} />
       <Route path="/practice/:game" element={<PracticeRedirect />} />

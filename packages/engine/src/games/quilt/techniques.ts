@@ -1,5 +1,6 @@
 import { emptyOwner, rectCells, type Clue, type Owner, type Rect } from './grid.js';
 import { buildCandidates, type Cand } from './solver.js';
+import { andInto, covers, emptyMask, equals, fullMask, hasBit, isEmpty, orInto, overlaps } from './mask.js';
 
 /**
  * A human-technique solver. It never guesses, so the hardest technique it
@@ -37,17 +38,6 @@ export interface HumanSolve {
   owner: Owner;
 }
 
-function fullMask(n: number): { lo: number; hi: number } {
-  const cells = n * n;
-  return {
-    lo: cells >= 32 ? -1 : (1 << cells) - 1,
-    hi: cells <= 32 ? 0 : cells >= 64 ? -1 : (1 << (cells - 32)) - 1,
-  };
-}
-
-const hasBit = (lo: number, hi: number, i: number): boolean =>
-  i < 32 ? (lo & (1 << i)) !== 0 : (hi & (1 << (i - 32))) !== 0;
-
 /** Turning rungs off is how the ladder gets ranked — see docs/PLAN.md §7. */
 export interface SolveOpts { cands?: Cand[][]; rungs?: readonly boolean[] }
 
@@ -59,7 +49,7 @@ export function humanSolve(n: number, clues: readonly Clue[], opts: SolveOpts = 
   const placed = new Array<Rect | null>(clues.length).fill(null);
   const counts = [0, 0, 0, 0, 0];
   let hardest: TechniqueLevel | typeof BEYOND = 0;
-  let usedLo = 0, usedHi = 0;
+  const used = emptyMask(n);
   let stuck = false;
 
   const bump = (lvl: TechniqueLevel): void => { counts[lvl]!++; if (lvl > hardest) hardest = lvl; };
@@ -67,10 +57,10 @@ export function humanSolve(n: number, clues: readonly Clue[], opts: SolveOpts = 
 
   function place(k: number, cand: Cand): void {
     placed[k] = cand.rect;
-    usedLo |= cand.lo; usedHi |= cand.hi;
+    orInto(used, cand.m);
     alive[k] = [cand];
     for (const j of unplaced()) {
-      alive[j] = alive[j]!.filter((c) => (c.lo & cand.lo) === 0 && (c.hi & cand.hi) === 0);
+      alive[j] = alive[j]!.filter((c) => !overlaps(c.m, cand.m));
     }
   }
 
@@ -88,16 +78,14 @@ export function humanSolve(n: number, clues: readonly Clue[], opts: SolveOpts = 
     for (const k of unplaced()) {
       const live = alive[k]!;
       if (live.length < 2) continue;
-      let mustLo = live[0]!.lo, mustHi = live[0]!.hi;
-      for (let i = 1; i < live.length && (mustLo || mustHi); i++) {
-        mustLo &= live[i]!.lo; mustHi &= live[i]!.hi;
-      }
-      if (mustLo === 0 && mustHi === 0) continue;
+      const must = live[0]!.m.slice();
+      for (let i = 1; i < live.length && !isEmpty(must); i++) andInto(must, live[i]!.m);
+      if (isEmpty(must)) continue;
 
       let changed = false;
       for (const j of unplaced()) {
         if (j === k) continue;
-        const kept = alive[j]!.filter((c) => (c.lo & mustLo) === 0 && (c.hi & mustHi) === 0);
+        const kept = alive[j]!.filter((c) => !overlaps(c.m, must));
         if (kept.length !== alive[j]!.length) { alive[j] = kept; changed = true; }
       }
       if (changed) { bump(3); return true; }
@@ -108,21 +96,23 @@ export function humanSolve(n: number, clues: readonly Clue[], opts: SolveOpts = 
   /** A free cell only one clue can still reach is a cell that clue has to take. */
   function onlyOwner(): boolean {
     const open = unplaced();
-    const reach = open.map((k) => alive[k]!.reduce(
-      (m, c) => ({ lo: m.lo | c.lo, hi: m.hi | c.hi }), { lo: 0, hi: 0 },
-    ));
+    const reach = open.map((k) => {
+      const m = emptyMask(n);
+      for (const c of alive[k]!) orInto(m, c.m);
+      return m;
+    });
 
     for (let x = 0; x < n * n; x++) {
-      if (hasBit(usedLo, usedHi, x)) continue;
+      if (hasBit(used, x)) continue;
       let owner = -1, seen = 0;
       for (let t = 0; t < open.length; t++) {
-        if (hasBit(reach[t]!.lo, reach[t]!.hi, x)) { owner = t; seen++; if (seen > 1) break; }
+        if (hasBit(reach[t]!, x)) { owner = t; seen++; if (seen > 1) break; }
       }
       if (seen === 0) { stuck = true; return false; }
       if (seen > 1) continue;
 
       const k = open[owner]!;
-      const kept = alive[k]!.filter((c) => hasBit(c.lo, c.hi, x));
+      const kept = alive[k]!.filter((c) => hasBit(c.m, x));
       if (kept.length !== alive[k]!.length) { alive[k] = kept; bump(2); return true; }
     }
     return false;
@@ -141,20 +131,19 @@ export function humanSolve(n: number, clues: readonly Clue[], opts: SolveOpts = 
       if (live.length < 2 || live.length > REFUTE_MAX) continue;
 
       const kept = live.filter((cand) => {
-        let reachLo = 0, reachHi = 0;
+        const reach = emptyMask(n);
         for (const j of open) {
           if (j === k) continue;
-          let anyLo = 0, anyHi = 0, any = false;
+          let any = false;
           for (const c of alive[j]!) {
-            if ((c.lo & cand.lo) !== 0 || (c.hi & cand.hi) !== 0) continue;
-            anyLo |= c.lo; anyHi |= c.hi; any = true;
+            if (overlaps(c.m, cand.m)) continue;
+            orInto(reach, c.m); any = true;
           }
           if (!any) return false;                       // starves clue j
-          reachLo |= anyLo; reachHi |= anyHi;
         }
-        const freeLo = full.lo & ~usedLo & ~cand.lo;
-        const freeHi = full.hi & ~usedHi & ~cand.hi;
-        return (freeLo & ~reachLo) === 0 && (freeHi & ~reachHi) === 0;
+        // Every cell still free once `cand` is down must be reachable.
+        orInto(reach, used); orInto(reach, cand.m);
+        return covers(reach, full);
       });
 
       if (kept.length > 0 && kept.length < live.length) {
@@ -178,7 +167,7 @@ export function humanSolve(n: number, clues: readonly Clue[], opts: SolveOpts = 
     if (stuck || !progress) break;
   }
 
-  const solved = !stuck && unplaced().length === 0 && usedLo === full.lo && usedHi === full.hi;
+  const solved = !stuck && unplaced().length === 0 && equals(used, full);
   if (!solved) hardest = BEYOND;
 
   const owner = emptyOwner(n);

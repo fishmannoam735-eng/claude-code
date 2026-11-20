@@ -16,7 +16,7 @@ export function buildShareText(opts: {
   const { game, parsed, seed, elapsedMs, rows, streak } = opts;
   const title = parsed.isDaily ? `${game} ${parsed.key}` : `${game} practice`;
   const line2 = `⏱ ${fmtTime(elapsedMs)}` + (streak ? ` · 🔥 ${streak}` : '');
-  return `Puzzle Break · ${title} · ${DIFF_LABEL[parsed.difficulty]}\n${line2}\n${rows.join('\n')}\n${location.origin}/g/${seed}`;
+  return `Puzzle Break · ${title} · ${DIFF_LABEL[parsed.difficulty]}\n${line2}\n${rows.map((r) => `${r}\n`).join('')}${location.origin}/g/${seed}`;
 }
 
 /** Chunk a per-region mistake tally into emoji rows. */
