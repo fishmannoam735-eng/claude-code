@@ -494,7 +494,7 @@ function PinballSheet({ onClose }: { onClose: () => void }) {
       <div className="mt-4 rounded-[20px] p-3.5" style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${PINBALL_COLOUR} 14%, var(--color-raised)), var(--color-raised) 70%)`, border: `1.5px solid color-mix(in srgb, ${PINBALL_COLOUR} 35%, transparent)` }}>
         <div className="flex items-baseline justify-between px-0.5">
           <span className="text-[15px] font-bold">Pick a level</span>
-          <span className="text-[11.5px] text-ink-2">Your best on each</span>
+          <span className="text-[11.5px] text-ink-2">Counts for the contest</span>
         </div>
         <div className="mt-2.5 flex gap-2">
           {PINBALL_LEVELS.map((lv) => {
@@ -517,6 +517,9 @@ function PinballSheet({ onClose }: { onClose: () => void }) {
         <ul className="mt-2.5 grid grid-cols-3 gap-2 text-center text-[10.5px] leading-snug text-ink-2">
           {PINBALL_LEVELS.map((lv) => <li key={lv}>{PINBALL_LEVEL_NOTE[lv]}</li>)}
         </ul>
+        <p className="mt-2.5 px-0.5 text-[11.5px] leading-snug text-ink-2">
+          Your best game of the day earns contest points. A good game (Easy 1M, Normal 700K, Hard 400K) is worth 100, 200 or 300 points; bigger scores earn up to half as much again.
+        </p>
       </div>
 
       <Link to="/rankings?game=pinball" className="pb-key mt-3 flex h-[46px] items-center justify-center gap-2 rounded-[14px] bg-raised text-[14px] font-bold" style={{ ['--key-side' as string]: 'var(--color-line-major)' }}>

@@ -126,8 +126,8 @@ export function Rankings() {
             </section>
 
             <p className="pb-rise mt-2.5 px-1 text-[12px] leading-snug text-ink-2" style={{ ['--d' as string]: '80ms' }}>
-              {pin ? `Crown Quest pinball, ${DIFF_LABEL[pinLevel].toLowerCase()} level: each player's best game ${period === 'day' ? 'today' : period === 'week' ? 'this week' : 'ever'}. A separate board, it does not change the puzzle contest.` : <>
-              {period === 'day' ? 'Everyone plays the same daily boards. After each daily, new boards can beat it; your best board of each game counts.'
+              {pin ? `Crown Quest pinball, ${DIFF_LABEL[pinLevel].toLowerCase()} level: each player's best game ${period === 'day' ? 'today' : period === 'week' ? 'this week' : 'ever'}. Your best game of each day also earns contest points: Easy up to 150, Normal up to 300, Hard up to 450.` : <>
+              {period === 'day' ? 'Everyone plays the same daily boards. After each daily, new boards can beat it; your best board of each game counts, and your best pinball game too.'
                 : period === 'week' ? 'Contest points from the last seven days.' : 'Every contest point since the start.'}
               {' '}Hints, mistakes and Fill cost points.</>}
             </p>
