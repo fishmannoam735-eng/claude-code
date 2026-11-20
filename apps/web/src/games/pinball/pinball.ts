@@ -4,9 +4,9 @@ import type { Difficulty } from '@pb/engine';
 export const PINBALL_LEVELS: Difficulty[] = ['easy', 'normal', 'hard'];
 
 export const PINBALL_LEVEL_NOTE: Record<Difficulty, string> = {
-  easy: '5 balls · long ball save',
-  normal: '3 balls · classic',
-  hard: '3 balls · short ball save',
+  easy: 'Flattest table · the ball rolls slowly',
+  normal: 'Gentle slope',
+  hard: 'Steeper · faster ball',
 };
 
 /** The table keeps its own high score per level, in the same storage the app uses. */
