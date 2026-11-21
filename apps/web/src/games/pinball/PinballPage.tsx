@@ -40,9 +40,9 @@ export function PinballPage({ table = 'crown' }: { table?: PinballTable }) {
   if (!PINBALL_LEVELS.includes(level as Difficulty)) return <Navigate to={`${def.route}/normal`} replace />;
 
   return (
-    <div className="fixed inset-0 z-50" style={{ background: table === 'manor' ? '#050308' : '#0b0604' }}>
+    <div className="fixed inset-0 z-50" style={{ background: table === 'manor' ? '#050308' : table === 'fossil' ? '#0a0804' : '#0b0604' }}>
       {!ready && (
-        <div className="absolute inset-x-0 bottom-[30%] text-center text-[15px] tracking-wide" style={{ color: table === 'manor' ? '#9dffc8' : '#ffd98a' }}>
+        <div className="absolute inset-x-0 bottom-[30%] text-center text-[15px] tracking-wide" style={{ color: table === 'manor' ? '#9dffc8' : table === 'fossil' ? '#ffb347' : '#ffd98a' }}>
           Setting up the table…
         </div>
       )}

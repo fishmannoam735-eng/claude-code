@@ -28,6 +28,8 @@ import pinballThumb from '../games/pinball/assets/thumb.webp';
 import pinballHero from '../games/pinball/assets/hero.webp';
 import manorThumb from '../games/pinball/assets/manor_thumb.webp';
 import manorHero from '../games/pinball/assets/manor_hero.webp';
+import fossilThumb from '../games/pinball/assets/fossil_thumb.webp';
+import fossilHero from '../games/pinball/assets/fossil_hero.webp';
 import { PINBALL_LEVELS, PINBALL_LEVEL_NOTE, PINBALL_TABLES, pinballBest, pinballHigh, type PinballTable } from '../games/pinball/pinball';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
@@ -207,6 +209,7 @@ export function Today() {
         <Shelf title="Speed &amp; skill" note="Quick hands, high scores" delay={320}>
           <PinballBox table="crown" index={GAMES.length} onOpen={() => setOpen('crown')} />
           <PinballBox table="manor" index={GAMES.length + 1} onOpen={() => setOpen('manor')} />
+          <PinballBox table="fossil" index={GAMES.length + 2} onOpen={() => setOpen('fossil')} />
           <div
             className="flex items-center justify-center rounded-[20px] border-2 border-dashed border-line-major/70 px-3 text-center text-[12px] font-medium leading-snug text-ink-2"
             aria-hidden="true"
@@ -219,7 +222,7 @@ export function Today() {
 
       </div>
       {openDef && <GameSheet def={openDef} today={today} states={board[openDef.id]} best={bests[openDef.id]} onClose={() => setOpen(null)} />}
-      {(open === 'crown' || open === 'manor') && <PinballSheet table={open} onClose={() => setOpen(null)} />}
+      {(open === 'crown' || open === 'manor' || open === 'fossil') && <PinballSheet table={open} onClose={() => setOpen(null)} />}
     </div>
   );
 }
@@ -390,6 +393,7 @@ function GameBox({ def, states, index, onOpen }: { def: GameDef; states: Record<
 const TABLE_ART: Record<PinballTable, { thumb: string; hero: string; title: string; sub: string; ink: string; shade: string; key: [string, string, string] }> = {
   crown: { thumb: pinballThumb, hero: pinballHero, title: '#FFE6A8', sub: '#E9D6B2', ink: 'rgb(40 20 5)', shade: 'rgb(12 8 30 / 0.92)', key: ['#7B6BE0', '#4C3DAE', '#2F2477'] },
   manor: { thumb: manorThumb, hero: manorHero, title: '#C9FFDF', sub: '#D9CCF5', ink: 'rgb(10 30 20)', shade: 'rgb(6 4 14 / 0.94)', key: ['#4FC28E', '#21734F', '#124A32'] },
+  fossil: { thumb: fossilThumb, hero: fossilHero, title: '#FFD27A', sub: '#F0DCB8', ink: 'rgb(40 18 4)', shade: 'rgb(14 8 2 / 0.94)', key: ['#E08A3A', '#A8561A', '#6A3410'] },
 };
 
 /** A pinball table as a small box, shown as a glimpse of the real 3D table. */
