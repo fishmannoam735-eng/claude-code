@@ -408,7 +408,7 @@ function PinballBox({ table, index, onOpen }: { table: PinballTable; index: numb
         </div>
       </div>
       <div className="relative mt-2 flex items-baseline justify-between gap-1 px-0.5">
-        <span className="truncate text-[14.5px] font-bold tracking-[-0.01em]">{table === 'crown' ? 'Pinball' : 'Haunted'}</span>
+        <span className="truncate text-[14.5px] font-bold tracking-[-0.01em]">{table === 'crown' ? 'Pinball' : table === 'fossil' ? 'Volcano' : 'Haunted'}</span>
         <span className="flex-shrink-0 text-[11px] font-semibold tabular-nums text-ink-2">{best ? shortPoints(best) : 'Play'}</span>
       </div>
     </BoxShell>
