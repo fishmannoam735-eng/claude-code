@@ -36,7 +36,7 @@ export const PINBALL_TABLES: Record<PinballTable, PinballTableDef> = {
   crown: {
     id: 'crown', name: 'Crown Quest', blurb: 'Pinball · win back the crown jewels', file: 'pinball.html', source: 'crown-quest', route: '/arcade/pinball',
     hiKey: 'cq_hi', colour: '#5B4BC4', online: true,
-    howTo: 'Your mission is always written big at the top, with a glowing arrow on the shot. Tap the left or right half to flip. The right side also fires the green side flipper by the launcher: flip it just as the ball flies past to jump up to the tower, where everything scores triple. To launch, drag down on the right half and let go. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
+    howTo: 'Everything you need to know shows on the amber dot display above the table, and the book button opens a picture guide to every target. Knock down the C-R-O-W-N shields to light the throne lock; 2 locked jewels start Coronation Multiball. Ride the Royal Ramp to spell KING and the orbits to spell ORBIT. Spell K-E-Y to lower the drawbridge (it rides straight into the throne) and light the dragon\'s lair for quests; after your 1st, 3rd and 5th quest the dragon wakes up: hit it to beat it. Tap the left or right half to flip (the third flipper moves with the right one). Hold the right half to pull the plunger and let go to launch; swipe to nudge. On a keyboard: Z and M flip, Space launches.',
   },
   manor: {
     id: 'manor', name: 'Hollow Manor', blurb: 'Haunted pinball · free three spirits by midnight', file: 'manor.html', source: 'hollow-manor', route: '/arcade/manor',
