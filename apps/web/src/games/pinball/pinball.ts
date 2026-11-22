@@ -2,7 +2,7 @@ import type { Difficulty } from '@pb/engine';
 
 /**
  * The pinball tables. Each table is a self-contained page in public/ run in a
- * frame: Crown Quest (pinball.html), Hollow Manor (manor.html) and Fossil Isle (fossil.html).
+ * frame: Crown Quest (pinball.html), Hollow Manor (manor.html) and Volcano Expedition (volcano.html; its id stays 'fossil').
  */
 export const PINBALL_LEVELS: Difficulty[] = ['easy', 'normal', 'hard'];
 
@@ -44,9 +44,9 @@ export const PINBALL_TABLES: Record<PinballTable, PinballTableDef> = {
     howTo: 'Your mission is always written big at the top, with a glowing arrow on the shot. Tap the left or right half to flip. The right side also fires the green side flipper by the launcher: flip it just as the ball flies past to jump up to the deck, where everything scores triple. To launch, drag down on the right half and let go. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
   },
   fossil: {
-    id: 'fossil', name: 'Fossil Isle', blurb: 'Pinball · recapture three escaped creatures', file: 'fossil.html', source: 'fossil-isle', route: '/arcade/fossil',
-    hiKey: 'fi_hi', colour: '#C8681A', online: false,
-    howTo: 'Your mission is always written big at the top, with a glowing arrow on the shot. Knock down A·M·B·E·R, then shoot the NEST to start a hunt. The Ironjaw watches the ball from the volcano crater: catch all three creatures and it breaks loose for Breakout multiball. Tap the left or right half to flip. The right side also fires the side flipper by the launcher: flip it as the ball flies past to jump up to the crater, where everything scores triple. To launch, drag down on the right half and let go. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
+    id: 'fossil', name: 'Volcano Expedition', blurb: 'Pinball · beat the lava raptor', file: 'volcano.html', source: 'volcano-expedition', route: '/arcade/volcano',
+    hiKey: 've_hi', colour: '#C8681A', online: false,
+    howTo: 'Everything you need to know shows on the amber dot display above the table, and the book button opens a picture guide to every target. Shoot the ramps and orbits to spell LAVA, BONE and ORBIT and start missions; drop the fossils to light the nest, 3 eggs hatch Raptor Multiball. Hit D-I-N-O to light the cave for more missions, and after your 1st, 3rd and 5th mission the raptor leaps onto the table: hit it to beat it. Tap the left or right half to flip (the side flippers move with them). Hold the right half to pull the plunger and let go to launch; swipe to nudge. On a keyboard: Z and M flip, Space launches.',
   },
 };
 

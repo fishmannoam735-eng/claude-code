@@ -50,6 +50,12 @@ function Board() {
   }
 }
 
+/** Fossil Isle was replaced by Volcano Expedition: old links keep their level. */
+function OldFossilRedirect() {
+  const { level } = useParams();
+  return <Navigate to={`/arcade/volcano/${level ?? 'normal'}`} replace />;
+}
+
 export function App() {
   const init = useSession((s) => s.init);
   const userId = useSession((s) => s.userId);
@@ -65,8 +71,10 @@ export function App() {
       <Route path="/arcade/pinball/:level" element={<PinballPage />} />
       <Route path="/arcade/manor" element={<PinballPage table="manor" />} />
       <Route path="/arcade/manor/:level" element={<PinballPage table="manor" />} />
-      <Route path="/arcade/fossil" element={<PinballPage table="fossil" />} />
-      <Route path="/arcade/fossil/:level" element={<PinballPage table="fossil" />} />
+      <Route path="/arcade/volcano" element={<PinballPage table="fossil" />} />
+      <Route path="/arcade/volcano/:level" element={<PinballPage table="fossil" />} />
+      <Route path="/arcade/fossil" element={<Navigate to="/arcade/volcano" replace />} />
+      <Route path="/arcade/fossil/:level" element={<OldFossilRedirect />} />
       <Route path="/:game" element={<DailyRedirect />} />
       <Route path="/:game/:difficulty" element={<DailyRedirect />} />
       <Route path="/practice/:game" element={<PracticeRedirect />} />

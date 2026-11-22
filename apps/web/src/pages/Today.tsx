@@ -28,8 +28,8 @@ import pinballThumb from '../games/pinball/assets/thumb.webp';
 import pinballHero from '../games/pinball/assets/hero.webp';
 import manorThumb from '../games/pinball/assets/manor_thumb.webp';
 import manorHero from '../games/pinball/assets/manor_hero.webp';
-import fossilThumb from '../games/pinball/assets/fossil_thumb.webp';
-import fossilHero from '../games/pinball/assets/fossil_hero.webp';
+import fossilThumb from '../games/pinball/assets/volcano_thumb.webp';
+import fossilHero from '../games/pinball/assets/volcano_hero.webp';
 import { PINBALL_LEVELS, PINBALL_LEVEL_NOTE, PINBALL_TABLES, pinballBest, pinballHigh, type PinballTable } from '../games/pinball/pinball';
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
