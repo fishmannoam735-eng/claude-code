@@ -41,7 +41,7 @@ export const PINBALL_TABLES: Record<PinballTable, PinballTableDef> = {
   manor: {
     id: 'manor', name: 'Hollow Manor', blurb: 'Haunted pinball · free three spirits by midnight', file: 'manor.html', source: 'hollow-manor', route: '/arcade/manor',
     hiKey: 'hm_hi', colour: '#2F8A63', online: false,
-    howTo: 'Your mission is always written big at the top, with a glowing arrow on the shot. Tap the left or right half to flip. The right side also fires the green side flipper by the launcher: flip it just as the ball flies past to jump up to the deck, where everything scores triple. To launch, drag down on the right half and let go. On a keyboard: Z and M (or the arrows) flip, hold Space to pull.',
+    howTo: 'Everything you need to know shows on the amber dot display above the table, and the book button opens a picture guide to every target. Ride the wooden bridge and the Manor wire ramp: both drop the ball back into an inlane. Knock down G-H-O-S-T to open the coffin and free a spirit. Flip the green side flipper on the left wall as the ball rolls by (or shoot the left lane) to ride the lift up to the crypt: a small table with its own flippers, a cauldron and three skulls. Hit all three skulls to free a spirit before the 25 second timer runs out. Spell B-O-O for more. Tap the left or right half to flip. Hold the right half to pull the plunger and let go to launch; swipe to nudge. On a keyboard: Z and M flip, Space launches.',
   },
   fossil: {
     id: 'fossil', name: 'Volcano Expedition', blurb: 'Pinball · beat the lava raptor', file: 'volcano.html', source: 'volcano-expedition', route: '/arcade/volcano',
