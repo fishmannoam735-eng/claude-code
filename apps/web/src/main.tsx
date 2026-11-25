@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, HashRouter } from 'react-router';
 import './index.css';
 import { App } from './App';
+import { startContestOnce } from './lib/contestStart';
+
+startContestOnce();
 
 /**
  * Paths are the default, because `/g/<seed>` is a link worth sharing and a

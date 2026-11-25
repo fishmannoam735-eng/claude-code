@@ -1,40 +1,24 @@
 import { candidatesFor, emptyOwner, rectCells, type Clue, type Owner, type Rect } from './grid.js';
+import { covers, emptyMask, equals, fullMask, maskOf, orInto, overlaps, clearInto, type Mask } from './mask.js';
+
+export { maskOf } from './mask.js';
 
 /**
- * A candidate rectangle with its cells precomputed as a bitmask. Boards are at
- * most 8x8, so 64 bits fits in two 32-bit halves and overlap testing collapses
- * to two ANDs. That matters: the search tests candidate viability tens of
- * thousands of times per puzzle, and doing it by walking cell arrays is what
- * separates a solver that runs in a millisecond from one that runs in fifty.
+ * A candidate rectangle with its cells precomputed as a bitmask, so testing
+ * whether two candidates overlap is a few word ANDs. That matters: the search
+ * tests candidate viability tens of thousands of times per puzzle, and doing it
+ * by walking cell arrays is what separates a solver that runs in a millisecond
+ * from one that runs in fifty.
  */
 export interface Cand {
   rect: Rect;
-  lo: number;
-  hi: number;
-}
-
-export function maskOf(cells: readonly number[]): { lo: number; hi: number } {
-  let lo = 0, hi = 0;
-  for (const i of cells) {
-    if (i < 32) lo |= 1 << i;
-    else hi |= 1 << (i - 32);
-  }
-  return { lo, hi };
+  m: Mask;
 }
 
 export function buildCandidates(n: number, clues: readonly Clue[]): Cand[][] {
   return clues.map((_, k) =>
-    candidatesFor(n, clues, k).map((rect) => ({ rect, ...maskOf(rectCells(rect, n)) })),
+    candidatesFor(n, clues, k).map((rect) => ({ rect, m: maskOf(rectCells(rect, n), n) })),
   );
-}
-
-/** The mask of a full board, so "everything covered" is one comparison. */
-function fullMask(n: number): { lo: number; hi: number } {
-  const cells = n * n;
-  return {
-    lo: cells >= 32 ? -1 : (1 << cells) - 1,
-    hi: cells <= 32 ? 0 : cells >= 64 ? -1 : (1 << (cells - 32)) - 1,
-  };
 }
 
 /**
@@ -51,7 +35,7 @@ export function findTilings(n: number, clues: readonly Clue[], limit = 2, cands?
   const full = fullMask(n);
   const chosen = new Array<Rect | null>(clues.length).fill(null);
   const out: Owner[] = [];
-  let usedLo = 0, usedHi = 0;
+  const used = emptyMask(n);
 
   function record(): void {
     const owner = emptyOwner(n);
@@ -66,35 +50,33 @@ export function findTilings(n: number, clues: readonly Clue[], limit = 2, cands?
 
     let bestClue = -1;
     let bestList: Cand[] | null = null;
-    let reachLo = 0, reachHi = 0;
+    const reach = emptyMask(n);
 
     for (let k = 0; k < clues.length; k++) {
       if (chosen[k]) continue;
       const live: Cand[] = [];
       for (const cand of candidates[k]!) {
-        if ((cand.lo & usedLo) === 0 && (cand.hi & usedHi) === 0) live.push(cand);
+        if (!overlaps(cand.m, used)) { live.push(cand); orInto(reach, cand.m); }
       }
       if (live.length === 0) return;                 // this clue has nowhere to go
-      reachLo |= live.reduce((m, c) => m | c.lo, 0);
-      reachHi |= live.reduce((m, c) => m | c.hi, 0);
       if (bestList === null || live.length < bestList.length) { bestClue = k; bestList = live; }
     }
 
     if (bestList === null) {                          // every clue placed
-      if (usedLo === full.lo && usedHi === full.hi) record();
+      if (equals(used, full)) record();
       return;
     }
 
     // Any free cell no live candidate can reach is a cell nothing will ever
     // cover, so this branch is already dead.
-    const freeLo = full.lo & ~usedLo, freeHi = full.hi & ~usedHi;
-    if ((freeLo & ~reachLo) !== 0 || (freeHi & ~reachHi) !== 0) return;
+    orInto(reach, used);
+    if (!covers(reach, full)) return;
 
     for (const cand of bestList) {
       chosen[bestClue] = cand.rect;
-      usedLo |= cand.lo; usedHi |= cand.hi;
+      orInto(used, cand.m);
       search();
-      usedLo &= ~cand.lo; usedHi &= ~cand.hi;
+      clearInto(used, cand.m);
       chosen[bestClue] = null;
       if (out.length >= limit) return;
     }
